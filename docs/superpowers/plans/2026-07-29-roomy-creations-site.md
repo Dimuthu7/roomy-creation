@@ -1745,26 +1745,18 @@ Create `src/components/gallery/GalleryCard.tsx`:
 ```tsx
 'use client'
 import Image from 'next/image'
-import { rowSpan, offsetFor, isEager } from '@/lib/galleryLayout'
+import { isEager } from '@/lib/galleryLayout'
 import { workAlt } from '@/lib/workAlt'
 import { isTBC } from '@/lib/tbc'
 import type { Work } from '@/data/works'
 
-const OFFSET_CLASS = {
-  none: '',
-  left: 'lg:-translate-x-6',
-  right: 'lg:translate-x-6',
-} as const
-
 export function GalleryCard({
   work,
   index,
-  columns,
   onOpen,
 }: {
   work: Work
   index: number
-  columns: number
   onOpen: (index: number) => void
 }) {
   const caption = [work.title, work.materials, work.district]
@@ -1776,10 +1768,8 @@ export function GalleryCard({
       type="button"
       onClick={() => onOpen(index)}
       data-cursor-label="View"
-      style={{ gridRowEnd: `span ${rowSpan(work.ratio)}` }}
-      className={`group relative block w-full overflow-hidden text-left transition-[opacity,transform]
-                  duration-300 group-data-[hovered=true]/grid:opacity-40 hover:!opacity-100
-                  ${OFFSET_CLASS[offsetFor(index, columns)]}`}
+      className="group absolute inset-0 block overflow-hidden text-left transition-opacity
+                 duration-300 group-data-[hovered=true]/grid:opacity-40 hover:!opacity-100"
     >
       <Image
         src={work.image}
@@ -1813,10 +1803,16 @@ import { useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { WORKS } from '@/data/works'
 import type { CategoryId } from '@/data/categories'
-import { filterWorks } from '@/lib/galleryLayout'
+import { filterWorks, rowSpan, offsetFor } from '@/lib/galleryLayout'
 import { useMotionLevel } from '@/hooks/useMotionLevel'
 import { FilterRow } from './FilterRow'
 import { GalleryCard } from './GalleryCard'
+
+const OFFSET_CLASS = {
+  none: '',
+  left: 'lg:-translate-x-6',
+  right: 'lg:translate-x-6',
+} as const
 
 export function GalleryGrid({ onOpen }: { onOpen: (index: number) => void }) {
   const [active, setActive] = useState<CategoryId>('all')
@@ -1842,6 +1838,9 @@ export function GalleryGrid({ onOpen }: { onOpen: (index: number) => void }) {
       >
         <AnimatePresence mode="popLayout">
           {visible.map((work, i) => (
+            // This motion element IS the grid item: it carries the row span and the
+            // interlock offset. Framer Motion cannot measure a `display: contents`
+            // element, so wrapping the card in one would silently kill layout animation.
             <motion.div
               key={work.id}
               layout={level === 'full'}
@@ -1849,12 +1848,12 @@ export function GalleryGrid({ onOpen }: { onOpen: (index: number) => void }) {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.3, delay: i * stagger, ease: [0.22, 1.2, 0.36, 1] }}
-              style={{ display: 'contents' }}
+              style={{ gridRowEnd: `span ${rowSpan(work.ratio)}` }}
+              className={`relative ${OFFSET_CLASS[offsetFor(i, columns)]}`}
             >
               <GalleryCard
                 work={work}
                 index={WORKS.indexOf(work)}
-                columns={columns}
                 onOpen={onOpen}
               />
             </motion.div>
@@ -2405,9 +2404,10 @@ describe('Film', () => {
   it('is muted, looping and inline so it can autoplay', () => {
     render(<Film />)
     const video = screen.getByTestId('film-video') as HTMLVideoElement
-    expect(video).toHaveAttribute('muted')
-    expect(video).toHaveAttribute('loop')
-    expect(video).toHaveAttribute('playsinline')
+    // React sets these as DOM properties, not attributes — assert the properties.
+    expect(video.muted).toBe(true)
+    expect(video.loop).toBe(true)
+    expect(video.getAttribute('playsinline')).not.toBeNull()
   })
 
   it('omits a card figure that is still unknown rather than printing the placeholder', () => {
@@ -2529,12 +2529,14 @@ export function Film() {
         <span data-film-line className="absolute -bottom-6 left-0 h-px w-full origin-left scale-x-0 bg-teal" />
       </div>
 
-      <h2
+      {/* Second half of the split headline. A <p>, not an <h2> — the section already
+          has its heading above, and one section should not carry two headings. */}
+      <p
         data-testid="film-headline-bottom"
         className="text-center font-display text-4xl tracking-tight text-white lg:text-6xl"
       >
         Installed to the millimetre.
-      </h2>
+      </p>
     </section>
   )
 }
