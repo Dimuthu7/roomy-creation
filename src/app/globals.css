@@ -1,0 +1,40 @@
+@import "tailwindcss";
+
+@theme {
+  --color-navy: #023048;
+  --color-yellow: #F5CA4A;
+  --color-teal: #1FA2C0;
+  --color-sky: #8FCBE7;
+  --color-paper: #F1F5F8;
+
+  --font-display: var(--font-outfit);
+  --font-body: var(--font-instrument);
+  --font-mono: var(--font-plex-mono);
+}
+
+html {
+  background-color: var(--color-navy);
+}
+
+body {
+  font-family: var(--font-body);
+  font-size: 1.0625rem;
+  line-height: 1.6;
+  color: var(--color-sky);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-yellow);
+  outline-offset: 3px;
+}
+
+.on-paper :focus-visible {
+  outline-color: var(--color-navy);
+}
+
+.u-mono {
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 0.75rem;
+}
