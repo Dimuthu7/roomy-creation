@@ -23,6 +23,11 @@ export interface Work {
   year: Maybe<number>
 }
 
+// Slot numbers (work-01.jpg, work-02.jpg, ...) derive from array position, and
+// the client has already been supplied filenames matching that numbering. New
+// work MUST be appended to the end of this array, never inserted — inserting
+// shifts every later record's slot number and silently breaks the mapping to
+// photographs the client has already provided.
 const PLAN: Array<[WorkCategoryId, Ratio, string]> = [
   ['wardrobe', '3:2', 'Built-in wardrobe'],
   ['kitchen', '16:9', 'Fitted kitchen run'],

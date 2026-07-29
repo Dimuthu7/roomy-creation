@@ -1,7 +1,7 @@
 import { isTBC, joinDefined } from './tbc'
-import type { Work } from '@/data/works'
+import type { PropertyType, Work } from '@/data/works'
 
-const ARTICLE: Record<string, string> = {
+const ARTICLE: Record<PropertyType, string> = {
   house: 'a house',
   apartment: 'an apartment',
   hotel: 'a hotel',
@@ -9,18 +9,14 @@ const ARTICLE: Record<string, string> = {
 }
 
 export function workAlt(work: Work): string {
-  const context = joinDefined(
+  const place = joinDefined(
     [
-      isTBC(work.materials) ? work.materials : `in ${work.materials}`,
       isTBC(work.propertyType) ? work.propertyType : `in ${ARTICLE[work.propertyType]}`,
-      work.district,
+      isTBC(work.district) ? work.district : `in ${work.district}`,
     ],
-    ', ',
+    ' ',
   )
-  // District reads as a trailing appositive ("..., Colombo, by Roomy Creations"),
-  // so it gets a comma before "by" that the other context clauses don't.
-  const trailingComma = !isTBC(work.district) ? ',' : ''
-  return context
-    ? `${work.title} ${context}${trailingComma} by Roomy Creations`
-    : `${work.title} by Roomy Creations`
+  const spec = isTBC(work.materials) ? '' : `, ${work.materials},`
+
+  return `${work.title}${place ? ` ${place}` : ''}${spec} by Roomy Creations`
 }

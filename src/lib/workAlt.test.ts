@@ -5,19 +5,36 @@ import { WORKS } from '@/data/works'
 
 const base = WORKS[1]
 
+// Shape: {title}[ in {article}][ in {district}][, {materials},] by Roomy Creations
 describe('workAlt', () => {
   it('falls back to the title alone when nothing else is known', () => {
     expect(workAlt(base)).toBe('Fitted kitchen run by Roomy Creations')
   })
 
-  it('adds materials and district once known', () => {
-    expect(workAlt({ ...base, materials: 'matte white board', district: 'Colombo' }))
-      .toBe('Fitted kitchen run in matte white board, Colombo, by Roomy Creations')
+  it('reads place first, then spec, when everything is known', () => {
+    expect(workAlt({
+      ...base, materials: '18mm board', propertyType: 'apartment', district: 'Colombo',
+    })).toBe('Fitted kitchen run in an apartment in Colombo, 18mm board, by Roomy Creations')
   })
 
   it('adds property type when known', () => {
     expect(workAlt({ ...base, propertyType: 'apartment' }))
       .toBe('Fitted kitchen run in an apartment by Roomy Creations')
+  })
+
+  it('keeps the preposition when district is the only known field', () => {
+    expect(workAlt({ ...base, district: 'Colombo' }))
+      .toBe('Fitted kitchen run in Colombo by Roomy Creations')
+  })
+
+  it('sets materials off as an appositive when it is the only known field', () => {
+    expect(workAlt({ ...base, materials: 'matte white board' }))
+      .toBe('Fitted kitchen run, matte white board, by Roomy Creations')
+  })
+
+  it('joins property type and district into one phrase, with no doubled preposition', () => {
+    expect(workAlt({ ...base, propertyType: 'apartment', district: 'Colombo' }))
+      .toBe('Fitted kitchen run in an apartment in Colombo by Roomy Creations')
   })
 
   it('never emits the TBC placeholder', () => {
