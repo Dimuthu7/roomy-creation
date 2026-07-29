@@ -765,19 +765,37 @@ import { WORKS } from '@/data/works'
 
 const base = WORKS[1]
 
+// Shape: {title}[ in {article}][ in {district}][, {materials},] by Roomy Creations
+// Place reads as one natural phrase; the spec detail follows as an appositive.
 describe('workAlt', () => {
   it('falls back to the title alone when nothing else is known', () => {
     expect(workAlt(base)).toBe('Fitted kitchen run by Roomy Creations')
   })
 
-  it('adds materials and district once known', () => {
-    expect(workAlt({ ...base, materials: 'matte white board', district: 'Colombo' }))
-      .toBe('Fitted kitchen run in matte white board, Colombo, by Roomy Creations')
+  it('reads place first, then spec, when everything is known', () => {
+    expect(workAlt({
+      ...base, materials: '18mm board', propertyType: 'apartment', district: 'Colombo',
+    })).toBe('Fitted kitchen run in an apartment in Colombo, 18mm board, by Roomy Creations')
   })
 
   it('adds property type when known', () => {
     expect(workAlt({ ...base, propertyType: 'apartment' }))
       .toBe('Fitted kitchen run in an apartment by Roomy Creations')
+  })
+
+  it('keeps the preposition when district is the only known field', () => {
+    expect(workAlt({ ...base, district: 'Colombo' }))
+      .toBe('Fitted kitchen run in Colombo by Roomy Creations')
+  })
+
+  it('sets materials off as an appositive when it is the only known field', () => {
+    expect(workAlt({ ...base, materials: 'matte white board' }))
+      .toBe('Fitted kitchen run, matte white board, by Roomy Creations')
+  })
+
+  it('joins property type and district into one phrase, with no doubled preposition', () => {
+    expect(workAlt({ ...base, propertyType: 'apartment', district: 'Colombo' }))
+      .toBe('Fitted kitchen run in an apartment in Colombo by Roomy Creations')
   })
 
   it('never emits the TBC placeholder', () => {
@@ -801,9 +819,9 @@ Create `src/lib/workAlt.ts`:
 
 ```ts
 import { isTBC, joinDefined } from './tbc'
-import type { Work } from '@/data/works'
+import type { PropertyType, Work } from '@/data/works'
 
-const ARTICLE: Record<string, string> = {
+const ARTICLE: Record<PropertyType, string> = {
   house: 'a house',
   apartment: 'an apartment',
   hotel: 'a hotel',
@@ -811,17 +829,19 @@ const ARTICLE: Record<string, string> = {
 }
 
 export function workAlt(work: Work): string {
-  const context = joinDefined(
+  // Property type and district form one place phrase — "in an apartment in Colombo" —
+  // so the preposition is never dropped and never doubled.
+  const place = joinDefined(
     [
-      isTBC(work.materials) ? work.materials : `in ${work.materials}`,
       isTBC(work.propertyType) ? work.propertyType : `in ${ARTICLE[work.propertyType]}`,
-      work.district,
+      isTBC(work.district) ? work.district : `in ${work.district}`,
     ],
-    ', ',
+    ' ',
   )
-  return context
-    ? `${work.title} ${context} by Roomy Creations`
-    : `${work.title} by Roomy Creations`
+  // Materials follow as an appositive, set off by commas.
+  const spec = isTBC(work.materials) ? '' : `, ${work.materials},`
+
+  return `${work.title}${place ? ` ${place}` : ''}${spec} by Roomy Creations`
 }
 ```
 
