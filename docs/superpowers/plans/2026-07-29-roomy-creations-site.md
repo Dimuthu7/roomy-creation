@@ -1110,17 +1110,25 @@ Expected: FAIL — modules not found.
 
 - [ ] **Step 4: Implement lightboxNav.ts**
 
+JavaScript's `%` keeps the sign of the dividend, so a single modulo returns a negative
+index for any `current` outside `[0, length)`. Normalise with a double modulo — a
+negative index would read `undefined` out of the works array and crash the lightbox
+rather than wrap.
+
 ```ts
 export function nextIndex(current: number, length: number): number {
   if (length <= 0) return 0
-  return (current + 1) % length
+  return (((current + 1) % length) + length) % length
 }
 
 export function prevIndex(current: number, length: number): number {
   if (length <= 0) return 0
-  return (current - 1 + length) % length
+  return (((current - 1) % length) + length) % length
 }
 ```
+
+Also add an out-of-range describe block to `lightboxNav.test.ts` (`prevIndex(-10, 5)` is
+4, `nextIndex(7, 5)` is 3), bringing that file to 9 tests and Step 6's total to 15.
 
 - [ ] **Step 5: Implement specs.ts and filmCards.ts**
 
@@ -1189,7 +1197,7 @@ export function cardIndexAt(time: number, starts: number[]): number {
 - [ ] **Step 6: Run tests to verify they pass**
 
 Run: `npx vitest run src/lib/lightboxNav.test.ts src/lib/filmCards.test.ts`
-Expected: PASS, 12 tests (6 lightboxNav + 6 filmCards).
+Expected: PASS, 15 tests (9 lightboxNav + 6 filmCards).
 
 - [ ] **Step 7: Commit**
 
