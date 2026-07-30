@@ -21,3 +21,20 @@ describe('edge cases', () => {
     expect(prevIndex(0, 0)).toBe(0)
   })
 })
+
+describe('out-of-range current', () => {
+  it('never returns a negative index', () => {
+    expect(nextIndex(-2, 5)).toBeGreaterThanOrEqual(0)
+    expect(prevIndex(-10, 5)).toBeGreaterThanOrEqual(0)
+  })
+
+  it('normalises an index below the start', () => {
+    expect(prevIndex(-10, 5)).toBe(4)
+    expect(nextIndex(-2, 5)).toBe(4)
+  })
+
+  it('normalises an index past the end', () => {
+    expect(nextIndex(7, 5)).toBe(3)
+    expect(prevIndex(7, 5)).toBe(1)
+  })
+})
