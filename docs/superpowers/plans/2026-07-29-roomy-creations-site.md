@@ -1189,7 +1189,7 @@ export function cardIndexAt(time: number, starts: number[]): number {
 - [ ] **Step 6: Run tests to verify they pass**
 
 Run: `npx vitest run src/lib/lightboxNav.test.ts src/lib/filmCards.test.ts`
-Expected: PASS, 11 tests.
+Expected: PASS, 12 tests (6 lightboxNav + 6 filmCards).
 
 - [ ] **Step 7: Commit**
 
