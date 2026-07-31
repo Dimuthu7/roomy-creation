@@ -1348,7 +1348,8 @@ export const NEED_OPTIONS = [
   { id: 'other', label: 'Other' },
 ] as const
 
-const NEED_IDS = NEED_OPTIONS.map((n) => n.id) as unknown as [string, ...string[]]
+export type NeedId = (typeof NEED_OPTIONS)[number]['id']
+const NEED_IDS = NEED_OPTIONS.map((n) => n.id) as [NeedId, ...NeedId[]]
 
 export const enquirySchema = z.object({
   name: z.string().trim().min(2, 'Enter your name'),
@@ -1373,8 +1374,21 @@ export type Enquiry = z.infer<typeof enquirySchema>
 
 - [ ] **Step 5: Run tests to verify they pass**
 
+Also lock the remaining approved error strings by content (`'Enter your name'`,
+`'Enter a phone number we can call back on'`, `'Enter an email address'`), add a case that
+OMITS `budget` entirely to exercise `.optional().default('')`, and add a compile-time guard
+so the need ids cannot silently widen back to `string[]`:
+
+```ts
+// @ts-expect-error - a need id outside NEED_OPTIONS must not type-check
+const _rejectsUnknownNeedId: Enquiry['needs'] = ['not-a-real-need']
+void _rejectsUnknownNeedId
+```
+
+`@ts-expect-error` fails the build when there is NO error, so `tsc --noEmit` is the guard.
+
 Run: `npx vitest run src/lib/whatsapp.test.ts src/lib/enquirySchema.test.ts`
-Expected: PASS, 12 tests (4 whatsapp + 8 enquirySchema).
+Expected: PASS, 16 tests (4 whatsapp + 12 enquirySchema).
 
 - [ ] **Step 6: Commit**
 
