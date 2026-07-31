@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { enquirySchema } from './enquirySchema'
+import { enquirySchema, type Enquiry } from './enquirySchema'
 
 const valid = {
   name: 'Nimal',
@@ -62,4 +62,40 @@ describe('enquirySchema', () => {
       }
     }
   })
+
+  it('names the field when the name is missing', () => {
+    const r = enquirySchema.safeParse({ ...valid, name: '' })
+    expect(r.success).toBe(false)
+    if (!r.success) {
+      expect(r.error.issues[0].message).toBe('Enter your name')
+    }
+  })
+
+  it('says why the phone number matters', () => {
+    const r = enquirySchema.safeParse({ ...valid, phone: '0771' })
+    expect(r.success).toBe(false)
+    if (!r.success) {
+      expect(r.error.issues[0].message).toBe('Enter a phone number we can call back on')
+    }
+  })
+
+  it('asks for an email when the field is blank', () => {
+    const r = enquirySchema.safeParse({ ...valid, email: '' })
+    expect(r.success).toBe(false)
+    if (!r.success) {
+      const hasMinMessage = r.error.issues.some((issue) => issue.message === 'Enter an email address')
+      expect(hasMinMessage).toBe(true)
+    }
+  })
+
+  it('fills in an absent budget rather than rejecting it', () => {
+    const { budget: _omitted, ...withoutBudget } = valid
+    const r = enquirySchema.safeParse(withoutBudget)
+    expect(r.success).toBe(true)
+    if (r.success) expect(r.data.budget).toBe('')
+  })
 })
+
+// @ts-expect-error - a need id outside NEED_OPTIONS must not type-check
+const _rejectsUnknownNeedId: Enquiry['needs'] = ['not-a-real-need']
+void _rejectsUnknownNeedId

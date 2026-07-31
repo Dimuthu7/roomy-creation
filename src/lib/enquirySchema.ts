@@ -11,7 +11,8 @@ export const NEED_OPTIONS = [
   { id: 'other', label: 'Other' },
 ] as const
 
-const NEED_IDS = NEED_OPTIONS.map((n) => n.id) as unknown as [string, ...string[]]
+export type NeedId = (typeof NEED_OPTIONS)[number]['id']
+const NEED_IDS = NEED_OPTIONS.map((n) => n.id) as [NeedId, ...NeedId[]]
 
 export const enquirySchema = z.object({
   name: z.string().trim().min(2, 'Enter your name'),
