@@ -1312,6 +1312,14 @@ describe('enquirySchema', () => {
     expect(enquirySchema.safeParse({ ...valid, propertyType: 'castle' }).success).toBe(false)
   })
 
+  it('phrases the property type error for a person, not a developer', () => {
+    const r = enquirySchema.safeParse({ ...valid, propertyType: 'castle' })
+    expect(r.success).toBe(false)
+    if (!r.success) {
+      expect(r.error.issues[0].message).toBe('Choose the property type')
+    }
+  })
+
   it('has no error message containing an exclamation mark or an apology', () => {
     const r = enquirySchema.safeParse({ name: '', phone: '', email: '', propertyType: 'x', needs: [] })
     if (!r.success) {
@@ -1366,7 +1374,7 @@ export type Enquiry = z.infer<typeof enquirySchema>
 - [ ] **Step 5: Run tests to verify they pass**
 
 Run: `npx vitest run src/lib/whatsapp.test.ts src/lib/enquirySchema.test.ts`
-Expected: PASS, 11 tests.
+Expected: PASS, 12 tests (4 whatsapp + 8 enquirySchema).
 
 - [ ] **Step 6: Commit**
 
