@@ -1402,10 +1402,18 @@ git commit -m "feat: add WhatsApp link builder and shared enquiry validation"
 ### Task 8: Motion foundation
 
 **Files:**
+- Create: `src/test/browserStubs.ts` — Modify: `vitest.setup.ts`
 - Create: `src/hooks/useMotionLevel.ts`, `src/hooks/useCountUp.ts`
 - Create: `src/components/chrome/SmoothScroll.tsx`, `src/components/chrome/CustomCursor.tsx`
 - Create: `src/components/weave/WeaveReveal.tsx`
-- Test: `src/hooks/useMotionLevel.test.tsx`
+- Test: `src/hooks/useMotionLevel.test.tsx`, `src/components/weave/WeaveReveal.test.tsx`
+
+**Harness prerequisite — do this first.** jsdom implements neither `window.matchMedia`
+(`useMotionLevel` dies with a TypeError) nor `IntersectionObserver` (framer-motion's
+`whileInView` dies with a ReferenceError). Neither degrades; both throw. Task 8's own pure
+test never notices, but every component test from Task 9 on crashes. `src/test/browserStubs.ts`
+exports `installBrowserStubs()` and `setPrefersReducedMotion(value)`; `vitest.setup.ts` installs
+them and resets to full motion at `innerWidth` 1024 in a `beforeEach`.
 
 **Interfaces:**
 - Consumes: nothing.
@@ -1486,6 +1494,20 @@ export function useMotionLevel(): MotionLevel {
 
 Run: `npx vitest run src/hooks/useMotionLevel.test.tsx`
 Expected: PASS, 4 tests.
+
+- [ ] **Step 4b: Lock the reduced-motion contract on the component, not just the maths**
+
+`resolveMotionLevel` being correct proves nothing about whether components honour it.
+`src/components/weave/WeaveReveal.test.tsx` ships 5 tests: two that the reduced path applies
+no transform and still renders its content, and three at full motion — the left and right
+start offsets, and that opacity settles at 1.
+
+That last one is load-bearing. Asserting merely that *some* inline style exists passes against
+a component with `whileInView` deleted — permanently invisible to every visitor — because
+framer-motion writes the hidden `initial` values synchronously on mount. Both guards are
+mutation-tested: removing the `level === 'reduced'` branch fails with
+`expected 'translateX(-48px)' to be ''`, and removing `whileInView` fails with
+`expected '0' to be '1'`. Do not weaken either into a style-attribute existence check.
 
 - [ ] **Step 5: Implement SmoothScroll**
 
@@ -1656,7 +1678,7 @@ export function useCountUp(target: number, active: boolean, duration = 900): num
 - [ ] **Step 9: Run the full suite and commit**
 
 Run: `npx vitest run`
-Expected: PASS, all tests green.
+Expected: PASS, 88 tests green — 79 carried in, 9 added here (4 motion level + 5 weave reveal).
 
 ```bash
 git add src/hooks src/components/chrome src/components/weave
