@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
-import { setPrefersReducedMotion } from '@/test/browserStubs'
+import { act } from 'react'
+import { setPrefersReducedMotion, emitMotionPreferenceChange } from '@/test/browserStubs'
 import { WeaveReveal } from './WeaveReveal'
 
 describe('WeaveReveal under reduced motion', () => {
@@ -57,5 +58,25 @@ describe('WeaveReveal with motion allowed', () => {
   it('settles fully visible, so the content is never left hidden', async () => {
     const wrapper = renderAtFullMotion('left')
     await waitFor(() => expect(wrapper.style.opacity).toBe('1'), { timeout: 2000 })
+  })
+})
+
+describe('WeaveReveal when the motion level changes mid-session', () => {
+  it('does not remount its children, which would discard their DOM state', () => {
+    setPrefersReducedMotion(false)
+    window.innerWidth = 1440
+    const { container } = render(
+      <WeaveReveal from="left">
+        <input defaultValue="" />
+      </WeaveReveal>,
+    )
+    const input = container.querySelector('input') as HTMLInputElement
+    input.value = 'typed by the visitor'
+
+    act(() => emitMotionPreferenceChange(true))
+
+    const after = container.querySelector('input') as HTMLInputElement
+    expect(after).toBe(input)
+    expect(after.value).toBe('typed by the visitor')
   })
 })

@@ -1,10 +1,11 @@
 import '@testing-library/jest-dom/vitest'
 import { beforeEach } from 'vitest'
-import { installBrowserStubs, setPrefersReducedMotion } from './src/test/browserStubs'
+import { installBrowserStubs, setPrefersReducedMotion, resetBrowserStubs } from './src/test/browserStubs'
 
 installBrowserStubs()
 
 beforeEach(() => {
+  resetBrowserStubs()
   setPrefersReducedMotion(false)
   window.innerWidth = 1024
 })
