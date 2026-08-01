@@ -36,12 +36,32 @@ function readLevel(container: HTMLElement): string {
   return (container.querySelector('[data-testid=level]') as HTMLElement).textContent ?? ''
 }
 
+/**
+ * Records the level on every render pass, including the first one, before effects
+ * flush. Reading the committed DOM cannot tell a resolve-on-first-render hook from
+ * a resolve-in-an-effect one, because Testing Library flushes effects inside act()
+ * — so only this can prove the conservative default never reaches the screen.
+ */
+function RenderRecorder({ seen }: { seen: string[] }) {
+  const level = useMotionLevel()
+  seen.push(level)
+  return null
+}
+
 describe('useMotionLevel', () => {
   it('reports full on the very first render, with no flip from a conservative default', () => {
     setPrefersReducedMotion(false)
     window.innerWidth = 1440
     const { container } = render(<Probe />)
     expect(readLevel(container)).toBe('full')
+  })
+
+  it('never renders the conservative default first, which would flash the wrong state', () => {
+    setPrefersReducedMotion(false)
+    window.innerWidth = 1440
+    const seen: string[] = []
+    render(<RenderRecorder seen={seen} />)
+    expect(seen[0]).toBe('full')
   })
 
   it('reports reduced on the very first render when the user asked for it', () => {
