@@ -1460,7 +1460,7 @@ Expected: FAIL — module not found.
 
 ```ts
 'use client'
-import { useEffect, useState } from 'react'
+import { useSyncExternalStore } from 'react'
 
 export type MotionLevel = 'full' | 'reduced' | 'mobile'
 export const MOBILE_MAX = 767
@@ -1470,25 +1470,49 @@ export function resolveMotionLevel(prefersReduced: boolean, width: number): Moti
   return width <= MOBILE_MAX ? 'mobile' : 'full'
 }
 
+function subscribe(onChange: () => void): () => void {
+  const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
+  motionQuery.addEventListener('change', onChange)
+  window.addEventListener('resize', onChange)
+  return () => {
+    motionQuery.removeEventListener('change', onChange)
+    window.removeEventListener('resize', onChange)
+  }
+}
+
+function getSnapshot(): MotionLevel {
+  return resolveMotionLevel(
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+    window.innerWidth,
+  )
+}
+
+// The server cannot know either the preference or the viewport, so it renders the
+// safe state: content visible, nothing transformed. That is also what a visitor
+// with JS disabled keeps.
+function getServerSnapshot(): MotionLevel {
+  return 'reduced'
+}
+
 export function useMotionLevel(): MotionLevel {
-  // Server and first paint assume the most conservative setting.
-  const [level, setLevel] = useState<MotionLevel>('reduced')
-
-  useEffect(() => {
-    const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
-    const update = () => setLevel(resolveMotionLevel(motionQuery.matches, window.innerWidth))
-    update()
-    motionQuery.addEventListener('change', update)
-    window.addEventListener('resize', update)
-    return () => {
-      motionQuery.removeEventListener('change', update)
-      window.removeEventListener('resize', update)
-    }
-  }, [])
-
-  return level
+  return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot)
 }
 ```
+
+**Do not replace this with `useState('reduced')` plus a correcting `useEffect`.** That was the
+original design and it was wrong: it renders the conservative default first, so a full-motion
+visitor sees the plain state and then a switch. Measured consequences were a `WeaveReveal`
+subtree remount (`div` → `motion.div` is a element-type change) and a `useCountUp` sequence of
+`t0=100 → t60ms=-286 → settled=99` — the figure appearing at its final value, resetting, and
+rendering a negative number on the way back up. After the fix the same probe reads
+`t0=0 → t60=11 → settled=100`. An isomorphic `useLayoutEffect` was also tried and rejected: it
+still flips after the first render, and combined with a settle-latch it produced a figure that
+never animates at all. `useSyncExternalStore` is the only one of the three that resolves on the
+first render while still giving SSR its own conservative snapshot.
+
+The guard is `src/hooks/useMotionLevel.test.tsx`'s "never renders the conservative default
+first", which records every render pass. Reading the committed DOM cannot catch this — Testing
+Library flushes effects inside `act()`, so both designs look identical after `render()` returns.
 
 - [ ] **Step 4: Run test to verify it passes**
 
@@ -1646,39 +1670,62 @@ Create `src/hooks/useCountUp.ts`:
 
 ```ts
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useMotionLevel } from './useMotionLevel'
 
 export function useCountUp(target: number, active: boolean, duration = 900): number {
   const level = useMotionLevel()
   const [value, setValue] = useState(0)
+  const settled = useRef(false)
 
   useEffect(() => {
-    if (!active) return
+    if (!active || settled.current) return
     if (level === 'reduced') {
+      settled.current = true
       setValue(target)
       return
     }
     let frame = 0
-    const start = performance.now()
+    let start: number | null = null
     const step = (now: number) => {
-      const progress = Math.min((now - start) / duration, 1)
-      const eased = 1 - Math.pow(1 - progress, 3)
-      setValue(Math.round(target * eased))
-      if (progress < 1) frame = requestAnimationFrame(step)
+      // `start` comes from the same clock as `now`, so elapsed time cannot go negative.
+      if (start === null) start = now
+      const progress = Math.min(Math.max((now - start) / duration, 0), 1)
+      setValue(Math.round(target * (1 - Math.pow(1 - progress, 3))))
+      if (progress < 1) {
+        frame = requestAnimationFrame(step)
+      } else {
+        settled.current = true
+      }
     }
     frame = requestAnimationFrame(step)
-    return () => cancelAnimationFrame(frame)
+
+    return () => {
+      cancelAnimationFrame(frame)
+      // A half-finished figure on screen is a wrong figure. If we are torn down
+      // mid-count, land on the real number rather than freezing part-way.
+      if (!settled.current) {
+        settled.current = true
+        setValue(target)
+      }
+    }
   }, [target, active, duration, level])
 
   return value
 }
 ```
 
+`start` must come from the first rAF timestamp, not `performance.now()` — the two are not
+guaranteed to share a time origin, and when they do not, elapsed time goes negative and a
+negative figure renders. The clamp is belt-and-braces on top of that. The `settled` latch stops
+a completed count re-running, and the teardown snap means an interrupted count lands on the real
+figure rather than freezing part-way.
+
 - [ ] **Step 9: Run the full suite and commit**
 
 Run: `npx vitest run`
-Expected: PASS, 88 tests green — 79 carried in, 9 added here (4 motion level + 5 weave reveal).
+Expected: PASS, 98 tests green — 79 carried in, 19 added across Task 8 and its 8b follow-up
+(5 motion level hook + 4 resolveMotionLevel + 6 weave reveal + 4 count up).
 
 ```bash
 git add src/hooks src/components/chrome src/components/weave

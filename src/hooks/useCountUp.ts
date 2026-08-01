@@ -32,6 +32,8 @@ export function useCountUp(target: number, active: boolean, duration = 900): num
 
     return () => {
       cancelAnimationFrame(frame)
+      // A half-finished figure on screen is a wrong figure. If we are torn down
+      // mid-count, land on the real number rather than freezing part-way.
       if (!settled.current) {
         settled.current = true
         setValue(target)
