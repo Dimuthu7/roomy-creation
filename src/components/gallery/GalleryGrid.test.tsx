@@ -1,0 +1,103 @@
+import { describe, it, expect, vi } from 'vitest'
+import { render, screen, waitFor, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { WORKS } from '@/data/works'
+import { rowSpan } from '@/lib/galleryLayout'
+import { GalleryGrid, GUTTER_ROWS } from './GalleryGrid'
+
+function items(): HTMLElement[] {
+  return Array.from(
+    screen.getByTestId('gallery-grid').querySelectorAll<HTMLElement>('[data-work-id]'),
+  )
+}
+
+describe('GalleryGrid', () => {
+  it('renders all 24 works by default', () => {
+    render(<GalleryGrid onOpen={vi.fn()} />)
+    expect(screen.getAllByRole('img')).toHaveLength(24)
+  })
+
+  it('gives every image real alt text with no placeholder', () => {
+    render(<GalleryGrid onOpen={vi.fn()} />)
+    for (const img of screen.getAllByRole('img')) {
+      expect(img).toHaveAccessibleName()
+      expect(img.getAttribute('alt')).not.toContain('[TBC]')
+    }
+  })
+
+  it('lazy-loads everything past the first eight', () => {
+    render(<GalleryGrid onOpen={vi.fn()} />)
+    const imgs = screen.getAllByRole('img')
+    expect(imgs[0]).toHaveAttribute('loading', 'eager')
+    expect(imgs[7]).toHaveAttribute('loading', 'eager')
+    expect(imgs[8]).toHaveAttribute('loading', 'lazy')
+  })
+
+  it('filters to a single category when a chip is chosen', async () => {
+    const user = userEvent.setup()
+    render(<GalleryGrid onOpen={vi.fn()} />)
+    await user.click(screen.getByRole('button', { name: 'Wardrobes' }))
+    // AnimatePresence keeps the departing cards mounted until their exit animation
+    // finishes. Measured: all 24 are still in the DOM immediately after the click, so
+    // asserting a count here without waiting reads a mid-transition state.
+    await waitFor(() => expect(screen.getAllByRole('img')).toHaveLength(5))
+  })
+
+  it('keeps the first visible cards eager after filtering', async () => {
+    const user = userEvent.setup()
+    render(<GalleryGrid onOpen={vi.fn()} />)
+    await user.click(screen.getByRole('button', { name: 'Wardrobes' }))
+    await waitFor(() => expect(screen.getAllByRole('img')).toHaveLength(5))
+    // All five fit inside the eager window. Keying eagerness off the WORKS index
+    // instead would leave three of them lazy, which is what this pins against.
+    for (const img of screen.getAllByRole('img')) {
+      expect(img).toHaveAttribute('loading', 'eager')
+    }
+  })
+
+  it('marks the active filter chip for assistive tech', async () => {
+    const user = userEvent.setup()
+    render(<GalleryGrid onOpen={vi.fn()} />)
+    expect(screen.getByRole('button', { name: 'All' })).toHaveAttribute('aria-pressed', 'true')
+    await user.click(screen.getByRole('button', { name: 'Wardrobes' }))
+    expect(screen.getByRole('button', { name: 'Wardrobes' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: 'All' })).toHaveAttribute('aria-pressed', 'false')
+  })
+
+  it('opens the lightbox at the clicked index', async () => {
+    const user = userEvent.setup()
+    const onOpen = vi.fn()
+    render(<GalleryGrid onOpen={onOpen} />)
+    await user.click(screen.getAllByRole('button', { name: /Built-in wardrobe/ })[0])
+    expect(onOpen).toHaveBeenCalledWith(0)
+  })
+
+  it('exposes each card as a keyboard-reachable button', () => {
+    render(<GalleryGrid onOpen={vi.fn()} />)
+    const grid = screen.getByTestId('gallery-grid')
+    expect(within(grid).getAllByRole('button')).toHaveLength(24)
+  })
+
+  // The two below are the point of Task 5. Without them the whole maths module could be
+  // unwired — or wired to a recomputed guess — and every other test here still passes.
+  it('sizes every card from the shared row-span maths', () => {
+    render(<GalleryGrid onOpen={vi.fn()} />)
+    const rendered = items()
+    expect(rendered).toHaveLength(24)
+    // Pinned concretely as well as derived: 3:2 over a 60-unit column is 40 rows, plus
+    // the 2-row gutter. A silent change to either the maths or the gutter fails here.
+    expect(rendered[0].style.gridRowEnd).toBe('span 42')
+    rendered.forEach((el, i) => {
+      expect(el.style.gridRowEnd).toBe(`span ${rowSpan(WORKS[i].ratio) + GUTTER_ROWS}`)
+    })
+  })
+
+  it('applies the interlock offset from offsetFor', () => {
+    render(<GalleryGrid onOpen={vi.fn()} />)
+    const rendered = items()
+    expect(rendered[0].className).not.toMatch(/translate-x/)
+    expect(rendered[1].className).toContain('lg:-translate-x-6')
+    expect(rendered[2].className).not.toMatch(/translate-x/)
+    expect(rendered[3].className).toContain('lg:translate-x-6')
+  })
+})
