@@ -38,3 +38,25 @@ body {
   letter-spacing: 0.14em;
   font-size: 0.75rem;
 }
+
+/*
+ * Safety net for prefers-reduced-motion. Components are still expected to gate
+ * their own transforms individually (an instant transform is still a transform),
+ * but this guard makes sure any transition/animation that slips through — now or
+ * in a later task — collapses to effectively nothing instead of playing at full
+ * speed for a user who asked the OS not to move things.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  html {
+    scroll-behavior: auto !important;
+  }
+}

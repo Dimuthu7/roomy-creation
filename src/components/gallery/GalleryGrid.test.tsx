@@ -100,4 +100,22 @@ describe('GalleryGrid', () => {
     expect(rendered[2].className).not.toMatch(/translate-x/)
     expect(rendered[3].className).toContain('lg:translate-x-6')
   })
+
+  // jsdom has no CSS engine, so it cannot evaluate `@media (prefers-reduced-motion)` or the
+  // `motion-safe:` variant's effect. The honest assertion available here is on the class
+  // list itself: pin that the hover-transform utilities are wrapped in `motion-safe:`, which
+  // Tailwind only applies under `(prefers-reduced-motion: no-preference)`. That is what makes
+  // the image scale and the caption slide absent (not merely instant) for a user with the OS
+  // reduced-motion preference set.
+  it('gates the card hover transforms behind motion-safe', () => {
+    render(<GalleryGrid onOpen={vi.fn()} />)
+    const grid = screen.getByTestId('gallery-grid')
+    const img = within(grid).getAllByRole('img')[0]
+    expect(img.className).toContain('motion-safe:group-hover:scale-105')
+
+    const caption = img.closest('button')?.querySelector('span')
+    expect(caption).not.toBeNull()
+    expect(caption!.className).toContain('motion-safe:translate-y-full')
+    expect(caption!.className).toContain('motion-safe:group-hover:translate-y-0')
+  })
 })

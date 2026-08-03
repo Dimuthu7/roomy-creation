@@ -39,11 +39,14 @@ export function GalleryCard({
         fill
         sizes="(max-width: 767px) 100vw, (max-width: 1279px) 50vw, 33vw"
         loading={eager ? 'eager' : 'lazy'}
-        className="object-cover transition-transform duration-300 group-hover:scale-105"
+        className="object-cover transition-transform duration-300 motion-safe:group-hover:scale-105"
       />
       <span
-        className="pointer-events-none absolute inset-x-0 bottom-0 translate-y-full bg-navy/90 p-4
-                   transition-transform duration-300 group-hover:translate-y-0"
+        // Both translate classes are motion-safe: under reduced motion the caption gets
+        // no translate at all and sits permanently visible at the bottom of the card,
+        // rather than merely snapping there instantly on hover.
+        className="pointer-events-none absolute inset-x-0 bottom-0 motion-safe:translate-y-full bg-navy/90 p-4
+                   transition-transform duration-300 motion-safe:group-hover:translate-y-0"
       >
         <span className="u-mono block text-sky">{caption}</span>
         <span className="mt-2 block h-px w-full bg-teal" />
