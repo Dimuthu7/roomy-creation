@@ -87,6 +87,14 @@ export function installBrowserStubs(): void {
   globalThis.IntersectionObserver =
     ImmediateIntersectionObserver as unknown as typeof globalThis.IntersectionObserver
 
+  // Unlike a real browser, this stub does not listen for `pointerup` or `pointercancel`
+  // at all, so it never auto-releases capture the way a browser does when the pointer
+  // lifts. A captured pointer stays captured until something calls
+  // `releasePointerCapture` explicitly, or until `resetBrowserStubs()` clears it between
+  // tests. Any future test that fires `pointerup` and expects `hasPointerCapture` to have
+  // gone false as a result will falsely pass or fail on that assumption alone — it must
+  // call `releasePointerCapture` itself (as production code should on pointerup) for the
+  // assertion to mean anything.
   Element.prototype.setPointerCapture = function (pointerId: number): void {
     let set = capturedPointers.get(this)
     if (!set) {

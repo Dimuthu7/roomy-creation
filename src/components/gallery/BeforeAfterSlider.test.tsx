@@ -104,6 +104,18 @@ describe('BeforeAfterSlider', () => {
     expect(slider).toHaveAttribute('aria-valuenow', '25')
   })
 
+  it('measures from the frame edge, not the viewport edge', () => {
+    render(<BeforeAfterSlider work={withBefore} />)
+    const slider = screen.getByRole('slider')
+    const frame = frameOf(slider)
+    // A frame that does not start at x=0 is the normal case in a real lightbox. Every
+    // other drag test stubs left=0, which makes the `- rect.left` term inert and a
+    // dropped offset invisible.
+    stubFrameGeometry(frame, 100, 400)
+    fireEvent.pointerDown(frame, { pointerId: 1, clientX: 200 })
+    expect(slider).toHaveAttribute('aria-valuenow', '25')
+  })
+
   it('follows a drag while the pointer is captured', () => {
     render(<BeforeAfterSlider work={withBefore} />)
     const slider = screen.getByRole('slider')
