@@ -8,6 +8,14 @@ type Listener = () => void
 const listeners = new Set<Listener>()
 let prefersReducedMotion = false
 
+/**
+ * jsdom implements no pointer capture at all: setPointerCapture, hasPointerCapture and
+ * releasePointerCapture are all undefined. BeforeAfterSlider calls setPointerCapture on
+ * every pointerdown, so any test that fires one throws `TypeError:
+ * e.currentTarget.setPointerCapture is not a function` without this stub.
+ */
+const capturedPointers = new Map<Element, Set<number>>()
+
 /** Set before rendering. */
 export function setPrefersReducedMotion(value: boolean): void {
   prefersReducedMotion = value
@@ -23,6 +31,7 @@ export function emitMotionPreferenceChange(value: boolean): void {
 export function resetBrowserStubs(): void {
   listeners.clear()
   prefersReducedMotion = false
+  capturedPointers.clear()
 }
 
 function createMediaQueryList(query: string): MediaQueryList {
@@ -77,4 +86,19 @@ export function installBrowserStubs(): void {
     ImmediateIntersectionObserver as unknown as typeof window.IntersectionObserver
   globalThis.IntersectionObserver =
     ImmediateIntersectionObserver as unknown as typeof globalThis.IntersectionObserver
+
+  Element.prototype.setPointerCapture = function (pointerId: number): void {
+    let set = capturedPointers.get(this)
+    if (!set) {
+      set = new Set()
+      capturedPointers.set(this, set)
+    }
+    set.add(pointerId)
+  }
+  Element.prototype.hasPointerCapture = function (pointerId: number): boolean {
+    return capturedPointers.get(this)?.has(pointerId) ?? false
+  }
+  Element.prototype.releasePointerCapture = function (pointerId: number): void {
+    capturedPointers.get(this)?.delete(pointerId)
+  }
 }
