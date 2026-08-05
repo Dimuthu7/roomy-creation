@@ -18,6 +18,28 @@ export function Film() {
   const [failed, setFailed] = useState(false)
   const active = FILM_CARDS[activeIndex]
 
+  // Autoplay is withheld on a phone as well as under reduced motion: the film loops,
+  // and on a metered connection that is the visitor's data being spent, not ours.
+  const autoPlay = level === 'full'
+  const [paused, setPaused] = useState(!autoPlay)
+
+  // Mirrors the element's own state rather than the autoplay intent, so a browser that
+  // refuses autoplay — or has not started it yet — still labels the control honestly.
+  // Synced once on mount for the same reason: the attribute asks for playback, it does
+  // not guarantee it.
+  useEffect(() => {
+    const el = videoRef.current
+    if (!el) return
+    const sync = () => setPaused(el.paused)
+    sync()
+    el.addEventListener('play', sync)
+    el.addEventListener('pause', sync)
+    return () => {
+      el.removeEventListener('play', sync)
+      el.removeEventListener('pause', sync)
+    }
+  }, [failed])
+
   // The client's rule: cards switch from the video's own clock. currentTime is read
   // here, never assigned — seeking from this handler would let something else (scroll,
   // a resize, anything) drive the footage, which is the one thing that is off the table.
@@ -89,7 +111,7 @@ export function Film() {
   return (
     <section ref={sectionRef} className="relative overflow-hidden bg-navy py-24 text-paper">
       <div data-film-headline="top" className="relative z-10 px-6 text-center">
-        <h2 className="text-4xl font-semibold tracking-tight sm:text-6xl">How a Roomy piece</h2>
+        <h2 className="text-4xl font-semibold tracking-tight sm:text-6xl">Measured on site.</h2>
         <div className="mx-auto mt-6 h-0.5 w-16 bg-teal" />
       </div>
 
@@ -115,10 +137,28 @@ export function Film() {
               muted
               loop
               playsInline
-              autoPlay={level !== 'reduced'}
+              autoPlay={autoPlay}
               aria-label="Film showing the measure, cut, fit and handover of a Roomy Creations build"
               onError={() => setFailed(true)}
             />
+          )}
+
+          {/* WCAG 2.2.2: the film loops, so there has to be a way to stop it. It is also
+              what starts the film on a phone and under reduced motion, where autoplay is
+              withheld — so it is present on every breakpoint, not only the animated one. */}
+          {!failed && (
+            <button
+              type="button"
+              onClick={() => {
+                const el = videoRef.current
+                if (!el) return
+                if (el.paused) void el.play()
+                else el.pause()
+              }}
+              className="u-mono absolute top-4 right-4 z-20 rounded-full bg-navy/90 px-4 py-2 text-sky hover:text-yellow"
+            >
+              {paused ? 'Play film' : 'Pause film'}
+            </button>
           )}
 
           <div className="absolute inset-x-0 bottom-0 z-10 flex flex-col gap-1 bg-gradient-to-t from-navy/90 to-transparent p-6">
@@ -138,8 +178,12 @@ export function Film() {
         </div>
       </div>
 
+      {/* A <p>, not a second <h2>. The section already has its heading above, and the
+          two halves are one sentence split around the frame, not two headings. */}
       <div data-film-headline="bottom" className="relative z-10 px-6 text-center">
-        <h2 className="text-4xl font-semibold tracking-tight sm:text-6xl">comes together</h2>
+        <p className="text-4xl font-semibold tracking-tight sm:text-6xl">
+          Installed to the millimetre.
+        </p>
       </div>
     </section>
   )

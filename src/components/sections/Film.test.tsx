@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { act } from 'react'
 import { Film } from './Film'
 import { CLIP_STARTS, FILM_CARDS } from '@/data/specs'
@@ -150,5 +151,45 @@ describe('Film', () => {
   it('the video has an accessible name', () => {
     render(<Film />)
     expect(video().getAttribute('aria-label')).toBeTruthy()
+  })
+
+  // The client approved this copy. It is the Fit and Specification argument in two
+  // lines, and it is the one part of this section that must not drift on a rewrite.
+  it('carries the approved split headline', () => {
+    render(<Film />)
+    expect(screen.getByText('Measured on site.')).toBeInTheDocument()
+    expect(screen.getByText('Installed to the millimetre.')).toBeInTheDocument()
+  })
+
+  it('carries one heading, not two', () => {
+    render(<Film />)
+    expect(screen.getAllByRole('heading')).toHaveLength(1)
+  })
+
+  // WCAG 2.2.2: anything that plays automatically for more than five seconds needs a
+  // way to stop it, and this film loops forever. The control is present on every
+  // breakpoint, because it is also what starts the film where autoplay is withheld.
+  it('offers a control that pauses and resumes the film', async () => {
+    const user = userEvent.setup()
+    render(<Film />)
+
+    // The control reads from the element, not from the autoplay attribute, so it starts
+    // on "Play film" here: asking for autoplay is not the same as playback having begun.
+    await user.click(screen.getByRole('button', { name: 'Play film' }))
+    expect(video().paused).toBe(false)
+
+    await user.click(screen.getByRole('button', { name: 'Pause film' }))
+    expect(video().paused).toBe(true)
+  })
+
+  it('does not autoplay on a phone, where the data is the visitor to spend', () => {
+    const original = window.innerWidth
+    Object.defineProperty(window, 'innerWidth', { value: 375, configurable: true })
+    try {
+      render(<Film />)
+      expect(video().getAttribute('autoplay')).toBeNull()
+    } finally {
+      Object.defineProperty(window, 'innerWidth', { value: original, configurable: true })
+    }
   })
 })

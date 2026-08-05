@@ -98,7 +98,31 @@ class ImmediateIntersectionObserver implements IntersectionObserver {
   }
 }
 
+/**
+ * jsdom leaves HTMLMediaElement.play and .pause unimplemented: they exist, but calling
+ * them only logs "Not implemented" to the console and never moves `paused`, so a pause
+ * control looks identical whether it is wired up or not. These stubs drive `paused` and
+ * fire the matching event, which is what a component syncing to the video's own state
+ * actually listens for.
+ */
+function installMediaStubs(): void {
+  const setPaused = (el: HTMLMediaElement, value: boolean) => {
+    Object.defineProperty(el, 'paused', { value, configurable: true, writable: true })
+  }
+  HTMLMediaElement.prototype.play = function (): Promise<void> {
+    setPaused(this, false)
+    this.dispatchEvent(new Event('play'))
+    return Promise.resolve()
+  }
+  HTMLMediaElement.prototype.pause = function (): void {
+    setPaused(this, true)
+    this.dispatchEvent(new Event('pause'))
+  }
+}
+
 export function installBrowserStubs(): void {
+  installMediaStubs()
+
   window.matchMedia = createMediaQueryList as typeof window.matchMedia
   window.IntersectionObserver =
     ImmediateIntersectionObserver as unknown as typeof window.IntersectionObserver
