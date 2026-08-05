@@ -32,6 +32,10 @@ export function BeforeAfterSlider({ work }: { work: Work }) {
     else if (e.key === 'End') setPercent(100)
     else return
     e.preventDefault()
+    // The lightbox binds the same arrow keys to move between works, and this handle
+    // renders inside it. Left to bubble, one nudge of the comparison would also swap
+    // the work being compared.
+    e.stopPropagation()
   }
 
   return (

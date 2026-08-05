@@ -55,6 +55,39 @@ describe('Lightbox', () => {
     expect(onIndexChange).toHaveBeenCalledWith(WORKS.length - 1)
   })
 
+  // The backward wrap above is the only one the other tests can see: every forward
+  // assertion runs at index 0, where `nextIndex(0, n)` and a bare `index + 1` agree.
+  // Without this, both nextIndex call sites could be replaced by `index + 1` with the
+  // whole suite still green.
+  it('wraps forward to the first index from the last, by key and by button', async () => {
+    const user = userEvent.setup()
+    const onIndexChange = vi.fn()
+    setup({ index: WORKS.length - 1, onIndexChange })
+
+    await user.keyboard('{ArrowRight}')
+    expect(onIndexChange).toHaveBeenCalledWith(0)
+
+    onIndexChange.mockClear()
+    await user.click(screen.getByRole('button', { name: 'Next' }))
+    expect(onIndexChange).toHaveBeenCalledWith(0)
+  })
+
+  // The compare handle and the lightbox both bind the arrow keys, and the handle sits
+  // inside the dialog. Without the slider stopping propagation, nudging the comparison
+  // one step also jumps to the next work — the image the user is comparing disappears
+  // out from under them.
+  it('leaves the arrow keys to the compare handle while it holds focus', async () => {
+    const user = userEvent.setup()
+    const { onIndexChange } = setup({ index: 0 })
+    const handle = screen.getByRole('slider')
+    handle.focus()
+
+    await user.keyboard('{ArrowRight}')
+
+    expect(handle).toHaveAttribute('aria-valuenow', '52')
+    expect(onIndexChange).not.toHaveBeenCalled()
+  })
+
   it('shows the compare slider for a work that has a before image', () => {
     setup()
     expect(screen.getByRole('slider')).toBeInTheDocument()
