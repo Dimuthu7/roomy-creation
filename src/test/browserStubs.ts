@@ -16,6 +16,23 @@ let prefersReducedMotion = false
  */
 const capturedPointers = new Map<Element, Set<number>>()
 
+/**
+ * jsdom does not implement scrollIntoView at all — calling it throws
+ * `TypeError: ...scrollIntoView is not a function` rather than doing nothing, so any
+ * component that scrolls an element into view crashes every test that renders it. The
+ * stub records what was asked for, so a test can assert the scroll behaviour (e.g.
+ * `{ behavior: 'auto' }` under reduced motion) instead of merely surviving the call.
+ */
+interface ScrollIntoViewCall {
+  target: Element
+  arg: boolean | ScrollIntoViewOptions | undefined
+}
+let scrollIntoViewCalls: ScrollIntoViewCall[] = []
+
+export function getScrollIntoViewCalls(): ScrollIntoViewCall[] {
+  return scrollIntoViewCalls
+}
+
 /** Set before rendering. */
 export function setPrefersReducedMotion(value: boolean): void {
   prefersReducedMotion = value
@@ -32,6 +49,7 @@ export function resetBrowserStubs(): void {
   listeners.clear()
   prefersReducedMotion = false
   capturedPointers.clear()
+  scrollIntoViewCalls = []
 }
 
 function createMediaQueryList(query: string): MediaQueryList {
@@ -108,5 +126,8 @@ export function installBrowserStubs(): void {
   }
   Element.prototype.releasePointerCapture = function (pointerId: number): void {
     capturedPointers.get(this)?.delete(pointerId)
+  }
+  Element.prototype.scrollIntoView = function (arg?: boolean | ScrollIntoViewOptions): void {
+    scrollIntoViewCalls.push({ target: this, arg })
   }
 }

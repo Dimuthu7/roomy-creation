@@ -6,6 +6,7 @@ import { WORKS } from '@/data/works'
 
 const withBefore = WORKS.find((w) => w.beforeImage)!
 const withoutBefore = WORKS.find((w) => !w.beforeImage)!
+const fourFive = WORKS.find((w) => !w.beforeImage && w.ratio === '4:5')!
 
 /**
  * jsdom performs no layout, so every element measures 0x0 and the drag maths divides by
@@ -35,6 +36,13 @@ describe('BeforeAfterSlider', () => {
     render(<BeforeAfterSlider work={withoutBefore} />)
     expect(screen.getAllByRole('img')).toHaveLength(1)
     expect(screen.queryByRole('slider')).not.toBeInTheDocument()
+  })
+
+  it('renders the fallback frame at the work\'s own ratio, not a hard-coded 3:2', () => {
+    const { container } = render(<BeforeAfterSlider work={fourFive} />)
+    const frame = container.querySelector('.relative.aspect-\\[4\\/5\\]')
+    expect(frame).not.toBeNull()
+    expect(container.querySelector('.aspect-\\[3\\/2\\]')).toBeNull()
   })
 
   it('exposes a labelled slider starting at the midpoint', () => {

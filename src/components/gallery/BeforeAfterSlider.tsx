@@ -3,6 +3,7 @@ import { useRef, useState } from 'react'
 import Image from 'next/image'
 import { clampPercent } from '@/lib/clamp'
 import { workAlt } from '@/lib/workAlt'
+import { aspectClass } from '@/lib/aspect'
 import type { Work } from '@/data/works'
 
 export function BeforeAfterSlider({ work }: { work: Work }) {
@@ -11,7 +12,7 @@ export function BeforeAfterSlider({ work }: { work: Work }) {
 
   if (!work.beforeImage) {
     return (
-      <div className="relative aspect-[3/2] w-full">
+      <div className={`relative ${aspectClass(work.ratio)} w-full`}>
         <Image src={work.image} alt={workAlt(work)} fill sizes="90vw" className="object-cover" />
       </div>
     )
@@ -39,7 +40,7 @@ export function BeforeAfterSlider({ work }: { work: Work }) {
       // `touch-pan-y` lets a vertical swipe still scroll the page while a horizontal drag
       // belongs to the slider. Without a touch-action rule the browser claims the gesture
       // and the slider cannot be dragged on a phone at all.
-      className="relative aspect-[3/2] w-full touch-pan-y select-none overflow-hidden"
+      className={`relative ${aspectClass(work.ratio)} w-full touch-pan-y select-none overflow-hidden`}
       onPointerDown={(e) => {
         e.currentTarget.setPointerCapture(e.pointerId)
         setFromClientX(e.clientX)
