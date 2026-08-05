@@ -96,6 +96,58 @@ describe('enquirySchema', () => {
   })
 })
 
+// D8: an endpoint that sends email with no CAPTCHA has field-length bounds as its only
+// defence against an abuse script. The probe measured a 200,000-character name as
+// accepted before this change.
+describe('field length bounds', () => {
+  it('rejects a name over 100 characters', () => {
+    const r = enquirySchema.safeParse({ ...valid, name: 'a'.repeat(101) })
+    expect(r.success).toBe(false)
+    if (!r.success) expect(r.error.issues[0].message).toBe('Use 100 characters or fewer')
+  })
+
+  it('accepts a name at exactly the 100 character limit', () => {
+    expect(enquirySchema.safeParse({ ...valid, name: 'a'.repeat(100) }).success).toBe(true)
+  })
+
+  it('rejects a phone number over 30 characters', () => {
+    const r = enquirySchema.safeParse({ ...valid, phone: '0'.repeat(31) })
+    expect(r.success).toBe(false)
+    if (!r.success) expect(r.error.issues[0].message).toBe('Use 30 characters or fewer')
+  })
+
+  it('rejects an email over 254 characters', () => {
+    const long = `${'a'.repeat(250)}@a.lk`
+    const r = enquirySchema.safeParse({ ...valid, email: long })
+    expect(r.success).toBe(false)
+    if (!r.success) expect(r.error.issues[0].message).toBe('Use 254 characters or fewer')
+  })
+
+  it('rejects room dimensions over 2000 characters', () => {
+    const r = enquirySchema.safeParse({ ...valid, dimensions: 'a'.repeat(2001) })
+    expect(r.success).toBe(false)
+    if (!r.success) expect(r.error.issues[0].message).toBe('Use 2000 characters or fewer')
+  })
+
+  it('rejects a budget string over 100 characters', () => {
+    const r = enquirySchema.safeParse({ ...valid, budget: 'a'.repeat(101) })
+    expect(r.success).toBe(false)
+    if (!r.success) expect(r.error.issues[0].message).toBe('Use 100 characters or fewer')
+  })
+
+  it('rejects a source string over 200 characters', () => {
+    const r = enquirySchema.safeParse({ ...valid, source: 'a'.repeat(201) })
+    expect(r.success).toBe(false)
+    if (!r.success) expect(r.error.issues[0].message).toBe('Use 200 characters or fewer')
+  })
+
+  it('still asks for a name first when the field is empty, ahead of any max-length concern', () => {
+    const r = enquirySchema.safeParse({ ...valid, name: '' })
+    expect(r.success).toBe(false)
+    if (!r.success) expect(r.error.issues[0].message).toBe('Enter your name')
+  })
+})
+
 // @ts-expect-error - a need id outside NEED_OPTIONS must not type-check
 const _rejectsUnknownNeedId: Enquiry['needs'] = ['not-a-real-need']
 void _rejectsUnknownNeedId
