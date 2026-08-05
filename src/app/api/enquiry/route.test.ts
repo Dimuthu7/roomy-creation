@@ -35,6 +35,22 @@ function postRaw(body: string) {
   })
 }
 
+/**
+ * A Request whose Content-Length says the body is enormous. `Content-Length` is a
+ * forbidden header name on a real Request, so it cannot be set through the constructor —
+ * and the point of the test is what the route does *before* touching the body, so a stub
+ * exposing only the two members the route reads is both sufficient and more honest than
+ * a real Request would be. `text` is a spy so the test can prove the body was never read.
+ */
+function postClaiming(bytes: number) {
+  const text = vi.fn().mockResolvedValue('{}')
+  const request = {
+    headers: new Headers({ 'content-type': 'application/json', 'content-length': String(bytes) }),
+    text,
+  } as unknown as Request
+  return { request, text }
+}
+
 beforeEach(() => {
   send.mockReset().mockResolvedValue({ data: { id: 'x' }, error: null })
   vi.stubEnv('RESEND_API_KEY', 'test-key')
@@ -74,6 +90,19 @@ describe('POST /api/enquiry', () => {
     const oversized = postRaw(JSON.stringify({ ...valid, source: 'a'.repeat(20_000) }))
     const res = await POST(oversized)
     expect(res.status).toBe(413)
+    expect(send).not.toHaveBeenCalled()
+  })
+
+  // Rejecting after `await request.text()` bounds nothing: by then the whole body is
+  // already buffered in memory, which is exactly what a size limit exists to prevent.
+  // The declared length has to be checked before the body is touched at all. The
+  // post-read check above still has to stay — Content-Length can be absent, or lie.
+  it('rejects a body that declares an oversized Content-Length without reading it', async () => {
+    const { POST } = await import('./route')
+    const { request, text } = postClaiming(50 * 1024 * 1024)
+    const res = await POST(request)
+    expect(res.status).toBe(413)
+    expect(text).not.toHaveBeenCalled()
     expect(send).not.toHaveBeenCalled()
   })
 

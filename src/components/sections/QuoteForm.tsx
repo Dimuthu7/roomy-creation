@@ -17,14 +17,36 @@ const PROPERTY_TYPE_LABELS: Record<(typeof PROPERTY_TYPES)[number], string> = {
 // The order fields appear in the form. Used after a failed validation pass to move
 // focus to whichever invalid field the visitor sees first, rather than whichever key
 // Object.entries happened to enumerate last.
-const FIELD_ORDER = ['name', 'phone', 'email', 'propertyType', 'needs', 'dimensions', 'budget', 'source']
+const FIELD_ORDER = [
+  'name',
+  'phone',
+  'email',
+  'propertyType',
+  'needs',
+  'dimensions',
+  'budget',
+  'source',
+]
+
+/**
+ * Focuses a control by its `name`, using the form's own elements collection rather than a
+ * map of per-field ref callbacks. A callback ref built during render is re-created every
+ * render, so React detaches and re-attaches it each time — and reading the map back is
+ * `react-hooks/refs`. `elements.namedItem` needs neither. The six same-named `needs`
+ * checkboxes come back as a RadioNodeList, so take the first: it is the one the visitor
+ * reaches first, and it is where "choose at least one" should land them.
+ */
+function focusControl(form: HTMLFormElement, name: string): void {
+  const found = form.elements.namedItem(name)
+  const el = found instanceof RadioNodeList ? found.item(0) : found
+  if (el instanceof HTMLElement) el.focus()
+}
 
 export function QuoteForm() {
   const { needs: prefilled } = useEnquiryPrefill()
   const [needs, setNeeds] = useState<string[]>([])
   const [errors, setErrors] = useState<Errors>({})
   const [state, setState] = useState<'idle' | 'sending' | 'sent' | 'failed'>('idle')
-  const fieldRefs = useRef<Record<string, HTMLElement | null>>({})
   const successRef = useRef<HTMLDivElement>(null)
   // Ids already merged from the prefill context. A checkbox the visitor deliberately
   // unticks must stay unticked even if the same id shows up again in `prefilled` (its
@@ -43,15 +65,10 @@ export function QuoteForm() {
     if (state === 'sent') successRef.current?.focus()
   }, [state])
 
-  function registerRef(key: string) {
-    return (el: HTMLElement | null) => {
-      fieldRefs.current[key] = el
-    }
-  }
-
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    const data = Object.fromEntries(new FormData(e.currentTarget))
+    const form = e.currentTarget
+    const data = Object.fromEntries(new FormData(form))
     const parsed = enquirySchema.safeParse({ ...data, needs })
 
     if (!parsed.success) {
@@ -62,7 +79,7 @@ export function QuoteForm() {
       }
       setErrors(next)
       const firstInvalid = FIELD_ORDER.find((key) => next[key])
-      if (firstInvalid) fieldRefs.current[firstInvalid]?.focus()
+      if (firstInvalid) focusControl(form, firstInvalid)
       return
     }
 
@@ -101,21 +118,9 @@ export function QuoteForm() {
 
   return (
     <form onSubmit={onSubmit} noValidate className="on-paper space-y-5 text-navy">
-      <Field id="name" label="Name" error={errors.name} registerRef={registerRef('name')} />
-      <Field
-        id="phone"
-        label="Phone"
-        type="tel"
-        error={errors.phone}
-        registerRef={registerRef('phone')}
-      />
-      <Field
-        id="email"
-        label="Email"
-        type="email"
-        error={errors.email}
-        registerRef={registerRef('email')}
-      />
+      <Field id="name" label="Name" error={errors.name} />
+      <Field id="phone" label="Phone" type="tel" error={errors.phone} />
+      <Field id="email" label="Email" type="email" error={errors.email} />
 
       <div>
         <label htmlFor="propertyType" className="u-mono block">
@@ -125,7 +130,6 @@ export function QuoteForm() {
           id="propertyType"
           name="propertyType"
           defaultValue=""
-          ref={registerRef('propertyType')}
           aria-invalid={errors.propertyType ? true : undefined}
           aria-describedby={errors.propertyType ? 'propertyType-error' : undefined}
           className="mt-2 w-full border border-navy bg-transparent p-3 text-navy"
@@ -149,14 +153,13 @@ export function QuoteForm() {
       <fieldset>
         <legend className="u-mono">What you need</legend>
         <div className="mt-2 grid grid-cols-2 gap-2">
-          {NEED_OPTIONS.map((n, i) => (
+          {NEED_OPTIONS.map((n) => (
             <label key={n.id} className="flex items-center gap-2 text-navy">
               <input
                 type="checkbox"
                 name="needs"
                 value={n.id}
                 checked={needs.includes(n.id)}
-                ref={i === 0 ? registerRef('needs') : undefined}
                 aria-describedby={errors.needs ? 'needs-error' : undefined}
                 onChange={(e) =>
                   setNeeds((current) =>
@@ -175,24 +178,16 @@ export function QuoteForm() {
         )}
       </fieldset>
 
+      {/* The "or 'not sure yet'" is approved copy and does real work: most visitors
+          enquiring have not measured anything, and without permission to say so they
+          either invent a number or give up on the form. Do not shorten this label. */}
       <Field
         id="dimensions"
-        label="Rough room dimensions"
+        label="Rough room dimensions, or 'not sure yet'"
         error={errors.dimensions}
-        registerRef={registerRef('dimensions')}
       />
-      <Field
-        id="budget"
-        label="Budget range (optional)"
-        error={errors.budget}
-        registerRef={registerRef('budget')}
-      />
-      <Field
-        id="source"
-        label="How you found us"
-        error={errors.source}
-        registerRef={registerRef('source')}
-      />
+      <Field id="budget" label="Budget range (optional)" error={errors.budget} />
+      <Field id="source" label="How you found us" error={errors.source} />
 
       {state === 'failed' && (
         <p role="alert" className="u-mono border border-navy p-3 text-navy">
@@ -221,13 +216,11 @@ function Field({
   label,
   type = 'text',
   error,
-  registerRef,
 }: {
   id: string
   label: string
   type?: string
   error?: string
-  registerRef: (el: HTMLElement | null) => void
 }) {
   return (
     <div>
@@ -238,7 +231,6 @@ function Field({
         id={id}
         name={id}
         type={type}
-        ref={registerRef}
         aria-invalid={error ? true : undefined}
         aria-describedby={error ? `${id}-error` : undefined}
         className="mt-2 w-full border border-navy bg-transparent p-3 text-navy"

@@ -46,6 +46,28 @@ describe('Enquiry', () => {
     expect(screen.queryByRole('link', { name: /tiktok/i })).toBeNull()
   })
 
+  // Every SITE field is [TBC] today, so both of these blocks have nothing to put under
+  // their heading. Rendering the heading anyway leaves two dead subheadings on the one
+  // section the whole site funnels into — worse than showing nothing at all. A heading
+  // has to earn its place from the content that follows it.
+  it('omits a contact block entirely rather than leaving its heading dangling', async () => {
+    await renderEnquiry()
+    expect(screen.queryByRole('heading', { name: 'Measurement visit' })).toBeNull()
+    expect(screen.queryByRole('heading', { name: 'WhatsApp' })).toBeNull()
+  })
+
+  it('shows each heading as soon as that block has something to say', async () => {
+    vi.doMock('@/data/site', async () => {
+      const actual = await vi.importActual<typeof import('@/data/site')>('@/data/site')
+      return {
+        SITE: { ...actual.SITE, city: 'Colombo', whatsappNumber: '94771234567' },
+      }
+    })
+    await renderEnquiry()
+    expect(screen.getByRole('heading', { name: 'Measurement visit' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'WhatsApp' })).toBeInTheDocument()
+  })
+
   it('renders a working WhatsApp link once SITE.whatsappNumber is configured', async () => {
     vi.doMock('@/data/site', async () => {
       const actual = await vi.importActual<typeof import('@/data/site')>('@/data/site')

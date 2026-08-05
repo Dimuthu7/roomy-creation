@@ -61,7 +61,10 @@ describe('QuoteForm', () => {
     expect(screen.getByText('Email')).toBeInTheDocument()
     expect(screen.getByText('Property type')).toBeInTheDocument()
     expect(screen.getByText('What you need')).toBeInTheDocument()
-    expect(screen.getByText('Rough room dimensions')).toBeInTheDocument()
+    // The trailing clause is not decoration. Most visitors enquiring about a fitted
+    // kitchen have not measured anything, and without permission to say so they either
+    // guess a number or abandon the form. It is approved copy — do not shorten it.
+    expect(screen.getByText("Rough room dimensions, or 'not sure yet'")).toBeInTheDocument()
     expect(screen.getByText('Budget range (optional)')).toBeInTheDocument()
     expect(screen.getByText('How you found us')).toBeInTheDocument()
   })

@@ -89,7 +89,7 @@ describe('enquirySchema', () => {
   })
 
   it('fills in an absent budget rather than rejecting it', () => {
-    const { budget: _omitted, ...withoutBudget } = valid
+    const withoutBudget = { ...valid, budget: undefined }
     const r = enquirySchema.safeParse(withoutBudget)
     expect(r.success).toBe(true)
     if (r.success) expect(r.data.budget).toBe('')

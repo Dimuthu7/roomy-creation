@@ -9,6 +9,16 @@ import { enquirySchema } from '@/lib/enquirySchema'
 const MAX_BODY_BYTES = 16 * 1024
 
 export async function POST(request: Request) {
+  // Checked before the body is touched. Rejecting after `await request.text()` bounds
+  // nothing — by then the whole payload is already buffered in memory, which is the one
+  // thing a size limit exists to prevent.
+  const declared = Number(request.headers.get('content-length'))
+  if (Number.isFinite(declared) && declared > MAX_BODY_BYTES) {
+    return Response.json({ ok: false }, { status: 413 })
+  }
+
+  // Content-Length can be absent (chunked encoding) or simply lie, so the real length
+  // is still checked once the body is in hand.
   const raw = await request.text()
   if (new TextEncoder().encode(raw).length > MAX_BODY_BYTES) {
     return Response.json({ ok: false }, { status: 413 })
