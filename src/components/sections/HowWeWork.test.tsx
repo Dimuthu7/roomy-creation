@@ -12,6 +12,26 @@ const STEPS = [
 ]
 
 describe('HowWeWork', () => {
+  // Measured with the project's own contrastRatio helper: navy at 60% opacity resolves
+  // to 3.48:1 over the yellow block and 3.87:1 over paper. `.u-mono` is 12px, so the AA
+  // floor is 4.5:1 — every step number and lead time in this section failed it. Full
+  // navy is 8.84:1 on yellow and 12.61:1 on paper. jsdom has no CSS engine, so the
+  // class list is the only thing assertable here.
+  it('never fades the small mono text to an opacity that fails AA', () => {
+    const { container } = render(<HowWeWork />)
+    expect(container.querySelectorAll('[class*="text-navy/"]')).toHaveLength(0)
+  })
+
+  // WeaveReveal renders a motion.div. Wrapping each <li> in one puts a <div> between
+  // the <ol> and its items, which is invalid and costs the list its semantics — a
+  // screen reader stops announcing "list, 5 items". The reveal belongs inside the <li>.
+  it('keeps the five steps as direct children of the list', () => {
+    render(<HowWeWork />)
+    const list = screen.getByRole('list')
+    expect(screen.getAllByRole('listitem')).toHaveLength(5)
+    expect([...list.children].every((child) => child.tagName === 'LI')).toBe(true)
+  })
+
   it('carries id="how"', () => {
     render(<HowWeWork />)
     expect(document.getElementById('how')).not.toBeNull()

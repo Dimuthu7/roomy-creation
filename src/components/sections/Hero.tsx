@@ -24,7 +24,12 @@ export function Hero() {
           src="/media/hero-master.jpg"
           alt="Fitted wardrobes and upholstered seating in a daylit living room"
           fill
-          preload
+          // `priority` is deprecated in Next 16. Its successor `preload` inserts a
+          // <link rel="preload"> in the head, which is redundant for an image already
+          // in the initial markup — so the docs steer to these two instead
+          // (03-api-reference/02-components/image.md, under `preload`).
+          loading="eager"
+          fetchPriority="high"
           sizes="100vw"
           className="object-cover"
           onError={() => setMasterFailed(true)}

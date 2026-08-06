@@ -7,6 +7,17 @@ function heroImage(): HTMLImageElement {
 }
 
 describe('Hero', () => {
+  // The master image is the LCP element. Left to the default `loading="lazy"` it is
+  // discovered late and the largest paint slips, which is invisible in every test and
+  // in local development on a fast connection — exactly the kind of regression that
+  // only shows up in field data months later.
+  it('asks the browser to load the master image eagerly and at high priority', () => {
+    const { container } = render(<Hero />)
+    const img = container.querySelector('img')!
+    expect(img).toHaveAttribute('loading', 'eager')
+    expect(img).toHaveAttribute('fetchpriority', 'high')
+  })
+
   it('carries id="top"', () => {
     render(<Hero />)
     expect(document.getElementById('top')).not.toBeNull()

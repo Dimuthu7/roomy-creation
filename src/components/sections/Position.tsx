@@ -2,7 +2,7 @@ import { WeaveReveal } from '@/components/weave/WeaveReveal'
 
 // D8: the plan described this section only as "three short lines... what we make, who
 // we make it for, and the fit argument" with no copy supplied. These three lines are
-// the implementer's, flagged for client sign-off — see the Task 14 brief.
+// NOT client-approved and are flagged for sign-off — see the Task 14 brief.
 const LINES = [
   'We make built-in furniture for homes, apartments, hotels and offices.',
   'Every piece is measured on site before anything is cut.',

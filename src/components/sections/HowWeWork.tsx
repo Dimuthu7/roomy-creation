@@ -1,6 +1,7 @@
 'use client'
 import { motion, useMotionValue } from 'framer-motion'
 import { useEffect } from 'react'
+import { driftX } from '@/lib/drift'
 import { isTBC, TBC, type Maybe } from '@/lib/tbc'
 import { useMotionLevel } from '@/hooks/useMotionLevel'
 import { WeaveReveal } from '@/components/weave/WeaveReveal'
@@ -32,12 +33,19 @@ export function HowWeWork() {
           {STEPS.map((step, i) => {
             const heaviest = i === 1
             return (
-              <WeaveReveal key={step.number} from={i % 2 === 0 ? 'left' : 'right'} delay={i * 0.05}>
-                <li
-                  data-testid={`how-step-${i}`}
-                  className={heaviest ? 'bg-yellow p-6 text-navy' : 'border border-navy/20 p-6 text-navy'}
-                >
-                  <span className="u-mono text-navy/60">{step.number}</span>
+              // The reveal sits INSIDE the <li>, not around it: WeaveReveal renders a
+              // motion.div, and a <div> between <ol> and <li> is invalid and costs the
+              // list its semantics — a screen reader stops announcing "list, 5 items".
+              <li
+                key={step.number}
+                data-testid={`how-step-${i}`}
+                className={heaviest ? 'bg-yellow' : 'border border-navy/20'}
+              >
+                <WeaveReveal from={i % 2 === 0 ? 'left' : 'right'} delay={i * 0.05} className="p-6">
+                  {/* Full navy, never an alpha variant. `.u-mono` is 12px, and navy at
+                      60% measures 3.48:1 on the yellow block and 3.87:1 on paper —
+                      both under the 4.5:1 AA floor for text that size. */}
+                  <span className="u-mono text-navy">{step.number}</span>
                   <p
                     className={
                       heaviest
@@ -47,9 +55,11 @@ export function HowWeWork() {
                   >
                     {step.title}
                   </p>
-                  <p className="u-mono mt-4 text-navy/60">{isTBC(step.leadTime) ? '—' : step.leadTime}</p>
-                </li>
-              </WeaveReveal>
+                  <p className="u-mono mt-4 text-navy">
+                    {isTBC(step.leadTime) ? '—' : step.leadTime}
+                  </p>
+                </WeaveReveal>
+              </li>
             )
           })}
         </ol>
@@ -73,7 +83,7 @@ function DriftingModule() {
   useEffect(() => {
     if (level !== 'full') return
     function onScroll() {
-      x.set((window.scrollY % 200) - 100)
+      x.set(driftX(window.scrollY))
     }
     window.addEventListener('scroll', onScroll)
     return () => window.removeEventListener('scroll', onScroll)
