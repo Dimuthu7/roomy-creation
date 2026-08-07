@@ -40,6 +40,24 @@ export function Film() {
     }
   }, [failed])
 
+  // The <video> is server-rendered with its src already set, so a missing file fails
+  // during the initial load — before React hydrates and attaches `onError`. That event
+  // is never replayed, so the JSX handler alone leaves a dead player on the page where
+  // the navy stand-in should be. Only visible once the component was on a real page:
+  // in jsdom nothing ever loads, so the handler is always attached before any error.
+  // Checking the element's own state covers the race in one direction and the listener
+  // covers it in the other.
+  useEffect(() => {
+    const el = videoRef.current
+    if (!el) return
+    const check = () => {
+      if (el.error || el.networkState === el.NETWORK_NO_SOURCE) setFailed(true)
+    }
+    check()
+    el.addEventListener('error', check)
+    return () => el.removeEventListener('error', check)
+  }, [])
+
   // The client's rule: cards switch from the video's own clock. currentTime is read
   // here, never assigned — seeking from this handler would let something else (scroll,
   // a resize, anything) drive the footage, which is the one thing that is off the table.
@@ -109,9 +127,15 @@ export function Film() {
   }, [level])
 
   return (
-    <section ref={sectionRef} className="relative overflow-hidden bg-navy py-24 text-paper">
+    <section
+      ref={sectionRef}
+      aria-labelledby="film-heading"
+      className="relative overflow-hidden bg-navy py-24 text-paper"
+    >
       <div data-film-headline="top" className="relative z-10 px-6 text-center">
-        <h2 className="text-4xl font-semibold tracking-tight sm:text-6xl">Measured on site.</h2>
+        <h2 id="film-heading" className="text-4xl font-semibold tracking-tight sm:text-6xl">
+          Measured on site.
+        </h2>
         <div className="mx-auto mt-6 h-0.5 w-16 bg-teal" />
       </div>
 

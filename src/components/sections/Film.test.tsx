@@ -148,6 +148,25 @@ describe('Film', () => {
     expect(screen.getByText(FILM_CARDS[0].counter)).toBeInTheDocument()
   })
 
+  // The test above fires `error` after mount, which is the one case a server-rendered
+  // <video> never hits: the file 404s during the initial load, well before React
+  // hydrates and attaches the handler, and that event is not replayed. Verified in a
+  // real browser on the assembled page — the element reported `error.code` 4 and
+  // `networkState` 3 while the stand-in never appeared. jsdom loads nothing, so this
+  // has to be simulated by putting the element into that already-failed state.
+  it('falls back to the navy stand-in when the film already failed before hydration', () => {
+    const spy = vi
+      .spyOn(HTMLMediaElement.prototype, 'networkState', 'get')
+      .mockReturnValue(3 /* NETWORK_NO_SOURCE */)
+    try {
+      render(<Film />)
+      expect(document.querySelector('video')).not.toBeInTheDocument()
+      expect(screen.getByTestId('film-fallback')).toBeInTheDocument()
+    } finally {
+      spy.mockRestore()
+    }
+  })
+
   it('the video has an accessible name', () => {
     render(<Film />)
     expect(video().getAttribute('aria-label')).toBeTruthy()
@@ -164,6 +183,14 @@ describe('Film', () => {
   it('carries one heading, not two', () => {
     render(<Film />)
     expect(screen.getAllByRole('heading')).toHaveLength(1)
+  })
+
+  // F2: a bare <section> with no accessible name is not exposed as a landmark
+  // region, even when it contains a heading — the section itself needs
+  // aria-labelledby pointing at that heading (brief §5).
+  it('gives the section its accessible name from the heading', () => {
+    render(<Film />)
+    expect(screen.getByRole('region', { name: 'Measured on site.' })).toBeInTheDocument()
   })
 
   // WCAG 2.2.2: anything that plays automatically for more than five seconds needs a

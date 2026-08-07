@@ -29,6 +29,14 @@ describe('Enquiry', () => {
     expect(screen.getByRole('button', { name: 'Send enquiry' })).toBeInTheDocument()
   })
 
+  // F2: a bare <section> with no accessible name is not exposed as a landmark
+  // region, even when it contains a heading — the section itself needs
+  // aria-labelledby pointing at that heading (brief §5).
+  it('gives the section its accessible name from the heading', async () => {
+    await renderEnquiry()
+    expect(screen.getByRole('region', { name: 'Get a quotation' })).toBeInTheDocument()
+  })
+
   it('never prints the [TBC] sentinel while SITE fields are unconfirmed', async () => {
     const { container } = await renderEnquiry()
     expect(container.textContent).not.toContain('[TBC]')

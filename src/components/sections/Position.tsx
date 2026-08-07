@@ -11,7 +11,7 @@ const LINES = [
 
 export function Position() {
   return (
-    <section className="bg-navy py-32">
+    <section aria-label="Position" className="bg-navy py-32">
       <div className="mx-auto max-w-4xl space-y-10 px-6">
         {LINES.map((line, i) => (
           <WeaveReveal key={line} from={i % 2 === 0 ? 'left' : 'right'} delay={i * 0.08}>

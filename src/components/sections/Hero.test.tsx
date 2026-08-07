@@ -30,6 +30,16 @@ describe('Hero', () => {
     expect(screen.getByText('We measure your wall, then build to it.')).toBeInTheDocument()
   })
 
+  // F2: a bare <section> with no accessible name is not exposed as a landmark
+  // region, even when it contains a heading — the section itself needs
+  // aria-labelledby pointing at that heading (brief §5).
+  it('gives the section its accessible name from the h1', () => {
+    render(<Hero />)
+    expect(
+      screen.getByRole('region', { name: 'We measure your wall, then build to it.' }),
+    ).toBeInTheDocument()
+  })
+
   it('carries the approved sub-line verbatim', () => {
     render(<Hero />)
     expect(

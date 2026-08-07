@@ -14,9 +14,18 @@ const CARDS = [
 
 export function WhatWeMake() {
   return (
-    <section className="bg-navy py-24">
+    <section aria-labelledby="what-we-make-heading" className="bg-navy py-24">
       <div className="mx-auto max-w-6xl px-6">
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        {/* F2: a structural label, not a marketing claim — flagged for sign-off,
+            brief §8. Without it this section had no heading at all and was not
+            reachable by heading or landmark navigation. */}
+        <h2
+          id="what-we-make-heading"
+          className="font-display text-3xl font-semibold tracking-tight text-paper sm:text-4xl"
+        >
+          What we make
+        </h2>
+        <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {CARDS.map((label, i) => (
             <WeaveReveal key={label} from={i % 2 === 0 ? 'left' : 'right'} delay={i * 0.06}>
               <Card index={i} label={label} />

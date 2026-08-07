@@ -37,6 +37,22 @@ describe('HowWeWork', () => {
     expect(document.getElementById('how')).not.toBeNull()
   })
 
+  // F2: the probe found four headings for nine sections, and this section — where
+  // the "we measure your apartment correctly" argument lives — had none, so it was
+  // unreachable by heading navigation. "How we work" is a structural label, not a
+  // marketing claim, and is flagged for sign-off (brief §8).
+  it('carries a heading naming the section, above the step list', () => {
+    render(<HowWeWork />)
+    const heading = screen.getByRole('heading', { name: 'How we work' })
+    const list = screen.getByRole('list')
+    expect(heading.compareDocumentPosition(list) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  it('gives the section its accessible name from that heading', () => {
+    render(<HowWeWork />)
+    expect(screen.getByRole('region', { name: 'How we work' })).toBeInTheDocument()
+  })
+
   // M8: the five steps have to render in this exact order.
   it('renders the five steps in the approved order', () => {
     const { container } = render(<HowWeWork />)

@@ -14,7 +14,11 @@ export function Hero() {
   const [cutoutFailed, setCutoutFailed] = useState(false)
 
   return (
-    <section id="top" className="relative flex min-h-screen items-center overflow-hidden bg-navy">
+    <section
+      id="top"
+      aria-labelledby="hero-heading"
+      className="relative flex min-h-screen items-center overflow-hidden bg-navy"
+    >
       {masterFailed ? (
         <div data-testid="hero-fallback" className="absolute inset-0 flex items-center justify-center bg-navy">
           <span className="text-sm text-sky">Image slot: /media/hero-master.jpg</span>
@@ -41,7 +45,10 @@ export function Hero() {
       <div className="relative z-10 mx-auto w-full max-w-6xl px-6 lg:px-12">
         {/* D2: pure white is not in the brand palette. text-paper carries display
             type on navy, text-sky carries body copy. */}
-        <h1 className="max-w-3xl font-display text-5xl leading-[1.05] tracking-tight text-paper lg:text-7xl">
+        <h1
+          id="hero-heading"
+          className="max-w-3xl font-display text-5xl leading-[1.05] tracking-tight text-paper lg:text-7xl"
+        >
           We measure your wall, then build to it.
         </h1>
         <p className="mt-6 max-w-xl text-sky">

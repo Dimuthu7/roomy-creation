@@ -58,4 +58,22 @@ describe('WhatWeMake', () => {
     const { container } = render(<WhatWeMake />)
     expect(container.innerHTML).not.toMatch(/text-white/)
   })
+
+  // F2: this section had no heading at all, so it was unreachable by heading
+  // navigation and, as a bare <section>, was not exposed as a landmark region
+  // either. "What we make" is a structural label, not a marketing claim — flagged
+  // for sign-off (brief §8).
+  it('carries a heading naming the section, above the card grid', () => {
+    render(<WhatWeMake />)
+    const heading = screen.getByRole('heading', { name: 'What we make' })
+    const firstCard = screen.getByText('Sofas & seating')
+    expect(
+      heading.compareDocumentPosition(firstCard) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
+  })
+
+  it('gives the section its accessible name from that heading', () => {
+    render(<WhatWeMake />)
+    expect(screen.getByRole('region', { name: 'What we make' })).toBeInTheDocument()
+  })
 })

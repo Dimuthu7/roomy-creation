@@ -153,4 +153,52 @@ describe('BeforeAfterSlider', () => {
     fireEvent.pointerDown(frame, { pointerId: 1, clientX: 900 })
     expect(slider).toHaveAttribute('aria-valuenow', '100')
   })
+
+  // F3: public/work/ does not exist yet, so every image in this component renders
+  // broken in a real browser. Three independent <Image> call sites (single-image
+  // fallback, the before shot, the after shot), each catches its own error event
+  // and falls back to a named navy block rather than an AI image or a broken glyph.
+  describe('image fallbacks (F3)', () => {
+    it('falls back to a named navy stand-in when the single image fails, no before shot', () => {
+      render(<BeforeAfterSlider work={withoutBefore} />)
+      fireEvent.error(screen.getByRole('img'))
+      expect(screen.queryByRole('img')).not.toBeInTheDocument()
+      const fallback = screen.getByTestId('slider-fallback')
+      expect(fallback).toHaveTextContent(`Image slot: ${withoutBefore.image}`)
+    })
+
+    it('falls back independently when the before image fails, leaving the after image intact', () => {
+      render(<BeforeAfterSlider work={withBefore} />)
+      const beforeImg = screen.getByAltText(/before installation/i)
+      fireEvent.error(beforeImg)
+      expect(screen.queryByAltText(/before installation/i)).not.toBeInTheDocument()
+      const fallback = screen.getByTestId('before-fallback')
+      expect(fallback).toHaveTextContent(`Image slot: ${withBefore.beforeImage}`)
+      // The after image is untouched by the before image's failure.
+      expect(screen.getAllByRole('img')).toHaveLength(1)
+    })
+
+    it('falls back independently when the after image fails, leaving the before image intact', () => {
+      render(<BeforeAfterSlider work={withBefore} />)
+      const images = screen.getAllByRole('img')
+      const afterImg = images.find((img) => img !== screen.getByAltText(/before installation/i))!
+      fireEvent.error(afterImg)
+      const fallback = screen.getByTestId('after-fallback')
+      expect(fallback).toHaveTextContent(`Image slot: ${withBefore.image}`)
+      // The before image is untouched by the after image's failure.
+      expect(screen.getByAltText(/before installation/i)).toBeInTheDocument()
+    })
+
+    it('the slider handle keeps working after the after image fails', async () => {
+      const user = userEvent.setup()
+      render(<BeforeAfterSlider work={withBefore} />)
+      const images = screen.getAllByRole('img')
+      const afterImg = images.find((img) => img !== screen.getByAltText(/before installation/i))!
+      fireEvent.error(afterImg)
+      const slider = screen.getByRole('slider')
+      slider.focus()
+      await user.keyboard('{ArrowRight}')
+      expect(slider).toHaveAttribute('aria-valuenow', '52')
+    })
+  })
 })

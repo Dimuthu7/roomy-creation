@@ -1,0 +1,110 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { render, screen, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { buildLocalBusinessSchema } from '@/lib/schema'
+import { SITE } from '@/data/site'
+
+async function renderPage() {
+  const { default: Home } = await import('./page')
+  return render(<Home />)
+}
+
+beforeEach(() => {
+  vi.resetModules()
+  vi.doUnmock('@/data/site')
+})
+
+describe('Home page assembly', () => {
+  it('renders exactly one h1 on the page', async () => {
+    await renderPage()
+    expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1)
+  })
+
+  it('renders <main id="main">, the skip link target', async () => {
+    const { container } = await renderPage()
+    const main = container.querySelector('main')
+    expect(main).not.toBeNull()
+    expect(main).toHaveAttribute('id', 'main')
+  })
+
+  it('carries every load-bearing anchor id: top, work, how, materials, enquiry', async () => {
+    await renderPage()
+    for (const id of ['top', 'work', 'how', 'materials', 'enquiry']) {
+      expect(document.getElementById(id)).not.toBeNull()
+    }
+  })
+
+  // Section order: Hero · Position · Figures · WhatWeMake · Work · Film · HowWeWork ·
+  // Materials · Enquiry. Figures is mocked with a known figure here — it is [TBC] by
+  // default and renders nothing, which would make it invisible to this ordering
+  // check.
+  it('lays out the nine sections in the approved order', async () => {
+    vi.doMock('@/data/site', async () => {
+      const actual = await vi.importActual<typeof import('@/data/site')>('@/data/site')
+      return {
+        SITE: { ...actual.SITE, figures: { ...actual.SITE.figures, yearsInBusiness: 7 } },
+      }
+    })
+    await renderPage()
+    const top = document.getElementById('top')!
+    const position = screen.getByRole('region', { name: 'Position' })
+    const figures = screen.getByRole('region', { name: 'Figures' })
+    const whatWeMake = screen.getByRole('region', { name: 'What we make' })
+    const work = document.getElementById('work')!
+    const film = screen.getByRole('region', { name: 'Measured on site.' })
+    const how = document.getElementById('how')!
+    const materials = document.getElementById('materials')!
+    const enquiry = document.getElementById('enquiry')!
+
+    const order = [top, position, figures, whatWeMake, work, film, how, materials, enquiry]
+    for (let i = 1; i < order.length; i++) {
+      expect(
+        order[i - 1].compareDocumentPosition(order[i]) & Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy()
+    }
+  })
+
+  // EnquiryPrefillProvider's default context value is deliberately inert. If page.tsx
+  // forgets the provider, the lightbox's "get a quote for this" button silently does
+  // nothing — no crash, no failing test unless this one exists.
+  it('wraps the page in EnquiryPrefillProvider, so the lightbox can prefill the enquiry form', async () => {
+    const user = userEvent.setup()
+    await renderPage()
+    await user.click(screen.getAllByRole('button', { name: /Built-in wardrobe/ })[0])
+    await user.click(
+      screen.getByRole('button', { name: 'Enquire about something like this' }),
+    )
+    const enquirySection = document.getElementById('enquiry') as HTMLElement
+    const checkbox = within(enquirySection).getByRole('checkbox', { name: /wardrobe/i })
+    expect(checkbox).toBeChecked()
+  })
+
+  // json-ld.md:31-36: a native <script type="application/ld+json">, with `<`
+  // replaced by its unicode escape — the doc calls out the XSS vector explicitly.
+  it('renders the LocalBusiness JSON-LD script with the XSS-safe escape applied', async () => {
+    const { container } = await renderPage()
+    const script = container.querySelector('script[type="application/ld+json"]')
+    expect(script).not.toBeNull()
+    const expected = JSON.stringify(buildLocalBusinessSchema(SITE)).replace(/</g, '\\u003c')
+    expect(script!.innerHTML).toBe(expected)
+  })
+
+  it('renders exactly one JSON-LD script, not one per section', async () => {
+    const { container } = await renderPage()
+    expect(container.querySelectorAll('script[type="application/ld+json"]')).toHaveLength(1)
+  })
+
+  // SITE carries no '<' today, so the escape assertion above would pass even with
+  // the .replace() call deleted — proven by mutation testing. This test forces a
+  // '<' through a real SITE field so the escape has something to actually do.
+  it('escapes a literal "<" reaching the JSON-LD payload through SITE data', async () => {
+    vi.doMock('@/data/site', async () => {
+      const actual = await vi.importActual<typeof import('@/data/site')>('@/data/site')
+      return { SITE: { ...actual.SITE, city: '</script><script>alert(1)</script>' } }
+    })
+    const { container } = await renderPage()
+    const script = container.querySelector('script[type="application/ld+json"]')!
+    expect(script.innerHTML).not.toContain('<script>')
+    expect(script.innerHTML).toContain('\\u003cscript>')
+  })
+})

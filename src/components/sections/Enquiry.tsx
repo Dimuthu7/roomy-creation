@@ -25,9 +25,16 @@ export function Enquiry() {
   const hasWhatsAppBlock = waUrl !== null || socials.length > 0
 
   return (
-    <section id="enquiry" className="on-paper bg-paper py-24 text-navy">
+    <section
+      id="enquiry"
+      aria-labelledby="enquiry-heading"
+      className="on-paper bg-paper py-24 text-navy"
+    >
       <div className="mx-auto max-w-6xl px-6">
-        <h2 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">
+        <h2
+          id="enquiry-heading"
+          className="font-display text-3xl font-semibold tracking-tight sm:text-4xl"
+        >
           Get a quotation
         </h2>
 

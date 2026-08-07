@@ -2,6 +2,11 @@ import { TBC, type Maybe } from '@/lib/tbc'
 
 export interface SiteConfig {
   name: string
+  /** Production origin, no trailing slash, e.g. 'https://example.com'. Required before
+   *  any absolute-URL metadata works. The example is deliberately not a plausible
+   *  Roomy Creations domain: a guess written here is a guess somebody later pastes in
+   *  as fact, which is exactly how an invented address reached the enquiry route. */
+  url: Maybe<string>
   /** International format, no spaces. e.g. '+94112345678' */
   phone: Maybe<string>
   /** Digits only, country code first, no plus. e.g. '94771234567' */
@@ -35,6 +40,7 @@ export interface SiteConfig {
 
 export const SITE: SiteConfig = {
   name: 'Roomy Creations',
+  url: TBC,
   phone: TBC,
   whatsappNumber: TBC,
   email: TBC,

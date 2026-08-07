@@ -1,5 +1,6 @@
 'use client'
 import Image from 'next/image'
+import { useState } from 'react'
 import { workAlt } from '@/lib/workAlt'
 import { isTBC } from '@/lib/tbc'
 import type { Work } from '@/data/works'
@@ -18,6 +19,11 @@ export function GalleryCard({
   eager: boolean
   onOpen: (index: number) => void
 }) {
+  // F3: public/work/ does not exist yet, so every one of the 24 gallery images
+  // renders as a broken <img> in a real browser. Reuses Hero and Film's onError
+  // stand-in pattern: a solid navy block naming the exact slot, never an AI image.
+  const [failed, setFailed] = useState(false)
+
   const caption = [work.title, work.materials, work.district]
     .filter((p) => p !== undefined && !isTBC(p))
     .join(' · ')
@@ -33,14 +39,24 @@ export function GalleryCard({
                  transition-opacity duration-300
                  group-data-[hovered=true]/grid:opacity-40 hover:!opacity-100"
     >
-      <Image
-        src={work.image}
-        alt={workAlt(work)}
-        fill
-        sizes="(max-width: 767px) 100vw, (max-width: 1279px) 50vw, 33vw"
-        loading={eager ? 'eager' : 'lazy'}
-        className="object-cover transition-transform duration-300 motion-safe:group-hover:scale-105"
-      />
+      {failed ? (
+        <div
+          data-testid="card-fallback"
+          className="absolute inset-0 flex items-center justify-center bg-navy"
+        >
+          <span className="u-mono px-4 text-center text-sky">Image slot: {work.image}</span>
+        </div>
+      ) : (
+        <Image
+          src={work.image}
+          alt={workAlt(work)}
+          fill
+          sizes="(max-width: 767px) 100vw, (max-width: 1279px) 50vw, 33vw"
+          loading={eager ? 'eager' : 'lazy'}
+          className="object-cover transition-transform duration-300 motion-safe:group-hover:scale-105"
+          onError={() => setFailed(true)}
+        />
+      )}
       <span
         // Both translate classes are motion-safe: under reduced motion the caption gets
         // no translate at all and sits permanently visible at the bottom of the card,

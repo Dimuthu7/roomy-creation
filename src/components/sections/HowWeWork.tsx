@@ -26,10 +26,20 @@ const STEPS: Step[] = [
 
 export function HowWeWork() {
   return (
-    <section id="how" className="on-paper relative overflow-hidden bg-paper py-24 text-navy">
+    <section
+      id="how"
+      aria-labelledby="how-heading"
+      className="on-paper relative overflow-hidden bg-paper py-24 text-navy"
+    >
       <DriftingModule />
       <div className="relative mx-auto max-w-6xl px-6">
-        <ol className="grid gap-6 md:grid-cols-5">
+        {/* F2: a structural label, not a marketing claim — flagged for sign-off,
+            brief §8. Without it the process argument was unreachable by heading
+            navigation. */}
+        <h2 id="how-heading" className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">
+          How we work
+        </h2>
+        <ol className="mt-10 grid gap-6 md:grid-cols-5">
           {STEPS.map((step, i) => {
             const heaviest = i === 1
             return (

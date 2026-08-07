@@ -14,6 +14,20 @@
 
 html {
   background-color: var(--color-navy);
+
+  /*
+   * The nav is `position: fixed` (Nav.tsx), so without this every anchor on the site
+   * lands its target flush against the viewport top and underneath the bar: clicking
+   * "Process" hides the "How we work" heading, and the enquiry prefill's
+   * scrollIntoView hides "Get a quotation" — on a single-page site whose entire
+   * navigation is anchors, that is every route there is.
+   *
+   * 5rem clears the bar's measured 65px (py-4 = 32px, plus the h-8 logo, plus the
+   * 1px hairline) with room to spare. It covers scrollIntoView as well as anchor
+   * clicks, which is why it lives here rather than as scroll-margin-top on each of
+   * the five targets.
+   */
+  scroll-padding-top: 5rem;
 }
 
 body {

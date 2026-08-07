@@ -6,14 +6,41 @@ import { workAlt } from '@/lib/workAlt'
 import { aspectClass } from '@/lib/aspect'
 import type { Work } from '@/data/works'
 
+// F3: public/work/ does not exist yet, so every image below renders broken in a
+// real browser. Reuses Hero and Film's onError stand-in pattern: a solid navy block
+// naming the exact slot, never an AI image. This shared row is what a fallback block
+// looks like at each of the three call sites below — each keeps its own failed flag
+// so one image's failure never hides another that is still loading fine.
+function ImageFallback({ testId, slot }: { testId: string; slot: string }) {
+  return (
+    <div data-testid={testId} className="absolute inset-0 flex items-center justify-center bg-navy">
+      <span className="u-mono px-4 text-center text-sky">Image slot: {slot}</span>
+    </div>
+  )
+}
+
 export function BeforeAfterSlider({ work }: { work: Work }) {
   const [percent, setPercent] = useState(50)
+  const [singleFailed, setSingleFailed] = useState(false)
+  const [beforeFailed, setBeforeFailed] = useState(false)
+  const [afterFailed, setAfterFailed] = useState(false)
   const frameRef = useRef<HTMLDivElement>(null)
 
   if (!work.beforeImage) {
     return (
       <div className={`relative ${aspectClass(work.ratio)} w-full`}>
-        <Image src={work.image} alt={workAlt(work)} fill sizes="90vw" className="object-cover" />
+        {singleFailed ? (
+          <ImageFallback testId="slider-fallback" slot={work.image} />
+        ) : (
+          <Image
+            src={work.image}
+            alt={workAlt(work)}
+            fill
+            sizes="90vw"
+            className="object-cover"
+            onError={() => setSingleFailed(true)}
+          />
+        )}
       </div>
     )
   }
@@ -53,19 +80,35 @@ export function BeforeAfterSlider({ work }: { work: Work }) {
         if (e.currentTarget.hasPointerCapture(e.pointerId)) setFromClientX(e.clientX)
       }}
     >
-      <Image
-        src={work.beforeImage}
-        alt={`${work.title} before installation, bare wall`}
-        fill
-        sizes="90vw"
-        className="object-cover"
-      />
+      {beforeFailed ? (
+        <ImageFallback testId="before-fallback" slot={work.beforeImage} />
+      ) : (
+        <Image
+          src={work.beforeImage}
+          alt={`${work.title} before installation, bare wall`}
+          fill
+          sizes="90vw"
+          className="object-cover"
+          onError={() => setBeforeFailed(true)}
+        />
+      )}
       <div
         data-testid="after-reveal"
         className="absolute inset-0"
         style={{ clipPath: `inset(0 0 0 ${percent}%)` }}
       >
-        <Image src={work.image} alt={workAlt(work)} fill sizes="90vw" className="object-cover" />
+        {afterFailed ? (
+          <ImageFallback testId="after-fallback" slot={work.image} />
+        ) : (
+          <Image
+            src={work.image}
+            alt={workAlt(work)}
+            fill
+            sizes="90vw"
+            className="object-cover"
+            onError={() => setAfterFailed(true)}
+          />
+        )}
       </div>
 
       <div

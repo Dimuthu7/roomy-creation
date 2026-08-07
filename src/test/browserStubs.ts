@@ -33,6 +33,21 @@ export function getScrollIntoViewCalls(): ScrollIntoViewCall[] {
   return scrollIntoViewCalls
 }
 
+/**
+ * jsdom does not implement ResizeObserver at all — referencing the constructor throws
+ * `ReferenceError: ResizeObserver is not defined`. Lenis's `Dimensions` class
+ * constructs one on every instantiation, so any component that mounts Lenis (only
+ * `SmoothScroll` does) crashes without this stub. A no-op observe/unobserve/disconnect
+ * is enough: Lenis only needs the constructor not to throw, and this stub must not
+ * report sizes it cannot know — jsdom performs no layout, so a fabricated
+ * ResizeObserverEntry would be a lie no test could tell from a real measurement.
+ */
+class NoopResizeObserver implements ResizeObserver {
+  observe(): void {}
+  unobserve(): void {}
+  disconnect(): void {}
+}
+
 /** Set before rendering. */
 export function setPrefersReducedMotion(value: boolean): void {
   prefersReducedMotion = value
@@ -128,6 +143,8 @@ export function installBrowserStubs(): void {
     ImmediateIntersectionObserver as unknown as typeof window.IntersectionObserver
   globalThis.IntersectionObserver =
     ImmediateIntersectionObserver as unknown as typeof globalThis.IntersectionObserver
+  window.ResizeObserver = NoopResizeObserver as unknown as typeof window.ResizeObserver
+  globalThis.ResizeObserver = NoopResizeObserver as unknown as typeof globalThis.ResizeObserver
 
   // Unlike a real browser, this stub does not listen for `pointerup` or `pointercancel`
   // at all, so it never auto-releases capture the way a browser does when the pointer

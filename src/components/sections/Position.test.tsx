@@ -33,4 +33,14 @@ describe('Position', () => {
     const { container } = render(<Position />)
     expect(container.innerHTML).not.toMatch(/text-white/)
   })
+
+  // F2: a bare <section> with no accessible name is not exposed as a landmark
+  // region. This section is three display lines with no heading of its own (a
+  // heading over them would be noise, per the brief), so it earns its accessible
+  // name from aria-label instead of a visible <h2> (brief §5).
+  it('exposes an accessible name on the section, with no visible heading', () => {
+    render(<Position />)
+    expect(screen.getByRole('region', { name: 'Position' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading')).not.toBeInTheDocument()
+  })
 })

@@ -22,6 +22,14 @@ describe('Materials', () => {
     expect(screen.getByRole('heading', { name: 'What it is made of' })).toBeInTheDocument()
   })
 
+  // F2: a bare <section> with no accessible name is not exposed as a landmark
+  // region, even when it contains a heading — the section itself needs
+  // aria-labelledby pointing at that heading (brief §5).
+  it('gives the section its accessible name from the heading', async () => {
+    await renderMaterials()
+    expect(screen.getByRole('region', { name: 'What it is made of' })).toBeInTheDocument()
+  })
+
   // D5: asserting only the *absence* of apologetic words is vacuous — an empty
   // BOARD_ARGUMENT array would pass that check too. Assert every line is present
   // verbatim first, then the register.

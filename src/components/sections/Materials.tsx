@@ -18,11 +18,14 @@ export function Materials() {
   const knownSpecs = MATERIAL_SPECS.filter((spec) => !isTBC(spec.value))
 
   return (
-    <section id="materials" className="bg-navy py-24">
+    <section id="materials" aria-labelledby="materials-heading" className="bg-navy py-24">
       <div className="mx-auto max-w-6xl px-6">
         {/* D2: text-paper carries display type on navy — pure white is not in the
             brand palette. */}
-        <h2 className="font-display text-4xl tracking-tight text-paper lg:text-5xl">
+        <h2
+          id="materials-heading"
+          className="font-display text-4xl tracking-tight text-paper lg:text-5xl"
+        >
           What it is made of
         </h2>
 
