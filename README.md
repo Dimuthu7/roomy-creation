@@ -25,15 +25,20 @@ Add each file under the exact filename listed. No code change is needed once the
 files land — the block disappears and the real photo or film takes its place
 automatically.
 
-### Hero
+### Hero — supplied
 
-See `public/media/README.txt` for the full brief on both files below; not restated
-here beyond the ratio and size.
+Both hero files are present. They are **AI-generated atmosphere images**, not
+photographs of real work — they set a look and a quality level without claiming to
+show a job we did. See `docs/asset-manifest.md` for models, job IDs and prompts, and
+`public/media/README.txt` for the full brief.
 
-| Slot | Ratio | Minimum width | Notes |
+| Slot | Ratio | Delivered | Notes |
 |---|---|---|---|
-| `/media/hero-master.jpg` | 16:9 or wider | 1920px | The hero backdrop. Sits behind a fixed dark overlay. |
-| `/media/cutout-sofa.png` | roughly 3:2 | 900px | Foreground cutout, transparent background. Decorative — no fallback text if missing, it simply does not render. |
+| `/media/hero-master.jpg` | 16:9 or wider | 2752×1536, 380KB | The hero backdrop. Sits behind a fixed dark overlay. |
+| `/media/cutout-sofa.png` | roughly 3:2 | 1350×900, transparent | Foreground cutout. Decorative — no fallback text if missing, it simply does not render. |
+
+Replacing either with real photography later needs no code change — drop the new
+file in under the same filename.
 
 ### Gallery
 
@@ -147,9 +152,17 @@ approved by the client. Each is also flagged in a comment at the line it appears
 
 ## Known launch blockers
 
-- No `og:image` is set. There is no approved photograph to use, and a placeholder
-  image is against the client's own rule — a real photo (or an explicit decision to
-  go without one) is needed before this can be added.
+- No `og:image` is set. An image now exists that could serve as one
+  (`/media/hero-master.jpg`), but `og:image` needs an absolute URL, which needs
+  `metadataBase`, which needs the production domain below. Once the domain is
+  confirmed, decide whether the generated hero image is acceptable as the social
+  preview or whether that should wait for real photography.
+- **The hero fails two contrast checks now that a real image sits behind the text.**
+  Measured against the delivered `hero-master.jpg` through the navy/72% overlay: the
+  sub-line (`text-sky`, 16px) is 4.20:1 where AA needs 4.5:1, and the "See our work"
+  teal border is 2.28:1 where WCAG 1.4.11 needs 3:1. Darkening the overlay cannot fix
+  the border — teal tops out at 2.88:1 even at 88% — so that control needs a
+  different colour. Awaiting a decision; see the ledger for the measured options.
 - `metadataBase` is unset until the production domain is confirmed (see the
   checklist above). Search engines and link previews cannot resolve absolute URLs
   until it is.
