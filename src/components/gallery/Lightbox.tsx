@@ -138,7 +138,13 @@ export function Lightbox({
           </button>
         </div>
 
-        <BeforeAfterSlider work={work} />
+        {/* A1: the slider owns its own per-image failure flags, and the element type and
+            position do not change when `index` does — so without a key React keeps the
+            instance and carries those flags into the next work. One 404 then suppressed
+            every photo after it: the stand-in re-rendered with the new work's path and no
+            request was ever made for a file that exists. Keying on the work id also
+            resets the compare handle, which otherwise stayed where the last work left it. */}
+        <BeforeAfterSlider key={work.id} work={work} />
 
         <dl className="flex flex-col">
           {specRow('Project type', projectType)}

@@ -16,7 +16,13 @@ export function Film() {
   const videoRef = useRef<HTMLVideoElement>(null)
   const [activeIndex, setActiveIndex] = useState(0)
   const [failed, setFailed] = useState(false)
-  const active = FILM_CARDS[activeIndex]
+  // A2: specs.ts instructs the maintainer to delete a card row when a figure stays
+  // unknown, and nothing made them drop the matching clip at the same time. cardIndexAt
+  // clamps to CLIP_STARTS, so four clips against three cards returned an index this
+  // array does not have — and the unguarded dereference below took the whole client tree
+  // down, since Film has no error boundary above it. Clamped here rather than in the
+  // handler so every path into activeIndex is covered, not just timeupdate.
+  const active = FILM_CARDS[Math.min(activeIndex, FILM_CARDS.length - 1)]
 
   // Autoplay is withheld on a phone as well as under reduced motion: the film loops,
   // and on a metered connection that is the visitor's data being spent, not ours.

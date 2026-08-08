@@ -55,8 +55,18 @@ export function GalleryGrid({ onOpen }: { onOpen: (index: number) => void }) {
               key={work.id}
               data-work-id={work.id}
               layout={level === 'full'}
-              initial={{ opacity: 0, x: level === 'full' ? (i % 2 ? 32 : -32) : 0 }}
-              animate={{ opacity: 1, x: 0 }}
+              // The offset was gated on motion level but the fade was not, so every card
+              // rendered at opacity 0 — including on the server, where getServerSnapshot
+              // reports 'reduced' precisely so a visitor without JS keeps visible content.
+              // The whole gallery was invisible until framer-motion hydrated. Gated the
+              // same way WeaveReveal does it: under reduced motion there is no `initial`
+              // at all, rather than an initial that happens to animate quickly.
+              initial={
+                level === 'reduced'
+                  ? undefined
+                  : { opacity: 0, x: level === 'full' ? (i % 2 ? 32 : -32) : 0 }
+              }
+              animate={level === 'reduced' ? undefined : { opacity: 1, x: 0 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.3, delay: i * stagger, ease: [0.22, 1.2, 0.36, 1] }}
               style={{ gridRowEnd: `span ${rowSpan(work.ratio) + GUTTER_ROWS}` }}

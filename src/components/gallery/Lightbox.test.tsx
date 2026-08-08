@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
+import { useState } from 'react'
 import userEvent from '@testing-library/user-event'
 import { Lightbox } from './Lightbox'
 import { EnquiryPrefillProvider, useEnquiryPrefill } from '@/context/EnquiryPrefill'
@@ -183,6 +184,28 @@ describe('Lightbox', () => {
     const dialog = screen.getByRole('dialog')
     expect(dialog.querySelector('.aspect-\\[3\\/2\\]')).toBeNull()
     expect(dialog.querySelector('.aspect-\\[4\\/5\\]')).not.toBeNull()
+  })
+
+  // A1: BeforeAfterSlider owns its own `singleFailed`/`beforeFailed`/`afterFailed` flags.
+  // The element type and position do not change when `index` does, so without a key React
+  // keeps the instance — and its failure flags — across a navigation. One missing photo
+  // then suppressed every photo after it: the stand-in re-rendered with the NEXT work's
+  // path and no request was ever made for a file that exists.
+  it('does not carry one work\'s failed image over to the next', async () => {
+    const user = userEvent.setup()
+    function Harness() {
+      const [index, setIndex] = useState(1)
+      return <Lightbox index={index} onClose={vi.fn()} onIndexChange={setIndex} />
+    }
+    render(<Harness />)
+
+    fireEvent.error(document.querySelector('img')!)
+    expect(screen.getByTestId('slider-fallback')).toHaveTextContent(`Image slot: ${WORKS[1].image}`)
+
+    await user.click(screen.getByRole('button', { name: 'Next' }))
+
+    expect(screen.queryByTestId('slider-fallback')).not.toBeInTheDocument()
+    expect(document.querySelector('img')).toBeInTheDocument()
   })
 
   it('prefill scrolls instantly under reduced motion', async () => {

@@ -3,6 +3,7 @@ import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { WORKS } from '@/data/works'
 import { rowSpan } from '@/lib/galleryLayout'
+import { setPrefersReducedMotion } from '@/test/browserStubs'
 import { GalleryGrid, GUTTER_ROWS } from './GalleryGrid'
 
 function items(): HTMLElement[] {
@@ -117,5 +118,41 @@ describe('GalleryGrid', () => {
     expect(caption).not.toBeNull()
     expect(caption!.className).toContain('motion-safe:translate-y-full')
     expect(caption!.className).toContain('motion-safe:group-hover:translate-y-0')
+  })
+
+  // A3: the grid renders a FILTERED list but the lightbox indexes the FULL WORKS array,
+  // so the card has to hand back its position in WORKS, not its position on screen. The
+  // only test that touched this clicked the first card of an unfiltered grid, where the
+  // two numbers are both 0 — so `index={i}` passed all 339 tests while opening a sofa
+  // for a visitor who filtered to wardrobes and clicked the third one.
+  it('opens the work that was clicked, not the one at that position on screen', async () => {
+    const user = userEvent.setup()
+    const onOpen = vi.fn()
+    render(<GalleryGrid onOpen={onOpen} />)
+
+    await user.click(screen.getByRole('button', { name: 'Wardrobes' }))
+    await waitFor(() => expect(items().length).toBeLessThan(WORKS.length))
+
+    // The third wardrobe: on screen it is index 2, in WORKS it is something else entirely.
+    const third = items()[2]
+    const workId = third.getAttribute('data-work-id')
+    const expected = WORKS.findIndex((w) => w.id === workId)
+    expect(expected).toBeGreaterThan(2) // the test is worthless if the two indices agree
+
+    await user.click(within(third).getByRole('button'))
+    expect(onOpen).toHaveBeenCalledWith(expected)
+  })
+
+  // The x offset was already gated on motion level; the opacity was not, so every card
+  // rendered at opacity 0 on the server and stayed invisible until framer-motion
+  // hydrated. Confirmed against the real production HTML: 24 `opacity:0` in the
+  // document, exactly the card count. getServerSnapshot() returns 'reduced' precisely so
+  // that a visitor with no JS keeps visible content — this is that contract.
+  it('renders cards visible, not faded out, when motion is reduced', () => {
+    setPrefersReducedMotion(true)
+    render(<GalleryGrid onOpen={vi.fn()} />)
+    for (const item of items()) {
+      expect(item.style.opacity).not.toBe('0')
+    }
   })
 })
