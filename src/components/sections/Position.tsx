@@ -19,8 +19,11 @@ const LINES = [
 
 // Big → small → big, twice over: two "beats" of opening claim / supporting detail /
 // closing contrast, each cycling through the same three styles via `i % 3` so the
-// second beat (lines 4-6) reads with the same rhythm as the first (lines 1-3) instead
-// of needing new styles. The opening claim and closing contrast earn display type; the
+// second beat (lines 4-6) reads with the same typographic rhythm as the first (lines
+// 1-3) instead of needing new styles. (Entrance direction, via `i % 2`, keeps
+// incrementing independently of that three-style cycle, so the two beats mirror each
+// other left/right rather than repeating — a deliberate bit of variety, not the same
+// rhythm end to end.) The opening claim and closing contrast earn display type; the
 // supporting fact between them steps down to body copy instead of shouting at the same
 // volume as its neighbours. That step down also carries text-sky rather than
 // text-paper — on solid navy (no photo overlay to dim it, unlike Hero) sky measures
@@ -32,24 +35,19 @@ const STYLES = [
   'font-display text-2xl font-semibold leading-snug tracking-tight text-paper sm:text-3xl lg:text-4xl',
 ]
 
-const STAGGER = 0.3
-
 export function Position() {
   return (
     <section aria-label="Position" className="relative overflow-hidden bg-navy py-28">
       <WeaveTexture />
-      <div className="relative z-10 mx-auto grid max-w-4xl grid-cols-[1.25rem_1fr] gap-x-4 gap-y-[var(--pos-gap)] px-6 [--pos-gap:4rem] sm:grid-cols-[2rem_1fr] sm:gap-x-8 sm:[--pos-gap:5.5rem] lg:[--pos-gap:7rem]">
-        {LINES.map((line, i) => {
-          const delay = i * STAGGER
-          return (
-            <Fragment key={line}>
-              <WeaveThreadNode delay={delay} hasNext={i < LINES.length - 1} gap="var(--pos-gap)" />
-              <WeaveReveal from={i % 2 === 0 ? 'left' : 'right'} delay={delay}>
-                <p className={STYLES[i % 3]}>{line}</p>
-              </WeaveReveal>
-            </Fragment>
-          )
-        })}
+      <div className="relative z-10 mx-auto grid max-w-4xl grid-cols-[1.25rem_1fr] gap-x-4 gap-y-[var(--pos-gap)] px-6 [--pos-gap:85vh] sm:grid-cols-[2rem_1fr] sm:gap-x-8">
+        {LINES.map((line, i) => (
+          <Fragment key={line}>
+            <WeaveThreadNode delay={0} hasNext={i < LINES.length - 1} gap="var(--pos-gap)" />
+            <WeaveReveal from={i % 2 === 0 ? 'left' : 'right'} delay={0}>
+              <p className={STYLES[i % 3]}>{line}</p>
+            </WeaveReveal>
+          </Fragment>
+        ))}
       </div>
     </section>
   )

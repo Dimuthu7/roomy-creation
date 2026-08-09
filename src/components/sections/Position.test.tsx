@@ -50,4 +50,16 @@ describe('Position', () => {
     expect(screen.getByRole('region', { name: 'Position' })).toBeInTheDocument()
     expect(screen.queryByRole('heading')).not.toBeInTheDocument()
   })
+
+  // The grid's gap-y and the thread connector's calc(100% + gap) height used to be
+  // two hand-matched literals ('3rem' vs gap-y-12) that could silently drift apart.
+  // Both now read from the same --pos-gap CSS variable — this locks that coupling
+  // so a future edit can't reintroduce a hardcoded, independently-drifting value.
+  it('drives the grid gap and the thread connector from one shared variable', () => {
+    const { container } = render(<Position />)
+    expect(container.querySelector('[class*="gap-y-[var(--pos-gap)]"]')).toBeInTheDocument()
+    const strand = container.querySelector('span[style*="calc(100%"]')
+    expect(strand).not.toBeNull()
+    expect((strand as HTMLElement).style.height).toContain('var(--pos-gap)')
+  })
 })

@@ -3,13 +3,15 @@ import { motion } from 'framer-motion'
 import { useMotionLevel } from '@/hooks/useMotionLevel'
 
 /**
- * One joint on the thread that runs beside Position's three lines: a node where a
+ * One joint on the thread that runs beside Position's lines: a node where a
  * line "arrives", plus — unless it's the last node — the strand connecting down to
  * the next one. Growth is scroll-triggered off the same delay driving that line's
  * WeaveReveal, so the thread reads as stitching the statements together rather
- * than a decoration bolted on afterward. `gap` must match the grid's own gap-y so
- * the strand's calc(100% + gap) lands exactly on the next node instead of
- * over- or undershooting it.
+ * than a decoration bolted on afterward. `gap` must resolve to the same length as
+ * the grid's own gap-y so the strand's calc(100% + gap) lands exactly on the next
+ * node instead of over- or undershooting it — pass a shared CSS variable (e.g.
+ * `var(--pos-gap)`) rather than a duplicated literal, so the two values read from
+ * one source and can't drift apart.
  */
 export function WeaveThreadNode({
   delay,
