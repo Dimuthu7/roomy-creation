@@ -1,7 +1,11 @@
-import { Fragment } from 'react'
+'use client'
+import { Fragment, useEffect, useRef, useState } from 'react'
+import { motion } from 'framer-motion'
 import { WeaveReveal } from '@/components/weave/WeaveReveal'
 import { WeaveThreadNode } from '@/components/weave/WeaveThread'
 import { WeaveTexture } from '@/components/weave/WeaveTexture'
+import { activeScrollStep } from '@/lib/scrollProgress'
+import { useMotionLevel } from '@/hooks/useMotionLevel'
 
 // D8: the plan described this section only as "three short lines... what we make, who
 // we make it for, and the fit argument" with no copy supplied. Lines 1-3 are NOT
@@ -20,29 +24,33 @@ const LINES = [
 // Big → small → big, twice over: two "beats" of opening claim / supporting detail /
 // closing contrast, each cycling through the same three styles via `i % 3` so the
 // second beat (lines 4-6) reads with the same typographic rhythm as the first (lines
-// 1-3) instead of needing new styles. (Entrance direction, via `i % 2`, keeps
-// incrementing independently of that three-style cycle, so the two beats mirror each
-// other left/right rather than repeating — a deliberate bit of variety, not the same
-// rhythm end to end.) The opening claim and closing contrast earn display type; the
-// supporting fact between them steps down to body copy instead of shouting at the same
-// volume as its neighbours. That step down also carries text-sky rather than
-// text-paper — on solid navy (no photo overlay to dim it, unlike Hero) sky measures
-// 7.8:1, well past the 4.5:1 AA floor, so the supporting lines read quieter without
-// reading as low-contrast. Never text-white on any line.
+// 1-3) instead of needing new styles. The opening claim and closing contrast earn
+// display type; the supporting fact between them steps down to body copy instead of
+// shouting at the same volume as its neighbours. That step down also carries
+// text-sky rather than text-paper — on solid navy (no photo overlay to dim it, unlike
+// Hero) sky measures 7.8:1, well past the 4.5:1 AA floor, so the supporting lines
+// read quieter without reading as low-contrast. Never text-white on any line.
 const STYLES = [
   'font-display text-2xl font-medium leading-snug tracking-tight text-paper sm:text-3xl lg:text-4xl',
   'max-w-md font-body text-base leading-relaxed text-sky sm:text-lg',
   'font-display text-2xl font-semibold leading-snug tracking-tight text-paper sm:text-3xl lg:text-4xl',
 ]
 
-// Section stays a single compact page — no full-viewport gaps between lines. What
-// makes the reveal read as sequential instead of "all six at once" is the stagger
-// below, not scroll distance: each line's WeaveReveal/WeaveThreadNode still only
-// starts animating once the section itself scrolls into view, and STAGGER staggers
-// their entrances into a short cascade from there.
+// Pinned scroll-reveal only runs at full motion — position: sticky plus a scroll
+// listener is exactly the kind of transform-heavy effect the client's reduced-motion
+// rule disables outright, and pinned/scroll-jacked sections are also the pattern most
+// prone to going janky on small touch viewports (address-bar collapse, momentum
+// scroll fighting the pin). Reduced motion and mobile both get CompactPosition
+// instead: the whole statement laid out normally, still scroll-revealed, just not
+// scroll-jacked.
+export function Position() {
+  const level = useMotionLevel()
+  return level === 'full' ? <PinnedPosition /> : <CompactPosition />
+}
+
 const STAGGER = 0.15
 
-export function Position() {
+function CompactPosition() {
   return (
     <section aria-label="Position" className="relative overflow-hidden bg-navy py-28">
       <WeaveTexture />
@@ -58,6 +66,57 @@ export function Position() {
             </Fragment>
           )
         })}
+      </div>
+    </section>
+  )
+}
+
+// The scroll distance (in viewport heights) spent pinned on each line before the
+// next one takes over. Tunable in one place — smaller reads snappier, larger gives
+// more time per line.
+const STEP_VH = 55
+
+function PinnedPosition() {
+  const trackRef = useRef<HTMLElement>(null)
+  const [active, setActive] = useState(0)
+
+  useEffect(() => {
+    function onScroll() {
+      const track = trackRef.current
+      if (!track) return
+      const rect = track.getBoundingClientRect()
+      setActive(activeScrollStep(rect.top, rect.height, window.innerHeight, LINES.length))
+    }
+    onScroll()
+    window.addEventListener('scroll', onScroll)
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
+  return (
+    <section
+      aria-label="Position"
+      ref={trackRef}
+      className="relative bg-navy"
+      style={{ height: `${STEP_VH * LINES.length}vh` }}
+    >
+      <div className="sticky top-0 flex h-screen items-center overflow-hidden">
+        <WeaveTexture />
+        <div className="relative z-10 mx-auto grid w-full max-w-4xl px-6">
+          {LINES.map((line, i) => (
+            <motion.p
+              key={line}
+              className={`${STYLES[i % 3]} [grid-area:1/1]`}
+              initial={false}
+              animate={{
+                opacity: active === i ? 1 : 0,
+                y: active === i ? 0 : active > i ? -16 : 16,
+              }}
+              transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+            >
+              {line}
+            </motion.p>
+          ))}
+        </div>
       </div>
     </section>
   )

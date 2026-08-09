@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { setPrefersReducedMotion } from '@/test/browserStubs'
 import { Position } from './Position'
 
 // D8: the plan gave no copy for this section at all. These six lines (the three
@@ -8,16 +9,16 @@ import { Position } from './Position'
 // and docs/superpowers/specs/2026-08-09-position-scroll-reveal-design.md — they are
 // asserted verbatim here so a future rewrite cannot silently drift them further, the
 // same failure that hit Tasks 12 and 13.
-describe('Position', () => {
-  const LINES = [
-    'We make built-in furniture for homes, apartments, hotels and offices.',
-    'Every piece is measured on site before anything is cut.',
-    'A standard-size unit leaves gaps. A fitted one does not.',
-    'Every material is chosen to last, not just to look good on day one.',
-    'The same team measures, builds and installs — start to finish.',
-    'Fit it once. It will not need fitting again.',
-  ]
+const LINES = [
+  'We make built-in furniture for homes, apartments, hotels and offices.',
+  'Every piece is measured on site before anything is cut.',
+  'A standard-size unit leaves gaps. A fitted one does not.',
+  'Every material is chosen to last, not just to look good on day one.',
+  'The same team measures, builds and installs — start to finish.',
+  'Fit it once. It will not need fitting again.',
+]
 
+describe('Position', () => {
   it('carries all six lines verbatim, in order', () => {
     const { container } = render(<Position />)
     for (const line of LINES) {
@@ -32,8 +33,7 @@ describe('Position', () => {
 
   it('says nothing else — no invented copy beyond the six approved lines', () => {
     const { container } = render(<Position />)
-    const paragraphs = container.querySelectorAll('p')
-    expect(paragraphs).toHaveLength(6)
+    expect(container.querySelectorAll('p')).toHaveLength(6)
   })
 
   it('never uses text-white', () => {
@@ -51,15 +51,77 @@ describe('Position', () => {
     expect(screen.queryByRole('heading')).not.toBeInTheDocument()
   })
 
-  // The grid's gap-y and the thread connector's calc(100% + gap) height used to be
-  // two hand-matched literals ('3rem' vs gap-y-12) that could silently drift apart.
-  // Both now read from the same --pos-gap CSS variable — this locks that coupling
-  // so a future edit can't reintroduce a hardcoded, independently-drifting value.
-  it('drives the grid gap and the thread connector from one shared variable', () => {
-    const { container } = render(<Position />)
-    expect(container.querySelector('[class*="gap-y-[var(--pos-gap)]"]')).toBeInTheDocument()
-    const strand = container.querySelector('span[style*="calc(100%"]')
-    expect(strand).not.toBeNull()
-    expect((strand as HTMLElement).style.height).toContain('var(--pos-gap)')
+  describe('at full motion (pinned scroll reveal)', () => {
+    it('shows only the first line on initial render — the rest wait for scroll', () => {
+      const { container } = render(<Position />)
+      const paragraphs = [...container.querySelectorAll('p')] as HTMLElement[]
+      expect(paragraphs[0].style.opacity).toBe('1')
+      for (const p of paragraphs.slice(1)) {
+        expect(p.style.opacity).toBe('0')
+      }
+    })
+
+    it('pins the section for a scroll distance proportional to the line count', () => {
+      const { container } = render(<Position />)
+      const section = container.querySelector('section') as HTMLElement
+      // STEP_VH (55) * 6 lines
+      expect(section.style.height).toBe('330vh')
+      expect(section.querySelector('.sticky')).not.toBeNull()
+    })
+
+    it('advances which line is visible as the section scrolls past', async () => {
+      const { container } = render(<Position />)
+      const section = container.querySelector('section') as HTMLElement
+      section.getBoundingClientRect = () =>
+        ({
+          top: -2000,
+          height: 3300,
+          bottom: 1300,
+          left: 0,
+          right: 0,
+          x: 0,
+          y: -2000,
+          width: 0,
+          toJSON() {},
+        }) as DOMRect
+      Object.defineProperty(window, 'innerHeight', { value: 800, configurable: true })
+      fireEvent.scroll(window)
+      await waitFor(() => {
+        const paragraphs = [...container.querySelectorAll('p')] as HTMLElement[]
+        const activeIndex = paragraphs.findIndex((p) => p.style.opacity === '1')
+        expect(activeIndex).toBeGreaterThan(0)
+      })
+    })
+  })
+
+  describe('under reduced motion or on mobile (compact fallback)', () => {
+    it('renders every line at full opacity, with no pinning, under reduced motion', () => {
+      setPrefersReducedMotion(true)
+      const { container } = render(<Position />)
+      const section = container.querySelector('section') as HTMLElement
+      expect(section.style.height).toBe('')
+      expect(container.querySelectorAll('p')).toHaveLength(6)
+    })
+
+    it('renders the compact fallback on mobile widths', () => {
+      window.innerWidth = 600
+      const { container } = render(<Position />)
+      const section = container.querySelector('section') as HTMLElement
+      expect(section.style.height).toBe('')
+      expect(container.querySelectorAll('p')).toHaveLength(6)
+    })
+
+    // The grid's gap-y and the thread connector's calc(100% + gap) height used to be
+    // two hand-matched literals ('3rem' vs gap-y-12) that could silently drift apart.
+    // Both now read from the same --pos-gap CSS variable — this locks that coupling
+    // so a future edit can't reintroduce a hardcoded, independently-drifting value.
+    it('drives the grid gap and the thread connector from one shared variable', () => {
+      setPrefersReducedMotion(true)
+      const { container } = render(<Position />)
+      expect(container.querySelector('[class*="gap-y-[var(--pos-gap)]"]')).toBeInTheDocument()
+      const strand = container.querySelector('span[style*="calc(100%"]')
+      expect(strand).not.toBeNull()
+      expect((strand as HTMLElement).style.height).toContain('var(--pos-gap)')
+    })
   })
 })
