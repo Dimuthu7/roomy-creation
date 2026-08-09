@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import { setPrefersReducedMotion } from '@/test/browserStubs'
+import { TBC } from '@/lib/tbc'
 
 async function renderFloat() {
   const { WhatsAppFloat } = await import('./WhatsAppFloat')
@@ -13,9 +14,14 @@ beforeEach(() => {
 })
 
 describe('WhatsAppFloat', () => {
-  // SITE.whatsappNumber is [TBC] today, so whatsappUrl(...) returns null and this
-  // must render nothing rather than a dead link.
+  // Forced to [TBC] explicitly rather than relying on site.ts's ambient state: this
+  // proves whatsappUrl(...) returning null renders nothing, not that today's data
+  // happens to be unset.
   it('renders nothing while SITE.whatsappNumber is [TBC]', async () => {
+    vi.doMock('@/data/site', async () => {
+      const actual = await vi.importActual<typeof import('@/data/site')>('@/data/site')
+      return { SITE: { ...actual.SITE, whatsappNumber: TBC } }
+    })
     const { container } = await renderFloat()
     expect(container).toBeEmptyDOMElement()
   })

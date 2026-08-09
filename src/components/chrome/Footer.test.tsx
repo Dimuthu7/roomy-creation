@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { Logo } from './Logo'
+import { TBC } from '@/lib/tbc'
 
 async function renderFooter() {
   const { Footer } = await import('./Footer')
@@ -28,9 +29,25 @@ describe('Footer', () => {
   })
 
   // Every block is [TBC]-gated exactly like Enquiry.tsx: a heading only renders once
-  // it has content beneath it. With today's all-[TBC] site.ts the footer legitimately
-  // renders almost nothing — that is correct behaviour, not a bug to work around.
+  // it has content beneath it. Forced explicitly to [TBC] here rather than relying on
+  // site.ts's ambient state, which stopped being all-TBC once real contact details
+  // were entered — this test proves the gating logic, not today's data.
   it('renders no contact, visit, districts or follow block while SITE is all [TBC]', async () => {
+    vi.doMock('@/data/site', async () => {
+      const actual = await vi.importActual<typeof import('@/data/site')>('@/data/site')
+      return {
+        SITE: {
+          ...actual.SITE,
+          phone: TBC,
+          email: TBC,
+          addressLines: TBC,
+          city: TBC,
+          openingHours: TBC,
+          districts: TBC,
+          social: { facebook: TBC, instagram: TBC, tiktok: TBC },
+        },
+      }
+    })
     const { container } = await renderFooter()
     expect(screen.queryByRole('heading', { name: 'Contact' })).not.toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: 'Visit' })).not.toBeInTheDocument()
@@ -99,7 +116,12 @@ describe('Footer', () => {
     vi.doMock('@/data/site', async () => {
       const actual = await vi.importActual<typeof import('@/data/site')>('@/data/site')
       return {
-        SITE: { ...actual.SITE, social: { ...actual.SITE.social, instagram: 'https://instagram.com/roomycreations' } },
+        // facebook and tiktok forced to TBC so this proves isolation between social
+        // fields, rather than happening to pass because site.ts has all three filled.
+        SITE: {
+          ...actual.SITE,
+          social: { facebook: TBC, instagram: 'https://instagram.com/roomycreations', tiktok: TBC },
+        },
       }
     })
     await renderFooter()

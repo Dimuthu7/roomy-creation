@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { EnquiryPrefillProvider } from '@/context/EnquiryPrefill'
+import { TBC } from '@/lib/tbc'
 
 async function renderEnquiry() {
   const { Enquiry } = await import('./Enquiry')
@@ -42,23 +43,49 @@ describe('Enquiry', () => {
     expect(container.textContent).not.toContain('[TBC]')
   })
 
-  it('does not render a WhatsApp link while the number is [TBC], the value SITE has today', async () => {
+  // Forced explicitly to [TBC] rather than relying on site.ts's ambient state, which
+  // stopped being all-TBC once real contact details were entered.
+  it('does not render a WhatsApp link while the number is [TBC]', async () => {
+    vi.doMock('@/data/site', async () => {
+      const actual = await vi.importActual<typeof import('@/data/site')>('@/data/site')
+      return { SITE: { ...actual.SITE, whatsappNumber: TBC } }
+    })
     await renderEnquiry()
     expect(screen.queryByRole('link', { name: /whatsapp/i })).toBeNull()
   })
 
   it('does not render Facebook, Instagram or TikTok links while those fields are [TBC]', async () => {
+    vi.doMock('@/data/site', async () => {
+      const actual = await vi.importActual<typeof import('@/data/site')>('@/data/site')
+      return { SITE: { ...actual.SITE, social: { facebook: TBC, instagram: TBC, tiktok: TBC } } }
+    })
     await renderEnquiry()
     expect(screen.queryByRole('link', { name: /facebook/i })).toBeNull()
     expect(screen.queryByRole('link', { name: /instagram/i })).toBeNull()
     expect(screen.queryByRole('link', { name: /tiktok/i })).toBeNull()
   })
 
-  // Every SITE field is [TBC] today, so both of these blocks have nothing to put under
-  // their heading. Rendering the heading anyway leaves two dead subheadings on the one
-  // section the whole site funnels into — worse than showing nothing at all. A heading
-  // has to earn its place from the content that follows it.
+  // Both blocks forced to [TBC] explicitly, so this proves the heading-earns-its-place
+  // gating rather than happening to pass because site.ts has nothing to show today.
+  // Rendering a heading anyway leaves a dead subheading on the one section the whole
+  // site funnels into — worse than showing nothing at all. The WhatsApp heading is
+  // shared with the social row (hasWhatsAppBlock = waUrl !== null || socials.length >
+  // 0 in Enquiry.tsx), so social has to be cleared too or the heading survives on
+  // Facebook/Instagram/TikTok alone.
   it('omits a contact block entirely rather than leaving its heading dangling', async () => {
+    vi.doMock('@/data/site', async () => {
+      const actual = await vi.importActual<typeof import('@/data/site')>('@/data/site')
+      return {
+        SITE: {
+          ...actual.SITE,
+          whatsappNumber: TBC,
+          social: { facebook: TBC, instagram: TBC, tiktok: TBC },
+          addressLines: TBC,
+          city: TBC,
+          openingHours: TBC,
+        },
+      }
+    })
     await renderEnquiry()
     expect(screen.queryByRole('heading', { name: 'Measurement visit' })).toBeNull()
     expect(screen.queryByRole('heading', { name: 'WhatsApp' })).toBeNull()

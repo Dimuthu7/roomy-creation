@@ -34,8 +34,10 @@ describe('buildLocalBusinessSchema', () => {
   })
 
   it('builds a PostalAddress only when address parts exist', () => {
-    expect(buildLocalBusinessSchema({ ...SITE, city: TBC, addressLines: TBC }).address)
-      .toBeUndefined()
+    expect(
+      buildLocalBusinessSchema({ ...SITE, city: TBC, addressLines: TBC, postalCode: TBC })
+        .address,
+    ).toBeUndefined()
     const addr = buildLocalBusinessSchema(filled).address as Record<string, unknown>
     expect(addr['@type']).toBe('PostalAddress')
     expect(addr.addressLocality).toBe('Colombo')

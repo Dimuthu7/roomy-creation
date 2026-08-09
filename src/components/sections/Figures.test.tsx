@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { setPrefersReducedMotion } from '@/test/browserStubs'
+import { TBC } from '@/lib/tbc'
 
 async function renderFigures() {
   const { Figures } = await import('./Figures')
@@ -19,11 +20,26 @@ beforeEach(() => {
 //
 // F4: the client's rule is "if a figure is unknown, cut that row and run three cuts" —
 // the same ruling Task 14 applied to Materials (D4), which the original Figures
-// component did not carry across. Every SITE.figures value is [TBC] today, so unknown
-// figures must be cut rather than rendered as a label over an em dash.
+// component did not carry across. Figures forced explicitly to [TBC]/known below rather
+// than relying on site.ts's ambient state, which stopped being all-TBC once real
+// figures were entered — these tests prove the cutting logic, not today's data.
 describe('Figures', () => {
   it('renders nothing while every figure is unknown, rather than a strip of em dashes', async () => {
     setPrefersReducedMotion(true)
+    vi.doMock('@/data/site', async () => {
+      const actual = await vi.importActual<typeof import('@/data/site')>('@/data/site')
+      return {
+        SITE: {
+          ...actual.SITE,
+          figures: {
+            yearsInBusiness: TBC,
+            homesFitted: TBC,
+            unitsDelivered: TBC,
+            districtsCovered: TBC,
+          },
+        },
+      }
+    })
     const { container } = await renderFigures()
     expect(screen.queryByText(/\[TBC\]/)).not.toBeInTheDocument()
     expect(screen.queryByText('—')).not.toBeInTheDocument()
@@ -35,7 +51,15 @@ describe('Figures', () => {
     vi.doMock('@/data/site', async () => {
       const actual = await vi.importActual<typeof import('@/data/site')>('@/data/site')
       return {
-        SITE: { ...actual.SITE, figures: { ...actual.SITE.figures, yearsInBusiness: 7 } },
+        SITE: {
+          ...actual.SITE,
+          figures: {
+            yearsInBusiness: 7,
+            homesFitted: TBC,
+            unitsDelivered: TBC,
+            districtsCovered: TBC,
+          },
+        },
       }
     })
     await renderFigures()
