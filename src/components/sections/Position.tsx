@@ -4,21 +4,28 @@ import { WeaveThreadNode } from '@/components/weave/WeaveThread'
 import { WeaveTexture } from '@/components/weave/WeaveTexture'
 
 // D8: the plan described this section only as "three short lines... what we make, who
-// we make it for, and the fit argument" with no copy supplied. These three lines are
-// NOT client-approved and are flagged for sign-off — see the Task 14 brief.
+// we make it for, and the fit argument" with no copy supplied. Lines 1-3 are NOT
+// client-approved and are flagged for sign-off — see the Task 14 brief. Lines 4-6 were
+// added afterward as a second beat (durability, team continuity), same not-yet-approved
+// status — see docs/superpowers/specs/2026-08-09-position-scroll-reveal-design.md.
 const LINES = [
   'We make built-in furniture for homes, apartments, hotels and offices.',
   'Every piece is measured on site before anything is cut.',
   'A standard-size unit leaves gaps. A fitted one does not.',
+  'Every material is chosen to last, not just to look good on day one.',
+  'The same team measures, builds and installs — start to finish.',
+  'Fit it once. It will not need fitting again.',
 ]
 
-// Big → small → big: the opening claim and the closing contrast are the lines that
-// earn display type; the process fact between them is supporting detail, so it steps
-// down to body copy instead of shouting at the same volume as its neighbours. That
-// step down also carries text-sky rather than text-paper — on solid navy (no photo
-// overlay to dim it, unlike Hero) sky measures 7.8:1, well past the 4.5:1 AA floor,
-// so the second line reads quieter without reading as low-contrast. Never text-white
-// on either line.
+// Big → small → big, twice over: two "beats" of opening claim / supporting detail /
+// closing contrast, each cycling through the same three styles via `i % 3` so the
+// second beat (lines 4-6) reads with the same rhythm as the first (lines 1-3) instead
+// of needing new styles. The opening claim and closing contrast earn display type; the
+// supporting fact between them steps down to body copy instead of shouting at the same
+// volume as its neighbours. That step down also carries text-sky rather than
+// text-paper — on solid navy (no photo overlay to dim it, unlike Hero) sky measures
+// 7.8:1, well past the 4.5:1 AA floor, so the supporting lines read quieter without
+// reading as low-contrast. Never text-white on any line.
 const STYLES = [
   'font-display text-2xl font-medium leading-snug tracking-tight text-paper sm:text-3xl lg:text-4xl',
   'max-w-md font-body text-base leading-relaxed text-sky sm:text-lg',
@@ -39,7 +46,7 @@ export function Position() {
             <Fragment key={line}>
               <WeaveThreadNode delay={delay} hasNext={i < LINES.length - 1} gap={THREAD_GAP} />
               <WeaveReveal from={i % 2 === 0 ? 'left' : 'right'} delay={delay}>
-                <p className={STYLES[i]}>{line}</p>
+                <p className={STYLES[i % 3]}>{line}</p>
               </WeaveReveal>
             </Fragment>
           )
