@@ -2,9 +2,19 @@ import { TBC, type Maybe } from '@/lib/tbc'
 
 /**
  * Start timestamp in seconds of each clip inside the concatenated film.
- * Fill these from the actual encode before the film goes live.
+ *
+ * Read out of the shipped encode (public/film/roomy-process.mp4), not computed from the
+ * clip durations, and cross-checked by two independent methods that agreed exactly:
+ * keyframe positions (`ffprobe -skip_frame nokey`) and scene-change detection
+ * (`ffmpeg -vf "select='gt(scene,0.4)'"`). Four clips of 4.041667s joined with hard
+ * cuts, 16.166667s total.
+ *
+ * Film.tsx compares the video's own currentTime against these on every timeupdate, so a
+ * wrong value here does not fail loudly — the cards just narrate the wrong footage.
+ * Re-read them from the file if the film is ever re-encoded; never adjust by hand.
+ * Pinned by src/data/specs.test.ts.
  */
-export const CLIP_STARTS: number[] = [0, 4.5, 9.2, 13.8]
+export const CLIP_STARTS: number[] = [0, 4.041667, 8.083333, 12.125]
 
 export interface FilmCard {
   counter: string

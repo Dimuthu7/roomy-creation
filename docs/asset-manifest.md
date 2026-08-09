@@ -25,7 +25,31 @@ nothing on the site references.
 | `public/media/cutout-sofa.png` | Hero foreground cutout | nano_banana_pro | `5851e68f-be92-4485-a992-8dc877969ea7` | 2 credits |
 | ↳ background removal | — | image_background_remover | `dbe53eef-fb87-4e2d-8b95-a242ab4466ed` | 1 credit |
 
-Total spend including two discarded cutout attempts: **11 credits**.
+### The film (Task 17)
+
+| File | Model | Job ID | Cost |
+|---|---|---|---|
+| clip 01 — the measure | seedance_2_0_mini | `8a82599d-712f-47d0-a5c9-d672bbfe2563` | 10 credits |
+| clip 02 — the cut | seedance_2_0_mini | `a2d98897-a646-4171-9c1e-f193c6dc21bd` | 10 credits |
+| clip 03 — the fit | seedance_2_0_mini | `b98d1905-d19e-4198-95c3-297e175ac1e6` | 10 credits |
+| clip 04 — the handover | seedance_2_0_mini | `debdc2d4-b773-4734-8379-8822a4fb8780` | 10 credits |
+| start frame 01 | nano_banana_pro | `67680dc7-31bc-4577-b77e-9fc717d1498a` | 2 credits |
+| start frame 02 | nano_banana_pro | `c6aa892f-015b-4526-84f2-a9d6dd36c244` | 2 credits |
+| start frame 03 | nano_banana_pro | `2b68a281-b417-4d3e-a46b-81b69ccfefaa` | 2 credits |
+| start frame 04 | nano_banana_pro | `92b4ccf6-d96c-404c-aadf-f11f38c7cac9` | 2 credits |
+
+Each clip was generated from its own still as a `start_image` rather than from text
+alone, so the four cuts share one grade. The plan named full Seedance 2.0, which the
+Basic plan does not include; Mini was tested on a single clip first and judged good
+enough — stable geometry, no morphing, controlled camera — which saved the 30 credits
+that the Fast tier would have cost across four clips.
+
+Assembled with `-c copy` (no re-encode), then compressed once at CRF 24 with keyframes
+forced at the cut points: **8.6MB to 2.8MB**, measured at SSIM 0.987 / PSNR 43.8dB
+average, i.e. visually indistinguishable. The poster is the film's own first frame.
+
+Total spend including two discarded cutout attempts: **51 credits** of the 130
+available (4 images + 4 start frames + 4 clips + 3 background removals).
 
 ### hero-master.jpg
 

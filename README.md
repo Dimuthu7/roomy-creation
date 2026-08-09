@@ -66,18 +66,20 @@ as `work-01.jpg`, 3:2. To add more before/after pairs, supply `work-NN-before.jp
 for any other slot and tell the developer which slots — one line of code per pair
 turns the slider on.
 
-### Film
+### Film — supplied
 
-See `public/film/README.txt` for the full brief; not restated here beyond ratio.
+Both film files are present. Like the hero images, this is **AI-generated footage**
+illustrating the process, not a recording of a specific real job. See
+`public/film/README.txt` and `docs/asset-manifest.md`.
 
-| Slot | Ratio | Notes |
+| Slot | Delivered | Notes |
 |---|---|---|
-| `/film/roomy-process.mp4` | 16:9 | The concatenated process film. |
-| `/film/roomy-process-poster.jpg` | 16:9 | A still from the same frame, shown before the film starts playing. |
+| `/film/roomy-process.mp4` | 1280×720, 16.17s, 2.8MB | Four cuts of 4.041667s, hard joins, no audio track, +faststart. |
+| `/film/roomy-process-poster.jpg` | 1280×720, 42KB | The film's own first frame, so poster and playback start identically. |
 
-The four on-screen card boundaries inside the film (`CLIP_STARTS` in
-`src/data/specs.ts`) are provisional guesses and must be corrected against the real
-encode once it exists — see the launch blockers below.
+`CLIP_STARTS` in `src/data/specs.ts` is filled in from this encode — `[0, 4.041667,
+8.083333, 12.125]` — read from the file and confirmed by two independent methods.
+**Re-read them if the film is ever re-encoded**; `src/data/specs.test.ts` pins them.
 
 ## What the client needs to supply before launch
 
@@ -157,12 +159,11 @@ approved by the client. Each is also flagged in a comment at the line it appears
   `metadataBase`, which needs the production domain below. Once the domain is
   confirmed, decide whether the generated hero image is acceptable as the social
   preview or whether that should wait for real photography.
-- **The hero fails two contrast checks now that a real image sits behind the text.**
-  Measured against the delivered `hero-master.jpg` through the navy/72% overlay: the
-  sub-line (`text-sky`, 16px) is 4.20:1 where AA needs 4.5:1, and the "See our work"
-  teal border is 2.28:1 where WCAG 1.4.11 needs 3:1. Darkening the overlay cannot fix
-  the border — teal tops out at 2.88:1 even at 88% — so that control needs a
-  different colour. Awaiting a decision; see the ledger for the measured options.
+- ~~The hero fails two contrast checks.~~ **Fixed.** Re-measured against the
+  delivered photo: the sub-line moved to `text-paper` (4.20 → 5.82, AA needs 4.5) and
+  the "See our work" border to sky (2.28 → 3.25, 1.4.11 needs 3.0). The border colour
+  changed rather than the overlay because teal cannot reach 3:1 at any overlay
+  darkness — swept to 88% it still only reaches 2.88.
 - `metadataBase` is unset until the production domain is confirmed (see the
   checklist above). Search engines and link previews cannot resolve absolute URLs
   until it is.
@@ -170,5 +171,9 @@ approved by the client. Each is also flagged in a comment at the line it appears
   validates every field, but repeated abusive submissions are a deployment-level
   concern (a platform-level rate limit or firewall rule), not something this route
   handles.
-- `CLIP_STARTS` in `src/data/specs.ts` (the four film card boundaries) are
-  provisional guesses and need correcting against the real encode once it exists.
+- **A horizontal scrollbar gutter appears under the nav on any machine with classic
+  (non-overlay) scrollbars.** `Nav.tsx`'s link row is `overflow-x-auto`; nothing
+  overflows (`scrollWidth === clientWidth`), but the browser still reserves a 15px
+  track, which shows as a white bar and pushes the header from 69px to 84px. That
+  exceeds the `scroll-padding-top: 5rem` (80px) in `globals.css`, so anchor links land
+  slightly under the fixed bar. Not yet fixed.
