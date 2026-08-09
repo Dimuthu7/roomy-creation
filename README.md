@@ -83,40 +83,33 @@ illustrating the process, not a recording of a specific real job. See
 
 ## What the client needs to supply before launch
 
-Every field below is `[TBC]` in the code today. A `[TBC]` field does not render a
-placeholder — the block it belongs to disappears entirely rather than showing
-something unconfirmed. That is deliberate: an unconfirmed opening hour or an
-invented phone number is worse than a gap on the page. Once a field is filled in
-`src/data/site.ts` or `src/data/specs.ts`, its block appears with no further code
-change.
+A `[TBC]` field does not render a placeholder — the block it belongs to disappears
+entirely rather than showing something unconfirmed. That is deliberate: an
+unconfirmed opening hour or an invented phone number is worse than a gap on the
+page. Once a field is filled in `src/data/site.ts` or `src/data/specs.ts`, its
+block appears with no further code change.
 
-**Contact and business details** (`src/data/site.ts`)
-- Production domain (`url`) — required before search engines and social previews
-  can show a proper link back to the site
-- Phone number
-- WhatsApp number — until this is set, neither the floating WhatsApp button that
-  follows the visitor down the page nor the one in the enquiry section appears at all
-- Email address
-- Street address, city, postal code
-- Districts installed in
-- Opening hours
-- Facebook, Instagram and TikTok links
-- Google Maps embed link
-- Whether a measurement visit is genuinely free and carries no obligation
-- The four headline figures: years in business, homes and apartments fitted,
-  units delivered, districts covered
+**Contact and business details** (`src/data/site.ts`) — filled in 2026-08-09,
+except:
+- Production domain (`url`) — still `[TBC]`. Required before search engines and
+  social previews can show a proper link back to the site.
+- **Two entries need the client's confirmation, not code changes:**
+  - `districts: ["Kurunegala", "Kurunegala"]` — the same value twice. The footer
+    renders this verbatim as "Kurunegala, Kurunegala." Confirm whether a second
+    district was intended.
+  - `phone: "+94 72 292 0088"` — contains spaces. The type's own doc comment
+    asks for international format with no spaces (e.g. `+94112345678`), because
+    this value flows unmodified into both the `tel:` link and the JSON-LD
+    `telephone` field search engines read.
 
-**Material specifications** (`src/data/specs.ts`)
-- Board type and thickness
-- Where moisture-resistant board is used
-- Edge banding
-- Hinge and runner, with cycle rating
-- Upholstery fabric and foam density
-- Warranty
-
-**Film card figures** (`src/data/specs.ts`)
-- The oversized figure and supporting line for each of the four film cards — three
-  of the four figures and one of the four lines are still unset
+**Material specifications and film card figures** (`src/data/specs.ts`) —
+**PLACEHOLDER DATA, not real specifications.** Filled 2026-08-09 at the client's
+request so the film and materials sections preview with content instead of empty
+sections. Every value is clearly commented `PLACEHOLDER VALUES` at its definition
+in the source. **Must be confirmed or replaced with real figures before launch** —
+board type and thickness, where moisture-resistant board is used, edge banding,
+hinge/runner cycle rating, upholstery fabric and foam density, warranty terms, and
+the oversized figure/line on each of the four film cards.
 
 **Per-photo details** (`src/data/works.ts`)
 - For each of the 24 gallery photos once supplied: materials and finish,

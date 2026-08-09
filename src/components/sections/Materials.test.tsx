@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
+import { TBC } from '@/lib/tbc'
 
 async function renderMaterials() {
   const { Materials } = await import('./Materials')
@@ -59,7 +60,16 @@ describe('Materials', () => {
     expect(container.textContent).not.toContain('[TBC]')
   })
 
+  // Forced to [TBC] explicitly rather than relying on specs.ts's ambient state, which
+  // stopped being all-TBC once placeholder material specs were entered.
   it('renders no spec list at all while every spec is unknown', async () => {
+    vi.doMock('@/data/specs', async () => {
+      const actual = await vi.importActual<typeof import('@/data/specs')>('@/data/specs')
+      return {
+        ...actual,
+        MATERIAL_SPECS: actual.MATERIAL_SPECS.map((s) => ({ ...s, value: TBC })),
+      }
+    })
     await renderMaterials()
     expect(screen.queryByRole('list')).not.toBeInTheDocument()
   })

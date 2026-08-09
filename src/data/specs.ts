@@ -26,14 +26,29 @@ export interface FilmCard {
 }
 
 /**
+ * PLACEHOLDER VALUES — requested by the client 2026-08-09 to preview the film section
+ * with content instead of cut cards, standing in until real figures are confirmed.
+ * This is a deliberate, temporary exception to the client's own rule below, which
+ * otherwise still governs every other [TBC] field in this file and in site.ts.
+ *
  * Invented specification is worse than none. If a figure stays unknown at launch,
  * DELETE that row and drop the matching clip so the film runs three cuts.
  */
 export const FILM_CARDS: FilmCard[] = [
-  { counter: '01', label: 'The measure', figure: TBC, line: 'Tolerance we work to on site.' },
-  { counter: '02', label: 'The cut', figure: TBC, line: TBC },
-  { counter: '03', label: 'The fit', figure: TBC, line: 'Hinge and runner rating.' },
-  { counter: '04', label: 'The handover', figure: TBC, line: 'Measurement to installation, on average.' },
+  { counter: '01', label: 'The measure', figure: '±2 MM', line: 'Tolerance we work to on site.' },
+  {
+    counter: '02',
+    label: 'The cut',
+    figure: '18 MM BOARD',
+    line: 'Edge banding colour-matched to every panel.',
+  },
+  { counter: '03', label: 'The fit', figure: '80,000 CYCLES', line: 'Hinge and runner rating.' },
+  {
+    counter: '04',
+    label: 'The handover',
+    figure: '3 WEEKS',
+    line: 'Measurement to installation, on average.',
+  },
 ]
 
 export interface MaterialSpec {
@@ -43,11 +58,28 @@ export interface MaterialSpec {
   value: Maybe<string>
 }
 
+/**
+ * PLACEHOLDER VALUES — see the FILM_CARDS comment above; same request, same rule,
+ * same exception. Every value below must be confirmed or replaced before launch —
+ * see README.md's launch checklist.
+ */
 export const MATERIAL_SPECS: MaterialSpec[] = [
-  { slot: 'edge', label: 'Board type and thickness', value: TBC },
-  { slot: 'samples', label: 'Where we use moisture-resistant board', value: TBC },
-  { slot: 'edge', label: 'Edge banding', value: TBC },
-  { slot: 'hinge', label: 'Hinge and runner, with cycle rating', value: TBC },
-  { slot: 'fabric', label: 'Upholstery fabric and foam density', value: TBC },
-  { slot: 'interior', label: 'Warranty', value: TBC },
+  { slot: 'edge', label: 'Board type and thickness', value: '18mm E1-grade MDF board' },
+  {
+    slot: 'samples',
+    label: 'Where we use moisture-resistant board',
+    value: 'Kitchen and bathroom units',
+  },
+  { slot: 'edge', label: 'Edge banding', value: '2mm PVC, colour-matched to the board' },
+  {
+    slot: 'hinge',
+    label: 'Hinge and runner, with cycle rating',
+    value: 'Soft-close, rated 80,000 cycles',
+  },
+  {
+    slot: 'fabric',
+    label: 'Upholstery fabric and foam density',
+    value: 'Woven polyester, 32kg/m³ foam',
+  },
+  { slot: 'interior', label: 'Warranty', value: '2 years on workmanship and hardware' },
 ]
