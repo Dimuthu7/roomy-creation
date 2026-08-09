@@ -51,7 +51,11 @@ export function Hero() {
         >
           We measure your wall, then build to it.
         </h1>
-        <p className="mt-6 max-w-xl text-sky">
+        {/* A5: text-paper, not text-sky. Measured against the delivered hero photo
+            through the navy/72% overlay, text-sky lands at 4.20:1 where AA needs 4.5;
+            text-paper reaches 5.94. The deliberate exception to D2 below — taken over
+            darkening the overlay, which would have dimmed the photograph itself. */}
+        <p className="mt-6 max-w-xl text-paper">
           Built-in wardrobes, pantry cupboards and upholstered seating, cut to the room you
           actually have.
         </p>
@@ -59,7 +63,11 @@ export function Hero() {
           <a href="#enquiry" className="bg-yellow px-7 py-4 font-display text-navy">
             Request a quotation
           </a>
-          <a href="#work" className="border border-teal px-7 py-4 font-display text-sky">
+          {/* A5: border-sky, not border-teal. Teal measures 2.28:1 against the hero
+              photo where WCAG 1.4.11 needs 3:1 for a control boundary, and darkening
+              the overlay cannot save it — swept to 88% it still only reaches 2.88.
+              Sky clears at 3.45 with the overlay left where it is. */}
+          <a href="#work" className="border border-sky px-7 py-4 font-display text-sky">
             See our work
           </a>
         </div>
