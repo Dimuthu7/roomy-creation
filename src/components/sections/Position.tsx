@@ -7,34 +7,53 @@ import { WeaveTexture } from '@/components/weave/WeaveTexture'
 import { activeScrollStep } from '@/lib/scrollProgress'
 import { useMotionLevel } from '@/hooks/useMotionLevel'
 
+interface Point {
+  main: string
+  sub?: string
+}
+
 // D8: the plan described this section only as "three short lines... what we make, who
-// we make it for, and the fit argument" with no copy supplied. Lines 1-3 are NOT
-// client-approved and are flagged for sign-off — see the Task 14 brief. Lines 4-6 were
-// added afterward as a second beat (durability, team continuity), same not-yet-approved
-// status — see docs/superpowers/specs/2026-08-09-position-scroll-reveal-design.md.
-const LINES = [
-  'We make built-in furniture for homes, apartments, hotels and offices.',
-  'Every piece is measured on site before anything is cut.',
-  'A standard-size unit leaves gaps. A fitted one does not.',
-  'Every material is chosen to last, not just to look good on day one.',
-  'The same team measures, builds and installs — start to finish.',
-  'Fit it once. It will not need fitting again.',
+// we make it for, and the fit argument" with no copy supplied. The first main+sub pair
+// and the first closing line are NOT client-approved and are flagged for sign-off —
+// see the Task 14 brief. The second main+sub pair and second closing line were added
+// afterward (durability, team continuity), same not-yet-approved status — see
+// docs/superpowers/specs/2026-08-09-position-scroll-reveal-design.md. Grouped into
+// four points — two carry a supporting sub-line, two are standalone statements — so a
+// point's main and sub load and scroll together as one unit rather than as separate
+// steps.
+const POINTS: Point[] = [
+  {
+    main: 'We make built-in furniture for homes, apartments, hotels and offices.',
+    sub: 'Every piece is measured on site before anything is cut.',
+  },
+  {
+    main: 'A standard-size unit leaves gaps. A fitted one does not.',
+  },
+  {
+    main: 'Every material is chosen to last, not just to look good on day one.',
+    sub: 'The same team measures, builds and installs — start to finish.',
+  },
+  {
+    main: 'Fit it once. It will not need fitting again.',
+  },
 ]
 
-// Big → small → big, twice over: two "beats" of opening claim / supporting detail /
-// closing contrast, each cycling through the same three styles via `i % 3` so the
-// second beat (lines 4-6) reads with the same typographic rhythm as the first (lines
-// 1-3) instead of needing new styles. The opening claim and closing contrast earn
-// display type; the supporting fact between them steps down to body copy instead of
-// shouting at the same volume as its neighbours. That step down also carries
-// text-sky rather than text-paper — on solid navy (no photo overlay to dim it, unlike
-// Hero) sky measures 7.8:1, well past the 4.5:1 AA floor, so the supporting lines
-// read quieter without reading as low-contrast. Never text-white on any line.
-const STYLES = [
-  'font-display text-2xl font-medium leading-snug tracking-tight text-paper sm:text-3xl lg:text-4xl',
-  'max-w-md font-body text-base leading-relaxed text-sky sm:text-lg',
-  'font-display text-2xl font-semibold leading-snug tracking-tight text-paper sm:text-3xl lg:text-4xl',
-]
+// Opener and closer alternate per point (point 0, 2 open; point 1, 3 close) — both
+// earn display type, since each is the only line on screen for its point and needs
+// to carry that weight alone. The sub-line, when a point has one, steps down to body
+// copy instead of shouting at the same volume as its neighbours. That step down also
+// carries text-sky rather than text-paper — on solid navy (no photo overlay to dim
+// it, unlike Hero) sky measures 7.8:1, well past the 4.5:1 AA floor, so it reads
+// quieter without reading as low-contrast. Never text-white on any line.
+const STYLE_OPENER =
+  'font-display text-2xl font-medium leading-snug tracking-tight text-paper sm:text-3xl lg:text-4xl'
+const STYLE_SUB = 'max-w-md font-body text-base leading-relaxed text-sky sm:text-lg'
+const STYLE_CLOSER =
+  'font-display text-2xl font-semibold leading-snug tracking-tight text-paper sm:text-3xl lg:text-4xl'
+
+function mainStyle(pointIndex: number): string {
+  return pointIndex % 2 === 0 ? STYLE_OPENER : STYLE_CLOSER
+}
 
 // Pinned scroll-reveal only runs at full motion — position: sticky plus a scroll
 // listener is exactly the kind of transform-heavy effect the client's reduced-motion
@@ -51,17 +70,23 @@ export function Position() {
 const STAGGER = 0.15
 
 function CompactPosition() {
+  const rows = POINTS.flatMap((point, i) => {
+    const entries = [{ key: `${i}-main`, text: point.main, className: mainStyle(i) }]
+    if (point.sub) entries.push({ key: `${i}-sub`, text: point.sub, className: STYLE_SUB })
+    return entries
+  })
+
   return (
     <section aria-label="Position" className="relative overflow-hidden bg-navy py-28">
       <WeaveTexture />
       <div className="relative z-10 mx-auto grid max-w-4xl grid-cols-[1.25rem_1fr] gap-x-4 gap-y-[var(--pos-gap)] px-6 [--pos-gap:2.5rem] sm:grid-cols-[2rem_1fr] sm:gap-x-8 sm:[--pos-gap:3rem] lg:[--pos-gap:3.5rem]">
-        {LINES.map((line, i) => {
+        {rows.map((row, i) => {
           const delay = i * STAGGER
           return (
-            <Fragment key={line}>
-              <WeaveThreadNode delay={delay} hasNext={i < LINES.length - 1} gap="var(--pos-gap)" />
+            <Fragment key={row.key}>
+              <WeaveThreadNode delay={delay} hasNext={i < rows.length - 1} gap="var(--pos-gap)" />
               <WeaveReveal from={i % 2 === 0 ? 'left' : 'right'} delay={delay}>
-                <p className={STYLES[i % 3]}>{line}</p>
+                <p className={row.className}>{row.text}</p>
               </WeaveReveal>
             </Fragment>
           )
@@ -71,9 +96,9 @@ function CompactPosition() {
   )
 }
 
-// The scroll distance (in viewport heights) spent pinned on each line before the
+// The scroll distance (in viewport heights) spent pinned on each point before the
 // next one takes over. Tunable in one place — smaller reads snappier, larger gives
-// more time per line.
+// more time per point.
 const STEP_VH = 55
 
 function PinnedPosition() {
@@ -85,7 +110,7 @@ function PinnedPosition() {
       const track = trackRef.current
       if (!track) return
       const rect = track.getBoundingClientRect()
-      setActive(activeScrollStep(rect.top, rect.height, window.innerHeight, LINES.length))
+      setActive(activeScrollStep(rect.top, rect.height, window.innerHeight, POINTS.length))
     }
     onScroll()
     window.addEventListener('scroll', onScroll)
@@ -97,25 +122,37 @@ function PinnedPosition() {
       aria-label="Position"
       ref={trackRef}
       className="relative bg-navy"
-      style={{ height: `${STEP_VH * LINES.length}vh` }}
+      style={{ height: `${STEP_VH * POINTS.length}vh` }}
     >
       <div className="sticky top-0 flex h-screen items-center overflow-hidden">
         <WeaveTexture />
         <div className="relative z-10 mx-auto grid w-full max-w-4xl px-6">
-          {LINES.map((line, i) => (
-            <motion.p
-              key={line}
-              className={`${STYLES[i % 3]} [grid-area:1/1]`}
-              initial={false}
-              animate={{
-                opacity: active === i ? 1 : 0,
-                y: active === i ? 0 : active > i ? -16 : 16,
-              }}
-              transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-            >
-              {line}
-            </motion.p>
-          ))}
+          {POINTS.map((point, i) => {
+            const isActive = active === i
+            const offscreenY = active > i ? -16 : 16
+            return (
+              <div key={point.main} className="[grid-area:1/1] space-y-3">
+                <motion.p
+                  className={mainStyle(i)}
+                  initial={false}
+                  animate={{ opacity: isActive ? 1 : 0, y: isActive ? 0 : offscreenY }}
+                  transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                >
+                  {point.main}
+                </motion.p>
+                {point.sub && (
+                  <motion.p
+                    className={STYLE_SUB}
+                    initial={false}
+                    animate={{ opacity: isActive ? 1 : 0, y: isActive ? 0 : offscreenY }}
+                    transition={{ duration: 0.4, delay: isActive ? 0.15 : 0, ease: [0.22, 1, 0.36, 1] }}
+                  >
+                    {point.sub}
+                  </motion.p>
+                )}
+              </div>
+            )
+          })}
         </div>
       </div>
     </section>

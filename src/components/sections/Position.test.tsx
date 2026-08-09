@@ -52,24 +52,28 @@ describe('Position', () => {
   })
 
   describe('at full motion (pinned scroll reveal)', () => {
-    it('shows only the first line on initial render — the rest wait for scroll', () => {
+    // Point 0 has both a main and a sub line — they must load together on the very
+    // first render, not as two separate scroll steps. Points 1-3 wait for scroll.
+    it('shows only the first point (main + its sub) on initial render — the rest wait for scroll', () => {
       const { container } = render(<Position />)
       const paragraphs = [...container.querySelectorAll('p')] as HTMLElement[]
-      expect(paragraphs[0].style.opacity).toBe('1')
-      for (const p of paragraphs.slice(1)) {
+      expect(paragraphs).toHaveLength(6)
+      expect(paragraphs[0].style.opacity).toBe('1') // point 0 main
+      expect(paragraphs[1].style.opacity).toBe('1') // point 0 sub
+      for (const p of paragraphs.slice(2)) {
         expect(p.style.opacity).toBe('0')
       }
     })
 
-    it('pins the section for a scroll distance proportional to the line count', () => {
+    it('pins the section for a scroll distance proportional to the point count', () => {
       const { container } = render(<Position />)
       const section = container.querySelector('section') as HTMLElement
-      // STEP_VH (55) * 6 lines
-      expect(section.style.height).toBe('330vh')
+      // STEP_VH (55) * 4 points
+      expect(section.style.height).toBe('220vh')
       expect(section.querySelector('.sticky')).not.toBeNull()
     })
 
-    it('advances which line is visible as the section scrolls past', async () => {
+    it('advances which point is visible as the section scrolls past', async () => {
       const { container } = render(<Position />)
       const section = container.querySelector('section') as HTMLElement
       section.getBoundingClientRect = () =>
