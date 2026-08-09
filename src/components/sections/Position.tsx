@@ -35,19 +35,29 @@ const STYLES = [
   'font-display text-2xl font-semibold leading-snug tracking-tight text-paper sm:text-3xl lg:text-4xl',
 ]
 
+// Section stays a single compact page — no full-viewport gaps between lines. What
+// makes the reveal read as sequential instead of "all six at once" is the stagger
+// below, not scroll distance: each line's WeaveReveal/WeaveThreadNode still only
+// starts animating once the section itself scrolls into view, and STAGGER staggers
+// their entrances into a short cascade from there.
+const STAGGER = 0.15
+
 export function Position() {
   return (
     <section aria-label="Position" className="relative overflow-hidden bg-navy py-28">
       <WeaveTexture />
-      <div className="relative z-10 mx-auto grid max-w-4xl grid-cols-[1.25rem_1fr] gap-x-4 gap-y-[var(--pos-gap)] px-6 [--pos-gap:85vh] sm:grid-cols-[2rem_1fr] sm:gap-x-8">
-        {LINES.map((line, i) => (
-          <Fragment key={line}>
-            <WeaveThreadNode delay={0} hasNext={i < LINES.length - 1} gap="var(--pos-gap)" />
-            <WeaveReveal from={i % 2 === 0 ? 'left' : 'right'} delay={0}>
-              <p className={STYLES[i % 3]}>{line}</p>
-            </WeaveReveal>
-          </Fragment>
-        ))}
+      <div className="relative z-10 mx-auto grid max-w-4xl grid-cols-[1.25rem_1fr] gap-x-4 gap-y-[var(--pos-gap)] px-6 [--pos-gap:2.5rem] sm:grid-cols-[2rem_1fr] sm:gap-x-8 sm:[--pos-gap:3rem] lg:[--pos-gap:3.5rem]">
+        {LINES.map((line, i) => {
+          const delay = i * STAGGER
+          return (
+            <Fragment key={line}>
+              <WeaveThreadNode delay={delay} hasNext={i < LINES.length - 1} gap="var(--pos-gap)" />
+              <WeaveReveal from={i % 2 === 0 ? 'left' : 'right'} delay={delay}>
+                <p className={STYLES[i % 3]}>{line}</p>
+              </WeaveReveal>
+            </Fragment>
+          )
+        })}
       </div>
     </section>
   )
