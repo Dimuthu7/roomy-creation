@@ -48,8 +48,16 @@ Assembled with `-c copy` (no re-encode), then compressed once at CRF 24 with key
 forced at the cut points: **8.6MB to 2.8MB**, measured at SSIM 0.987 / PSNR 43.8dB
 average, i.e. visually indistinguishable. The poster is the film's own first frame.
 
-Total spend including two discarded cutout attempts: **51 credits** of the 130
-available (4 images + 4 start frames + 4 clips + 3 background removals).
+Total spend including two discarded cutout attempts: **59 credits** of the 130
+available, leaving 71.
+
+| Item | Qty | Each | Subtotal |
+|---|---|---|---|
+| Stills (hero + 3 sofa attempts) | 4 | 2 | 8 |
+| Background removals | 3 | 1 | 3 |
+| Film start frames | 4 | 2 | 8 |
+| Film clips (Mini, 4s, 720p) | 4 | 10 | 40 |
+| | | | **59** |
 
 ### hero-master.jpg
 
