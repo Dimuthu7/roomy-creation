@@ -66,14 +66,27 @@ export function Lightbox({
     dialogRef.current?.focus()
   }, [mounted])
 
+  // `html`, not `body`, is the browser's actual root scrolling box in standards
+  // mode — locking only `body.style.overflow` (the original bug) leaves `html`
+  // free to scroll, which is what let the page behind the modal keep moving.
+  // Lenis compounds this: it drives the lock by calling the real
+  // `window.scrollTo`, so once both roots are unscrollable its calls become
+  // no-ops too — no need to separately pause the Lenis instance.
   useEffect(() => {
     if (!mounted) return
-    const previous = document.body.style.overflow
+    const previousHtml = document.documentElement.style.overflow
+    const previousBody = document.body.style.overflow
+    document.documentElement.style.overflow = 'hidden'
     document.body.style.overflow = 'hidden'
     return () => {
-      document.body.style.overflow = previous
+      document.documentElement.style.overflow = previousHtml
+      document.body.style.overflow = previousBody
     }
   }, [mounted])
+
+  const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) onClose()
+  }
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (e.key === 'Escape') {
@@ -126,6 +139,15 @@ export function Lightbox({
       aria-labelledby="lightbox-title"
       tabIndex={-1}
       onKeyDown={handleKeyDown}
+      onClick={handleBackdropClick}
+      // Lenis (SmoothScroll.tsx) listens for wheel/touch on `window` and calls
+      // preventDefault to drive its own virtual scroll — without this attribute it
+      // intercepts scroll gestures made over the modal too, before the browser ever
+      // gets to natively scroll the content div below. `data-lenis-prevent` is
+      // Lenis's own documented escape hatch: it makes Lenis skip preventDefault for
+      // any event whose path includes this element, handing the gesture back to
+      // native scrolling — which the `overflow-y-auto` content div then honours.
+      data-lenis-prevent
       className="fixed inset-0 z-50 flex items-center justify-center bg-navy/95 p-4"
     >
       <div className="flex max-h-full w-full max-w-4xl flex-col gap-6 overflow-y-auto">

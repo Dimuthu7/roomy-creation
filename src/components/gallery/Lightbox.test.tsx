@@ -133,12 +133,28 @@ describe('Lightbox', () => {
     expect(document.activeElement).toBe(trigger)
   })
 
-  it('locks background scroll while open and restores the previous overflow on unmount', () => {
+  // `html`, not `body`, is the browser's actual root scrolling box in standards mode.
+  // The original lock only touched `body.style.overflow`, which left `html` free to
+  // scroll — that gap is what let the page behind the modal keep moving.
+  it('locks background scroll on both html and body while open, and restores the previous overflow of each on unmount', () => {
+    document.documentElement.style.overflow = 'auto'
     document.body.style.overflow = 'scroll'
     const { unmount } = setup()
+    expect(document.documentElement.style.overflow).toBe('hidden')
     expect(document.body.style.overflow).toBe('hidden')
     unmount()
+    expect(document.documentElement.style.overflow).toBe('auto')
     expect(document.body.style.overflow).toBe('scroll')
+  })
+
+  // SmoothScroll.tsx's Lenis instance listens for wheel/touch on `window` and calls
+  // preventDefault to drive its own scrolling — without this attribute it would
+  // intercept scroll gestures made over the modal's own content before the browser
+  // ever got to scroll it natively. `data-lenis-prevent` is Lenis's documented escape
+  // hatch for exactly this.
+  it('marks the dialog so Lenis defers to native scrolling inside it', () => {
+    setup()
+    expect(screen.getByRole('dialog')).toHaveAttribute('data-lenis-prevent')
   })
 
   it('the Close button calls onClose', async () => {
@@ -146,6 +162,25 @@ describe('Lightbox', () => {
     const { onClose } = setup()
     await user.click(screen.getByRole('button', { name: 'Close' }))
     expect(onClose).toHaveBeenCalled()
+  })
+
+  // Previously the overlay had no onClick at all, so the only way to close was the
+  // explicit Close button or Escape. Checking e.target === e.currentTarget (rather
+  // than stopping propagation on the content div) means a click that starts and ends
+  // on the backdrop itself closes, while a click on any descendant — which bubbles up
+  // with a different e.target — does not.
+  it('closes when the backdrop outside the dialog content is clicked', async () => {
+    const user = userEvent.setup()
+    const { onClose } = setup()
+    await user.click(screen.getByRole('dialog'))
+    expect(onClose).toHaveBeenCalled()
+  })
+
+  it('does not close when the dialog content itself is clicked', async () => {
+    const user = userEvent.setup()
+    const { onClose } = setup()
+    await user.click(screen.getByRole('heading', { name: WORKS[0].title }))
+    expect(onClose).not.toHaveBeenCalled()
   })
 
   it('the Previous and Next buttons call onIndexChange with the wrapped index', async () => {

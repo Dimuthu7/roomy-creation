@@ -2,9 +2,8 @@ import { describe, it, expect, vi } from 'vitest'
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { WORKS } from '@/data/works'
-import { rowSpan } from '@/lib/galleryLayout'
 import { setPrefersReducedMotion } from '@/test/browserStubs'
-import { GalleryGrid, GUTTER_ROWS } from './GalleryGrid'
+import { GalleryGrid } from './GalleryGrid'
 
 function items(): HTMLElement[] {
   return Array.from(
@@ -79,27 +78,24 @@ describe('GalleryGrid', () => {
     expect(within(grid).getAllByRole('button')).toHaveLength(24)
   })
 
-  // The two below are the point of Task 5. Without them the whole maths module could be
-  // unwired — or wired to a recomputed guess — and every other test here still passes.
-  it('sizes every card from the shared row-span maths', () => {
+  // Every cell renders at the same fixed aspect ratio and the grid uses a plain
+  // gap, rather than the previous per-work row-span plus sideways translate
+  // "brick" interlock — the client saw that as messy (staggered column tops,
+  // visibly different card sizes) and asked for a uniform, evenly aligned grid.
+  it('sizes every card to the same fixed aspect ratio, with no sideways offset', () => {
     render(<GalleryGrid onOpen={vi.fn()} />)
     const rendered = items()
     expect(rendered).toHaveLength(24)
-    // Pinned concretely as well as derived: 3:2 over a 60-unit column is 40 rows, plus
-    // the 2-row gutter. A silent change to either the maths or the gutter fails here.
-    expect(rendered[0].style.gridRowEnd).toBe('span 42')
-    rendered.forEach((el, i) => {
-      expect(el.style.gridRowEnd).toBe(`span ${rowSpan(WORKS[i].ratio) + GUTTER_ROWS}`)
-    })
+    for (const el of rendered) {
+      expect(el.className).toContain('aspect-[4/3]')
+      expect(el.className).not.toMatch(/translate-x/)
+    }
   })
 
-  it('applies the interlock offset from offsetFor', () => {
+  it('spaces cards with a real grid gap, not a baked-in per-cell gutter', () => {
     render(<GalleryGrid onOpen={vi.fn()} />)
-    const rendered = items()
-    expect(rendered[0].className).not.toMatch(/translate-x/)
-    expect(rendered[1].className).toContain('lg:-translate-x-6')
-    expect(rendered[2].className).not.toMatch(/translate-x/)
-    expect(rendered[3].className).toContain('lg:translate-x-6')
+    const grid = screen.getByTestId('gallery-grid')
+    expect(grid.className).toContain('gap-6')
   })
 
   // jsdom has no CSS engine, so it cannot evaluate `@media (prefers-reduced-motion)` or the
@@ -154,5 +150,20 @@ describe('GalleryGrid', () => {
     for (const item of items()) {
       expect(item.style.opacity).not.toBe('0')
     }
+  })
+
+  // The client wants the filter chips reachable while scrolling the grid, rather
+  // than having to scroll back to the top to change category. `top-[65px]` is the
+  // nav's own measured height, so the filter row sits flush under it with no gap
+  // (rather than the 5rem anchor-scroll clearance globals.css uses elsewhere, which
+  // would leave one). `bg-navy` is required — without an opaque background the
+  // grid's own images would show through, and scroll underneath, the pinned bar.
+  it('pins the filter row flush under the fixed nav while scrolling the grid', () => {
+    render(<GalleryGrid onOpen={vi.fn()} />)
+    const filterRow = screen.getByRole('group', { name: 'Filter work by category' })
+    const stickyWrapper = filterRow.parentElement
+    expect(stickyWrapper?.className).toContain('sticky')
+    expect(stickyWrapper?.className).toContain('top-[65px]')
+    expect(stickyWrapper?.className).toContain('bg-navy')
   })
 })

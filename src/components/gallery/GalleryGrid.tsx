@@ -3,24 +3,18 @@ import { useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { WORKS } from '@/data/works'
 import type { CategoryId } from '@/data/categories'
-import { filterWorks, rowSpan, offsetFor, isEager } from '@/lib/galleryLayout'
+import { filterWorks, isEager } from '@/lib/galleryLayout'
 import { useMotionLevel } from '@/hooks/useMotionLevel'
 import { FilterRow } from './FilterRow'
 import { GalleryCard } from './GalleryCard'
 
-/**
- * Rows of vertical gutter baked into every cell. Row-gap has to stay 0 — with
- * `gridAutoRows: 8px`, a row gap would be inserted between all N spanned rows and
- * inflate each card to `24N - 16` px, wrecking every aspect ratio. The gutter is
- * part of the cell instead, and the card insets itself by the same amount.
- */
-export const GUTTER_ROWS = 2
-
-const OFFSET_CLASS = {
-  none: '',
-  left: 'lg:-translate-x-6',
-  right: 'lg:translate-x-6',
-} as const
+// Every cell renders at the same fixed aspect ratio regardless of the source
+// photo's own ratio — GalleryCard crops to it with `object-cover`. A prior
+// version varied each cell's height by the work's real aspect ratio and offset
+// alternating columns sideways to fake a "brick" interlock; the client found the
+// result — staggered column tops, cards of visibly different sizes — read as
+// disorganised rather than deliberate, and asked for a plain aligned grid instead.
+const CARD_ASPECT = 'aspect-[4/3]'
 
 export function GalleryGrid({ onOpen }: { onOpen: (index: number) => void }) {
   const [active, setActive] = useState<CategoryId>('all')
@@ -28,14 +22,20 @@ export function GalleryGrid({ onOpen }: { onOpen: (index: number) => void }) {
   const level = useMotionLevel()
 
   const visible = filterWorks(WORKS, active)
-  // The interlock offsets are `lg:` only, and `lg` is the 3-column breakpoint, so the
-  // phase is computed for 3 columns everywhere except mobile, where it is suppressed.
-  const columns = level === 'mobile' ? 1 : 3
   const stagger = level === 'reduced' ? 0 : 0.025
 
   return (
     <div>
-      <FilterRow active={active} onChange={setActive} />
+      {/* Sticky within this outer div's bounds: pinned flush under the fixed nav
+          while the grid below scrolls past, then released the moment this div's own
+          bottom — the end of the grid — reaches that point. `top-[65px]` is the
+          nav's own measured height (globals.css's `scroll-padding-top` comment: py-4
+          + the h-8 logo + the 1px hairline) — flush, not the 5rem anchor-scroll
+          clearance that leaves a gap here. bg-navy stops the grid's images showing
+          through while pinned. */}
+      <div className="sticky top-[65px] z-40 bg-navy py-3">
+        <FilterRow active={active} onChange={setActive} />
+      </div>
 
       <motion.div
         layout={level === 'full'}
@@ -43,14 +43,13 @@ export function GalleryGrid({ onOpen }: { onOpen: (index: number) => void }) {
         data-hovered={hovered}
         onPointerEnter={() => setHovered(true)}
         onPointerLeave={() => setHovered(false)}
-        className="group/grid mt-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
-        style={{ gridAutoRows: '8px', columnGap: '1rem', rowGap: 0 }}
+        className="group/grid mt-10 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3"
       >
         <AnimatePresence mode="popLayout">
           {visible.map((work, i) => (
-            // This motion element IS the grid item: it carries the row span and the
-            // interlock offset. Framer Motion cannot measure a `display: contents`
-            // element, so wrapping the card in one would silently kill layout animation.
+            // This motion element IS the grid item. Framer Motion cannot measure a
+            // `display: contents` element, so wrapping the card in one would silently
+            // kill layout animation.
             <motion.div
               key={work.id}
               data-work-id={work.id}
@@ -69,8 +68,7 @@ export function GalleryGrid({ onOpen }: { onOpen: (index: number) => void }) {
               animate={level === 'reduced' ? undefined : { opacity: 1, x: 0 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.3, delay: i * stagger, ease: [0.22, 1.2, 0.36, 1] }}
-              style={{ gridRowEnd: `span ${rowSpan(work.ratio) + GUTTER_ROWS}` }}
-              className={`relative ${OFFSET_CLASS[offsetFor(i, columns)]}`}
+              className={`relative ${CARD_ASPECT}`}
             >
               <GalleryCard
                 work={work}

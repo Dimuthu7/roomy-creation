@@ -33,9 +33,7 @@ export function GalleryCard({
       type="button"
       onClick={() => onOpen(index)}
       data-cursor-label="View"
-      // `bottom-4` is the vertical gutter: the cell is 2 rows (16px) taller than the
-      // image needs, so the card's own height is exactly rowSpan(ratio) * 8.
-      className="group absolute inset-x-0 top-0 bottom-4 block overflow-hidden text-left
+      className="group absolute inset-0 block overflow-hidden text-left
                  transition-opacity duration-300
                  group-data-[hovered=true]/grid:opacity-40 hover:!opacity-100"
     >

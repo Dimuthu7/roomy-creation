@@ -18,7 +18,7 @@ export function Work() {
             flagged for sign-off, brief §8. */}
         <h2
           id="work-heading"
-          className="font-display text-3xl font-semibold tracking-tight text-paper sm:text-4xl"
+          className="mb-5 font-display text-3xl font-semibold tracking-tight text-paper sm:text-4xl"
         >
           Our work
         </h2>

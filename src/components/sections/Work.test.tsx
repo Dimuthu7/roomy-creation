@@ -38,6 +38,14 @@ describe('Work', () => {
     expect(screen.getByRole('region', { name: 'Our work' })).toBeInTheDocument()
   })
 
+  // The heading previously sat flush against the filter row below it, with only
+  // line-height for separation. `mb-5` (1.25rem = 20px) is the client-requested gap.
+  it('keeps a small margin below the heading, above the filter row', () => {
+    setup()
+    const heading = screen.getByRole('heading', { name: 'Our work' })
+    expect(heading.className).toContain('mb-5')
+  })
+
   it('renders the gallery grid with all 24 works', () => {
     setup()
     expect(screen.getAllByRole('img')).toHaveLength(24)
