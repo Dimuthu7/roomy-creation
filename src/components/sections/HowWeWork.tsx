@@ -129,8 +129,10 @@ const CARD_WIDTH = 420
 // drives it entirely by clicking, tapping the dots, or dragging the open page.
 function BookSteps() {
   const [index, setIndex] = useState(0)
+  const [hasInteracted, setHasInteracted] = useState(false)
 
   function goTo(next: number) {
+    setHasInteracted(true)
     setIndex(Math.max(0, Math.min(STEPS.length - 1, next)))
   }
 
@@ -181,12 +183,15 @@ function BookSteps() {
                 drag={isActive ? 'x' : false}
                 dragConstraints={{ left: 0, right: 0 }}
                 dragElastic={0.15}
+                onDragStart={() => setHasInteracted(true)}
                 onDragEnd={(_, info) => {
                   if (info.offset.x < -60) goTo(index + 1)
                   else if (info.offset.x > 60) goTo(index - 1)
                 }}
               >
-                <StepBody step={step} heaviest={heaviest} />
+                <div className={i === 0 ? 'how-nudge' : undefined}>
+                  <StepBody step={step} heaviest={heaviest} />
+                </div>
               </motion.li>
             )
           })}
@@ -232,6 +237,16 @@ function BookSteps() {
           <ChevronRightIcon className="h-4 w-4" />
         </button>
       </div>
+
+      <p
+        aria-hidden="true"
+        className={
+          'u-mono mt-4 text-center text-navy transition-opacity duration-500' +
+          (hasInteracted ? ' opacity-0' : ' opacity-100')
+        }
+      >
+        swipe, drag, or click to continue &rarr;
+      </p>
     </div>
   )
 }
