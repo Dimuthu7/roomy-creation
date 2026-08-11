@@ -1,7 +1,8 @@
 'use client'
 import { motion, useMotionValue } from 'framer-motion'
-import { useEffect } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { driftX } from '@/lib/drift'
+import { activeScrollStep } from '@/lib/scrollProgress'
 import { useMotionLevel } from '@/hooks/useMotionLevel'
 import { WeaveReveal } from '@/components/weave/WeaveReveal'
 import { HOW_WE_WORK_ICONS } from './HowWeWorkIcons'
@@ -15,7 +16,9 @@ interface Step {
 
 // Step index 1, Site measurement, is deliberately the heaviest of the five: larger
 // display type and a filled yellow block, because it is what separates fitted
-// furniture from furniture bought off a shelf.
+// furniture from furniture bought off a shelf. In the pinned full-motion variant
+// that treatment only applies once the step is active; the compact fallback below
+// applies it permanently, since nothing else there conveys emphasis.
 //
 // Description copy below is the implementer's draft, not client-approved — flagged
 // for sign-off the same way Position's statement lines are (see
@@ -54,6 +57,7 @@ const STEPS: Step[] = [
 ]
 
 export function HowWeWork() {
+  const level = useMotionLevel()
   return (
     <section
       id="how"
@@ -65,39 +69,139 @@ export function HowWeWork() {
         <h2 id="how-heading" className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">
           How we work
         </h2>
-        <ol className="mt-10 grid gap-6 md:grid-cols-5">
-          {STEPS.map((step, i) => {
-            const heaviest = i === 1
-            const Icon = HOW_WE_WORK_ICONS[step.icon]
-            return (
-              // The reveal sits INSIDE the <li>, not around it: WeaveReveal renders a
-              // motion.div, and a <div> between <ol> and <li> is invalid and costs the
-              // list its semantics — a screen reader stops announcing "list, 5 items".
-              <li
-                key={step.number}
-                data-testid={`how-step-${i}`}
-                className={heaviest ? 'bg-yellow' : 'border border-navy/20'}
-              >
-                <WeaveReveal from={i % 2 === 0 ? 'left' : 'right'} delay={i * 0.05} className="p-6">
-                  <Icon className={heaviest ? 'h-7 w-7 text-navy' : 'h-6 w-6 text-navy'} />
-                  <span className="u-mono mt-3 block text-navy">{step.number}</span>
-                  <p
-                    className={
-                      heaviest
-                        ? 'mt-2 font-display text-3xl tracking-tight text-navy'
-                        : 'mt-2 font-display text-xl tracking-tight text-navy'
-                    }
-                  >
-                    {step.title}
-                  </p>
-                  <p className="mt-3 font-body text-sm leading-relaxed text-navy">{step.description}</p>
-                </WeaveReveal>
-              </li>
-            )
-          })}
-        </ol>
+        {level === 'full' ? <PinnedSteps /> : <CompactSteps />}
       </div>
     </section>
+  )
+}
+
+function CompactSteps() {
+  return (
+    <ol className="mt-10 grid gap-6 md:grid-cols-5">
+      {STEPS.map((step, i) => {
+        const heaviest = i === 1
+        const Icon = HOW_WE_WORK_ICONS[step.icon]
+        return (
+          // The reveal sits INSIDE the <li>, not around it: WeaveReveal renders a
+          // motion.div, and a <div> between <ol> and <li> is invalid and costs the
+          // list its semantics — a screen reader stops announcing "list, 5 items".
+          <li
+            key={step.number}
+            data-testid={`how-step-${i}`}
+            className={heaviest ? 'bg-yellow' : 'border border-navy/20'}
+          >
+            <WeaveReveal from={i % 2 === 0 ? 'left' : 'right'} delay={i * 0.05} className="p-6">
+              <Icon className={heaviest ? 'h-7 w-7 text-navy' : 'h-6 w-6 text-navy'} />
+              <span className="u-mono mt-3 block text-navy">{step.number}</span>
+              <p
+                className={
+                  heaviest
+                    ? 'mt-2 font-display text-3xl tracking-tight text-navy'
+                    : 'mt-2 font-display text-xl tracking-tight text-navy'
+                }
+              >
+                {step.title}
+              </p>
+              <p className="mt-3 font-body text-sm leading-relaxed text-navy">{step.description}</p>
+            </WeaveReveal>
+          </li>
+        )
+      })}
+    </ol>
+  )
+}
+
+// The scroll distance (in viewport heights) spent pinned on each step before the
+// next one takes over. Shorter than Position's 55vh per point — each step here is
+// lighter content (icon + title + one sentence) than Position's fuller prose.
+const STEP_VH = 45
+// Card width and the gap between cards, in px. Kept as plain numbers (not Tailwind
+// arbitrary values alone) because the horizontal scroll offset below must be
+// computed from the same figures: CARD_SPACING is what one active-index step moves
+// the track by.
+const CARD_WIDTH = 320
+const CARD_GAP = 24
+const CARD_SPACING = CARD_WIDTH + CARD_GAP
+
+// Pinned scroll-reveal only runs at full motion — position: sticky plus a scroll
+// listener is exactly the kind of transform-heavy effect the client's reduced-motion
+// rule disables outright, and pinned/scroll-jacked sections are also the pattern most
+// prone to going janky on small touch viewports. Reduced motion and mobile both get
+// CompactSteps instead: every step laid out normally, still scroll-revealed via
+// WeaveReveal, just not scroll-jacked.
+function PinnedSteps() {
+  const trackRef = useRef<HTMLDivElement>(null)
+  const [active, setActive] = useState(0)
+
+  useEffect(() => {
+    function onScroll() {
+      const track = trackRef.current
+      if (!track) return
+      const rect = track.getBoundingClientRect()
+      setActive(activeScrollStep(rect.top, rect.height, window.innerHeight, STEPS.length))
+    }
+    onScroll()
+    window.addEventListener('scroll', onScroll)
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
+  return (
+    <div
+      ref={trackRef}
+      data-testid="how-track"
+      data-active-index={active}
+      className="relative mt-10"
+      style={{ height: `${STEP_VH * STEPS.length}vh` }}
+    >
+      <div className="sticky top-0 flex h-screen flex-col items-center justify-center overflow-hidden">
+        <motion.ol
+          className="flex"
+          style={{ gap: `${CARD_GAP}px` }}
+          animate={{ x: -active * CARD_SPACING }}
+          transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+        >
+          {STEPS.map((step, i) => {
+            const isActive = active === i
+            const heaviest = i === 1 && isActive
+            const Icon = HOW_WE_WORK_ICONS[step.icon]
+            return (
+              <motion.li
+                key={step.number}
+                data-testid={`how-step-${i}`}
+                className={heaviest ? 'bg-yellow p-6' : 'border border-navy/20 p-6'}
+                style={{ width: `${CARD_WIDTH}px` }}
+                animate={{ opacity: isActive ? 1 : 0.4, scale: isActive ? 1 : 0.92 }}
+                transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+              >
+                <Icon className={heaviest ? 'h-7 w-7 text-navy' : 'h-6 w-6 text-navy'} />
+                <span className="u-mono mt-3 block text-navy">{step.number}</span>
+                <p
+                  className={
+                    heaviest
+                      ? 'mt-2 font-display text-3xl tracking-tight text-navy'
+                      : 'mt-2 font-display text-xl tracking-tight text-navy'
+                  }
+                >
+                  {step.title}
+                </p>
+                <p className="mt-3 font-body text-sm leading-relaxed text-navy">{step.description}</p>
+              </motion.li>
+            )
+          })}
+        </motion.ol>
+        <div className="mt-6 flex gap-2" aria-hidden="true">
+          {STEPS.map((step, i) => (
+            <span
+              key={step.number}
+              data-testid={`how-dot-${i}`}
+              className={
+                active === i ? 'h-1.5 w-6 rounded-full bg-yellow' : 'h-1.5 w-6 rounded-full bg-navy/20'
+              }
+            />
+          ))}
+        </div>
+      </div>
+    </div>
   )
 }
 
