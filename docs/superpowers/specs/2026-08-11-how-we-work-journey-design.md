@@ -1,7 +1,7 @@
 # How we work: horizontal pinned journey
 
 **Date:** 2026-08-11
-**Status:** approved by user, pending implementation plan
+**Status:** implemented, then superseded 2026-08-11 — see [Addendum](#addendum-2026-08-11-scroll-jacking-replaced-with-a-click-drag-book) below. Kept as the historical record of the original design; the current behavior is the addendum.
 
 ## Problem
 
@@ -148,3 +148,42 @@ and `CompactPosition`):
 - No new icon library dependency.
 - No change to the `src/lib/tbc.ts` helper itself (only this section's use of
   it is removed).
+
+## Addendum (2026-08-11): scroll-jacking replaced with a click/drag book
+
+Shipped as designed above, then changed same-day on direct user feedback
+after reviewing it live: the pinned/scroll-jacked track left a large empty
+gap between the heading and the cards (the sticky wrapper reserved a full
+viewport height to center itself in), and the decorative `DriftingModule`
+box read as a stray UI element rather than a flourish. The user also wanted
+the cards to work like pages in a book — turned by the visitor, not by the
+page scroll.
+
+What changed in `src/components/sections/HowWeWork.tsx`:
+
+- `PinnedSteps` (scroll listener + `activeScrollStep` + horizontal `x`
+  track) is replaced by `BookSteps`: all 5 steps stay mounted, absolutely
+  stacked in one fixed-size frame, with only the active one exposed to
+  sighted/assistive-tech users (`aria-hidden` on the rest — the standard
+  accessible-carousel pattern). The active page is `0deg`; the others sit
+  rotated `±78deg` on the Y axis and invisible (`opacity: 0`), giving a
+  page-turn effect when the active index changes.
+- Navigation is entirely visitor-driven: next/prev buttons, clickable dots
+  (each with a descriptive `aria-label`), left/right arrow keys on the
+  focused book, or a drag/swipe on the open page (`drag="x"` with a 60px
+  offset threshold). No `scroll` event listener, no `activeScrollStep` call,
+  no pinned/`sticky` track.
+- The heavy yellow/large-type treatment is no longer hardcoded to "Site
+  measurement" (index 1) in the full-motion variant — it now follows
+  whichever page is currently open, on further user feedback that the
+  emphasis should track the active card generically. The compact fallback
+  grid (`CompactSteps`, reduced motion / mobile) is unchanged: it still
+  gives "Site measurement" the treatment permanently, since nothing there
+  has a concept of an "active" card.
+- `DriftingModule` and its `src/lib/drift.ts` helper are deleted, not just
+  hidden — nothing else referenced `driftX`.
+
+Everything under "Content model" above (the `Step` interface, the 5
+descriptions, the icon set) is unchanged. `useMotionLevel() !== 'full'`
+still renders `CompactSteps`, unchanged. The "Out of scope" list above still
+holds, except that `DriftingModule` is now gone rather than untouched.
