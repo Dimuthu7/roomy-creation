@@ -2,26 +2,55 @@
 import { motion, useMotionValue } from 'framer-motion'
 import { useEffect } from 'react'
 import { driftX } from '@/lib/drift'
-import { isTBC, TBC, type Maybe } from '@/lib/tbc'
 import { useMotionLevel } from '@/hooks/useMotionLevel'
 import { WeaveReveal } from '@/components/weave/WeaveReveal'
+import { HOW_WE_WORK_ICONS } from './HowWeWorkIcons'
 
 interface Step {
   number: string
   title: string
-  /** No lead time is confirmed yet — every step renders an em dash until it is. */
-  leadTime: Maybe<string>
+  description: string
+  icon: keyof typeof HOW_WE_WORK_ICONS
 }
 
 // Step index 1, Site measurement, is deliberately the heaviest of the five: larger
 // display type and a filled yellow block, because it is what separates fitted
 // furniture from furniture bought off a shelf.
+//
+// Description copy below is the implementer's draft, not client-approved — flagged
+// for sign-off the same way Position's statement lines are (see
+// docs/superpowers/specs/2026-08-11-how-we-work-journey-design.md).
 const STEPS: Step[] = [
-  { number: '01', title: 'Enquiry', leadTime: TBC },
-  { number: '02', title: 'Site measurement', leadTime: TBC },
-  { number: '03', title: 'Drawings, materials and quotation', leadTime: TBC },
-  { number: '04', title: 'Manufacture', leadTime: TBC },
-  { number: '05', title: 'Installation and handover', leadTime: TBC },
+  {
+    number: '01',
+    title: 'Enquiry',
+    description: 'Tell us what you need and we start the conversation.',
+    icon: 'enquiry',
+  },
+  {
+    number: '02',
+    title: 'Site measurement',
+    description: 'We visit your site and take precise measurements before anything is drawn.',
+    icon: 'measurement',
+  },
+  {
+    number: '03',
+    title: 'Drawings, materials and quotation',
+    description: 'Measurements become drawings, material choices and a firm quote.',
+    icon: 'drawings',
+  },
+  {
+    number: '04',
+    title: 'Manufacture',
+    description: 'Your piece is built to spec in our workshop.',
+    icon: 'manufacture',
+  },
+  {
+    number: '05',
+    title: 'Installation and handover',
+    description: 'We fit it on site and hand it over, ready to use.',
+    icon: 'installation',
+  },
 ]
 
 export function HowWeWork() {
@@ -33,15 +62,13 @@ export function HowWeWork() {
     >
       <DriftingModule />
       <div className="relative mx-auto max-w-6xl px-6">
-        {/* F2: a structural label, not a marketing claim — flagged for sign-off,
-            brief §8. Without it the process argument was unreachable by heading
-            navigation. */}
         <h2 id="how-heading" className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">
           How we work
         </h2>
         <ol className="mt-10 grid gap-6 md:grid-cols-5">
           {STEPS.map((step, i) => {
             const heaviest = i === 1
+            const Icon = HOW_WE_WORK_ICONS[step.icon]
             return (
               // The reveal sits INSIDE the <li>, not around it: WeaveReveal renders a
               // motion.div, and a <div> between <ol> and <li> is invalid and costs the
@@ -52,22 +79,18 @@ export function HowWeWork() {
                 className={heaviest ? 'bg-yellow' : 'border border-navy/20'}
               >
                 <WeaveReveal from={i % 2 === 0 ? 'left' : 'right'} delay={i * 0.05} className="p-6">
-                  {/* Full navy, never an alpha variant. `.u-mono` is 12px, and navy at
-                      60% measures 3.48:1 on the yellow block and 3.87:1 on paper —
-                      both under the 4.5:1 AA floor for text that size. */}
-                  <span className="u-mono text-navy">{step.number}</span>
+                  <Icon className={heaviest ? 'h-7 w-7 text-navy' : 'h-6 w-6 text-navy'} />
+                  <span className="u-mono mt-3 block text-navy">{step.number}</span>
                   <p
                     className={
                       heaviest
-                        ? 'mt-3 font-display text-3xl tracking-tight text-navy'
-                        : 'mt-3 font-display text-xl tracking-tight text-navy'
+                        ? 'mt-2 font-display text-3xl tracking-tight text-navy'
+                        : 'mt-2 font-display text-xl tracking-tight text-navy'
                     }
                   >
                     {step.title}
                   </p>
-                  <p className="u-mono mt-4 text-navy">
-                    {isTBC(step.leadTime) ? '—' : step.leadTime}
-                  </p>
+                  <p className="mt-3 font-body text-sm leading-relaxed text-navy">{step.description}</p>
                 </WeaveReveal>
               </li>
             )

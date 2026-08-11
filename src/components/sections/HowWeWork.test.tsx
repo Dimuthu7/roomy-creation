@@ -3,7 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { setPrefersReducedMotion } from '@/test/browserStubs'
 import { HowWeWork } from './HowWeWork'
 
-const STEPS = [
+const TITLES = [
   'Enquiry',
   'Site measurement',
   'Drawings, materials and quotation',
@@ -11,20 +11,20 @@ const STEPS = [
   'Installation and handover',
 ]
 
+const DESCRIPTIONS = [
+  'Tell us what you need and we start the conversation.',
+  'We visit your site and take precise measurements before anything is drawn.',
+  'Measurements become drawings, material choices and a firm quote.',
+  'Your piece is built to spec in our workshop.',
+  'We fit it on site and hand it over, ready to use.',
+]
+
 describe('HowWeWork', () => {
-  // Measured with the project's own contrastRatio helper: navy at 60% opacity resolves
-  // to 3.48:1 over the yellow block and 3.87:1 over paper. `.u-mono` is 12px, so the AA
-  // floor is 4.5:1 — every step number and lead time in this section failed it. Full
-  // navy is 8.84:1 on yellow and 12.61:1 on paper. jsdom has no CSS engine, so the
-  // class list is the only thing assertable here.
   it('never fades the small mono text to an opacity that fails AA', () => {
     const { container } = render(<HowWeWork />)
     expect(container.querySelectorAll('[class*="text-navy/"]')).toHaveLength(0)
   })
 
-  // WeaveReveal renders a motion.div. Wrapping each <li> in one puts a <div> between
-  // the <ol> and its items, which is invalid and costs the list its semantics — a
-  // screen reader stops announcing "list, 5 items". The reveal belongs inside the <li>.
   it('keeps the five steps as direct children of the list', () => {
     render(<HowWeWork />)
     const list = screen.getByRole('list')
@@ -37,10 +37,6 @@ describe('HowWeWork', () => {
     expect(document.getElementById('how')).not.toBeNull()
   })
 
-  // F2: the probe found four headings for nine sections, and this section — where
-  // the "we measure your apartment correctly" argument lives — had none, so it was
-  // unreachable by heading navigation. "How we work" is a structural label, not a
-  // marketing claim, and is flagged for sign-off (brief §8).
   it('carries a heading naming the section, above the step list', () => {
     render(<HowWeWork />)
     const heading = screen.getByRole('heading', { name: 'How we work' })
@@ -53,16 +49,41 @@ describe('HowWeWork', () => {
     expect(screen.getByRole('region', { name: 'How we work' })).toBeInTheDocument()
   })
 
-  // M8: the five steps have to render in this exact order.
-  it('renders the five steps in the approved order', () => {
+  it('renders the five step titles in the approved order', () => {
     const { container } = render(<HowWeWork />)
     const text = container.textContent ?? ''
-    const positions = STEPS.map((step) => {
-      expect(screen.getByText(step)).toBeInTheDocument()
-      return text.indexOf(step)
+    const positions = TITLES.map((title) => {
+      expect(screen.getByText(title)).toBeInTheDocument()
+      return text.indexOf(title)
     })
     for (let i = 1; i < positions.length; i++) {
       expect(positions[i]).toBeGreaterThan(positions[i - 1])
+    }
+  })
+
+  it('gives each step a short description, in the approved order', () => {
+    const { container } = render(<HowWeWork />)
+    const text = container.textContent ?? ''
+    const positions = DESCRIPTIONS.map((line) => {
+      expect(screen.getByText(line)).toBeInTheDocument()
+      return text.indexOf(line)
+    })
+    for (let i = 1; i < positions.length; i++) {
+      expect(positions[i]).toBeGreaterThan(positions[i - 1])
+    }
+  })
+
+  it('never shows the [TBC] sentinel or a lead-time dash', () => {
+    const { container } = render(<HowWeWork />)
+    expect(container.textContent).not.toContain('[TBC]')
+    expect(screen.queryByText('—')).not.toBeInTheDocument()
+  })
+
+  it('gives each step card a decorative icon', () => {
+    const { container } = render(<HowWeWork />)
+    for (let i = 0; i < 5; i++) {
+      const card = container.querySelector(`[data-testid="how-step-${i}"]`) as HTMLElement
+      expect(card.querySelector('svg[aria-hidden="true"]')).not.toBeNull()
     }
   })
 
@@ -75,19 +96,11 @@ describe('HowWeWork', () => {
     expect(step1.className).not.toMatch(/bg-yellow/)
   })
 
-  it('shows an em dash for lead time, never the [TBC] sentinel', () => {
-    const { container } = render(<HowWeWork />)
-    expect(container.textContent).not.toContain('[TBC]')
-    expect(screen.getAllByText('—')).toHaveLength(5)
-  })
-
   it('never uses text-white', () => {
     const { container } = render(<HowWeWork />)
     expect(container.innerHTML).not.toMatch(/text-white/)
   })
 
-  // The client's rule is absolute: prefers-reduced-motion disables all transforms and
-  // autoplay. The drifting module must carry none at all under reduced motion.
   it('applies no transform to the drifting module under reduced motion, even on scroll', () => {
     setPrefersReducedMotion(true)
     const { container } = render(<HowWeWork />)
