@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import { setPrefersReducedMotion } from '@/test/browserStubs'
 import { HowWeWork } from './HowWeWork'
 
@@ -26,9 +26,10 @@ describe('HowWeWork', () => {
   })
 
   it('keeps the five steps as direct children of the list', () => {
-    render(<HowWeWork />)
-    const list = screen.getByRole('list')
-    expect(screen.getAllByRole('listitem')).toHaveLength(5)
+    const { container } = render(<HowWeWork />)
+    const list = container.querySelector('ol') as HTMLElement
+    const items = container.querySelectorAll('li')
+    expect(items).toHaveLength(5)
     expect([...list.children].every((child) => child.tagName === 'LI')).toBe(true)
   })
 
@@ -38,9 +39,9 @@ describe('HowWeWork', () => {
   })
 
   it('carries a heading naming the section, above the step list', () => {
-    render(<HowWeWork />)
+    const { container } = render(<HowWeWork />)
     const heading = screen.getByRole('heading', { name: 'How we work' })
-    const list = screen.getByRole('list')
+    const list = container.querySelector('ol') as HTMLElement
     expect(heading.compareDocumentPosition(list) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 
@@ -92,99 +93,68 @@ describe('HowWeWork', () => {
     expect(container.innerHTML).not.toMatch(/text-white/)
   })
 
-  describe('at full motion (pinned horizontal journey)', () => {
-    it('pins the track for a scroll distance proportional to the step count', () => {
+  describe('at full motion (page-turning book)', () => {
+    it('opens on the first step and hides the rest from assistive tech', () => {
       const { container } = render(<HowWeWork />)
-      const track = container.querySelector('[data-testid="how-track"]') as HTMLElement
-      // STEP_VH (45) * 5 steps
-      expect(track.style.height).toBe('225vh')
-      expect(track.querySelector('.sticky')).not.toBeNull()
+      const book = container.querySelector('[data-testid="how-book"]') as HTMLElement
+      expect(book.dataset.activeIndex).toBe('0')
+      const step0 = container.querySelector('[data-testid="how-step-0"]') as HTMLElement
+      expect(step0).not.toHaveAttribute('aria-hidden', 'true')
+      for (let i = 1; i < 5; i++) {
+        const step = container.querySelector(`[data-testid="how-step-${i}"]`) as HTMLElement
+        expect(step).toHaveAttribute('aria-hidden', 'true')
+      }
     })
 
-    it('marks only the first step active on initial render', () => {
+    it('turns to the next page on click, exposing it and hiding the previous one', () => {
       const { container } = render(<HowWeWork />)
-      const track = container.querySelector('[data-testid="how-track"]') as HTMLElement
-      expect(track.dataset.activeIndex).toBe('0')
+      fireEvent.click(screen.getByRole('button', { name: 'Next step' }))
+      const book = container.querySelector('[data-testid="how-book"]') as HTMLElement
+      expect(book.dataset.activeIndex).toBe('1')
+      expect(container.querySelector('[data-testid="how-step-1"]')).not.toHaveAttribute(
+        'aria-hidden',
+        'true',
+      )
+      expect(container.querySelector('[data-testid="how-step-0"]')).toHaveAttribute(
+        'aria-hidden',
+        'true',
+      )
     })
 
-    it('advances which step is active as the section scrolls past', async () => {
-      const { container } = render(<HowWeWork />)
-      const track = container.querySelector('[data-testid="how-track"]') as HTMLElement
-      track.getBoundingClientRect = () =>
-        ({
-          top: -300,
-          height: 2000,
-          bottom: 1700,
-          left: 0,
-          right: 0,
-          x: 0,
-          y: -300,
-          width: 0,
-          toJSON() {},
-        }) as DOMRect
-      Object.defineProperty(window, 'innerHeight', { value: 800, configurable: true })
-      fireEvent.scroll(window)
-      await waitFor(() => expect(track.dataset.activeIndex).toBe('1'))
+    it('disables the previous button on the first page and the next button on the last', () => {
+      render(<HowWeWork />)
+      expect(screen.getByRole('button', { name: 'Previous step' })).toBeDisabled()
+      for (let i = 0; i < 4; i++) fireEvent.click(screen.getByRole('button', { name: 'Next step' }))
+      expect(screen.getByRole('button', { name: 'Next step' })).toBeDisabled()
     })
 
-    it('gives Site measurement the heavy yellow treatment once it becomes the active step, not before', async () => {
+    it('jumps straight to a page when its dot is clicked', () => {
       const { container } = render(<HowWeWork />)
-      const track = container.querySelector('[data-testid="how-track"]') as HTMLElement
+      fireEvent.click(screen.getByRole('button', { name: /Go to step 4 of 5/ }))
+      const book = container.querySelector('[data-testid="how-book"]') as HTMLElement
+      expect(book.dataset.activeIndex).toBe('3')
+    })
+
+    it('turns pages with the left and right arrow keys', () => {
+      const { container } = render(<HowWeWork />)
+      const book = container.querySelector('[data-testid="how-book"]') as HTMLElement
+      fireEvent.keyDown(book, { key: 'ArrowRight' })
+      expect(book.dataset.activeIndex).toBe('1')
+      fireEvent.keyDown(book, { key: 'ArrowLeft' })
+      expect(book.dataset.activeIndex).toBe('0')
+    })
+
+    it('gives whichever page is open the heavy yellow treatment, not a fixed step', () => {
+      const { container } = render(<HowWeWork />)
+      const step0 = container.querySelector('[data-testid="how-step-0"]') as HTMLElement
       const step1 = container.querySelector('[data-testid="how-step-1"]') as HTMLElement
+      expect(step0.className).toMatch(/bg-yellow/)
       expect(step1.className).not.toMatch(/bg-yellow/)
-      track.getBoundingClientRect = () =>
-        ({
-          top: -300,
-          height: 2000,
-          bottom: 1700,
-          left: 0,
-          right: 0,
-          x: 0,
-          y: -300,
-          width: 0,
-          toJSON() {},
-        }) as DOMRect
-      Object.defineProperty(window, 'innerHeight', { value: 800, configurable: true })
-      fireEvent.scroll(window)
-      await waitFor(() => expect(track.dataset.activeIndex).toBe('1'))
+
+      fireEvent.click(screen.getByRole('button', { name: 'Next step' }))
+
+      expect(step0.className).not.toMatch(/bg-yellow/)
       expect(step1.className).toMatch(/bg-yellow/)
-    })
-
-    it('centers the row so the active card sits in the middle on initial render', async () => {
-      const { container } = render(<HowWeWork />)
-      const list = container.querySelector('[data-testid="how-track-list"]') as HTMLElement
-      // CARD_SPACING (344) * ((5 - 1) / 2 - active); active = 0 initially
-      await waitFor(() => expect(list.style.transform).toBe('translateX(688px)'))
-    })
-
-    it('translates the row together with the active index as the section scrolls', async () => {
-      const { container } = render(<HowWeWork />)
-      const track = container.querySelector('[data-testid="how-track"]') as HTMLElement
-      const list = container.querySelector('[data-testid="how-track-list"]') as HTMLElement
-      track.getBoundingClientRect = () =>
-        ({
-          top: -300,
-          height: 2000,
-          bottom: 1700,
-          left: 0,
-          right: 0,
-          x: 0,
-          y: -300,
-          width: 0,
-          toJSON() {},
-        }) as DOMRect
-      Object.defineProperty(window, 'innerHeight', { value: 800, configurable: true })
-      fireEvent.scroll(window)
-      await waitFor(() => expect(track.dataset.activeIndex).toBe('1'))
-      await waitFor(() => expect(list.style.transform).toBe('translateX(344px)'))
-    })
-
-    it('dims non-active cards to a contrast-safe opacity, not the fully-visible one', async () => {
-      const { container } = render(<HowWeWork />)
-      const active = container.querySelector('[data-testid="how-step-0"]') as HTMLElement
-      const inactive = container.querySelector('[data-testid="how-step-1"]') as HTMLElement
-      await waitFor(() => expect(active.style.opacity).toBe('1'))
-      await waitFor(() => expect(inactive.style.opacity).toBe('0.7'))
     })
 
     it('renders a progress dot per step, marking only the active one', () => {
@@ -208,38 +178,18 @@ describe('HowWeWork', () => {
       expect(step1.className).not.toMatch(/bg-yellow/)
     })
 
-    it('renders no pinned track under reduced motion', () => {
+    it('renders no book widget under reduced motion', () => {
       setPrefersReducedMotion(true)
       const { container } = render(<HowWeWork />)
-      expect(container.querySelector('[data-testid="how-track"]')).toBeNull()
+      expect(container.querySelector('[data-testid="how-book"]')).toBeNull()
       expect(screen.getAllByRole('listitem')).toHaveLength(5)
     })
 
     it('renders the compact fallback on mobile widths', () => {
       window.innerWidth = 600
       const { container } = render(<HowWeWork />)
-      expect(container.querySelector('[data-testid="how-track"]')).toBeNull()
+      expect(container.querySelector('[data-testid="how-book"]')).toBeNull()
       expect(screen.getAllByRole('listitem')).toHaveLength(5)
     })
-  })
-
-  it('applies no transform to the drifting module under reduced motion, even on scroll', () => {
-    setPrefersReducedMotion(true)
-    const { container } = render(<HowWeWork />)
-    const driftEl = container.querySelector('[data-testid="how-cutout-inner"]') as HTMLElement
-    expect(driftEl.style.transform).toBe('')
-    fireEvent.scroll(window, { target: { scrollY: 400 } })
-    expect(driftEl.style.transform).toBe('')
-  })
-
-  it('drifts the module on scroll at full motion', async () => {
-    setPrefersReducedMotion(false)
-    window.innerWidth = 1440
-    const { container } = render(<HowWeWork />)
-    const driftEl = container.querySelector('[data-testid="how-cutout-inner"]') as HTMLElement
-    const before = driftEl.style.transform
-    Object.defineProperty(window, 'scrollY', { value: 400, configurable: true })
-    fireEvent.scroll(window)
-    await waitFor(() => expect(driftEl.style.transform).not.toBe(before))
   })
 })
