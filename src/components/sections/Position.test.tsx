@@ -1,7 +1,27 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { setPrefersReducedMotion } from '@/test/browserStubs'
+import { TBC } from '@/lib/tbc'
 import { Position } from './Position'
+
+async function renderPositionWithFigures(figures: {
+  yearsInBusiness?: number | typeof TBC
+  homesFitted?: number | typeof TBC
+  unitsDelivered?: number | typeof TBC
+  districtsCovered?: number | typeof TBC
+}) {
+  vi.doMock('@/data/site', async () => {
+    const actual = await vi.importActual<typeof import('@/data/site')>('@/data/site')
+    return { SITE: { ...actual.SITE, figures: { ...actual.SITE.figures, ...figures } } }
+  })
+  const { Position: MockedPosition } = await import('./Position')
+  return render(<MockedPosition />)
+}
+
+beforeEach(() => {
+  vi.resetModules()
+  vi.doUnmock('@/data/site')
+})
 
 // D8: the plan gave no copy for this section at all. These six lines (the three
 // originally approved-pending, plus three added later as a second beat) are the
@@ -33,7 +53,8 @@ describe('Position', () => {
 
   it('says nothing else — no invented copy beyond the six approved lines', () => {
     const { container } = render(<Position />)
-    expect(container.querySelectorAll('p')).toHaveLength(6)
+    const points = container.querySelector('[data-testid="position-points"]') as HTMLElement
+    expect(points.querySelectorAll('p')).toHaveLength(6)
   })
 
   it('never uses text-white', () => {
@@ -56,7 +77,8 @@ describe('Position', () => {
     // first render, not as two separate scroll steps. Points 1-3 wait for scroll.
     it('shows only the first point (main + its sub) on initial render — the rest wait for scroll', () => {
       const { container } = render(<Position />)
-      const paragraphs = [...container.querySelectorAll('p')] as HTMLElement[]
+      const points = container.querySelector('[data-testid="position-points"]') as HTMLElement
+      const paragraphs = [...points.querySelectorAll('p')] as HTMLElement[]
       expect(paragraphs).toHaveLength(6)
       expect(paragraphs[0].style.opacity).toBe('1') // point 0 main
       expect(paragraphs[1].style.opacity).toBe('1') // point 0 sub
@@ -104,7 +126,8 @@ describe('Position', () => {
       const { container } = render(<Position />)
       const section = container.querySelector('section') as HTMLElement
       expect(section.style.height).toBe('')
-      expect(container.querySelectorAll('p')).toHaveLength(6)
+      const points = container.querySelector('[data-testid="position-points"]') as HTMLElement
+      expect(points.querySelectorAll('p')).toHaveLength(6)
     })
 
     it('renders the compact fallback on mobile widths', () => {
@@ -112,7 +135,8 @@ describe('Position', () => {
       const { container } = render(<Position />)
       const section = container.querySelector('section') as HTMLElement
       expect(section.style.height).toBe('')
-      expect(container.querySelectorAll('p')).toHaveLength(6)
+      const points = container.querySelector('[data-testid="position-points"]') as HTMLElement
+      expect(points.querySelectorAll('p')).toHaveLength(6)
     })
 
     // The grid's gap-y and the thread connector's calc(100% + gap) height used to be
@@ -126,6 +150,152 @@ describe('Position', () => {
       const strand = container.querySelector('span[style*="calc(100%"]')
       expect(strand).not.toBeNull()
       expect((strand as HTMLElement).style.height).toContain('var(--pos-gap)')
+    })
+  })
+
+  describe('stat strip', () => {
+    // F4: same "cut unknown rows, render nothing once none survive" rule the client
+    // set for Materials (D4) and the original standalone Figures section — carried
+    // across now that the stats live in Position.
+    it('renders no stat strip while every figure is unknown', async () => {
+      setPrefersReducedMotion(true)
+      const { container } = await renderPositionWithFigures({
+        yearsInBusiness: TBC,
+        homesFitted: TBC,
+        unitsDelivered: TBC,
+        districtsCovered: TBC,
+      })
+      expect(container.querySelectorAll('[data-testid="position-stat"]')).toHaveLength(0)
+    })
+
+    it('cuts unknown stat rows, keeping only the figures that are known', async () => {
+      setPrefersReducedMotion(true)
+      await renderPositionWithFigures({
+        yearsInBusiness: 7,
+        homesFitted: TBC,
+        unitsDelivered: TBC,
+        districtsCovered: TBC,
+      })
+      expect(screen.getByText('Years in business')).toBeInTheDocument()
+      expect(screen.queryByText('Homes and apartments fitted')).not.toBeInTheDocument()
+      expect(screen.queryByText('Units delivered')).not.toBeInTheDocument()
+      expect(screen.queryByText('Districts we install in')).not.toBeInTheDocument()
+    })
+
+    it('renders every known stat, in order: years, homes, units, districts', async () => {
+      setPrefersReducedMotion(true)
+      const { container } = await renderPositionWithFigures({
+        yearsInBusiness: 7,
+        homesFitted: 120,
+        unitsDelivered: 400,
+        districtsCovered: 9,
+      })
+      const text = container.textContent ?? ''
+      const yearsAt = text.indexOf('Years in business')
+      const homesAt = text.indexOf('Homes and apartments fitted')
+      const unitsAt = text.indexOf('Units delivered')
+      const districtsAt = text.indexOf('Districts we install in')
+      expect(yearsAt).toBeGreaterThanOrEqual(0)
+      expect(homesAt).toBeGreaterThan(yearsAt)
+      expect(unitsAt).toBeGreaterThan(homesAt)
+      expect(districtsAt).toBeGreaterThan(unitsAt)
+    })
+
+    // Unlike Hero, Position sits on solid bg-navy with no photo overlay to dim it, so
+    // it keeps the sub-line's own text-sky rather than Hero's text-paper exception.
+    it('keeps the stat label on text-sky, matching this section\'s plain-navy contrast', async () => {
+      setPrefersReducedMotion(true)
+      await renderPositionWithFigures({ yearsInBusiness: 7 })
+      const label = screen.getByText('Years in business')
+      expect(label.className).toMatch(/text-sky/)
+    })
+
+    describe('at full motion (rides along with the pinned points)', () => {
+      it('shows only the first stat alongside point 0 on initial render — the rest wait for scroll', async () => {
+        const { container } = await renderPositionWithFigures({
+          yearsInBusiness: 2,
+          homesFitted: 10,
+          unitsDelivered: 20,
+          districtsCovered: 3,
+        })
+        const stats = [...container.querySelectorAll('[data-testid="position-stat"]')] as HTMLElement[]
+        expect(stats).toHaveLength(4)
+        const wrappers = stats.map((s) => s.parentElement as HTMLElement)
+        expect(wrappers[0].style.opacity).toBe('1')
+        for (const wrapper of wrappers.slice(1)) {
+          expect(wrapper.style.opacity).toBe('0')
+        }
+      })
+
+      it('adds no extra scroll distance beyond the existing point track', async () => {
+        const { container } = await renderPositionWithFigures({
+          yearsInBusiness: 2,
+          homesFitted: 10,
+          unitsDelivered: 20,
+          districtsCovered: 3,
+        })
+        const section = container.querySelector('section') as HTMLElement
+        // Unchanged from the points-only track: STEP_VH (55) * 4 points.
+        expect(section.style.height).toBe('220vh')
+      })
+
+      it('cumulatively reveals stats as points advance — later points keep earlier stats, not replace them', async () => {
+        const { container } = await renderPositionWithFigures({
+          yearsInBusiness: 2,
+          homesFitted: 10,
+          unitsDelivered: 20,
+          districtsCovered: 3,
+        })
+        const section = container.querySelector('section') as HTMLElement
+        section.getBoundingClientRect = () =>
+          ({
+            top: -1000,
+            height: 3300,
+            bottom: 2300,
+            left: 0,
+            right: 0,
+            x: 0,
+            y: -1000,
+            width: 0,
+            toJSON() {},
+          }) as DOMRect
+        Object.defineProperty(window, 'innerHeight', { value: 800, configurable: true })
+        fireEvent.scroll(window)
+        await waitFor(() => {
+          const stats = [...container.querySelectorAll('[data-testid="position-stat"]')] as HTMLElement[]
+          const wrappers = stats.map((s) => s.parentElement as HTMLElement)
+          expect(wrappers[0].style.opacity).toBe('1')
+          expect(wrappers[1].style.opacity).toBe('1')
+          expect(wrappers[2].style.opacity).toBe('0')
+          expect(wrappers[3].style.opacity).toBe('0')
+        })
+      })
+    })
+
+    describe('under reduced motion or on mobile (compact fallback)', () => {
+      it('renders every known stat at full opacity, with no pinning, under reduced motion', async () => {
+        setPrefersReducedMotion(true)
+        const { container } = await renderPositionWithFigures({
+          yearsInBusiness: 2,
+          homesFitted: 10,
+          unitsDelivered: 20,
+          districtsCovered: 3,
+        })
+        const stats = [...container.querySelectorAll('[data-testid="position-stat"]')] as HTMLElement[]
+        expect(stats).toHaveLength(4)
+      })
+
+      it('renders every known stat on mobile widths', async () => {
+        window.innerWidth = 600
+        const { container } = await renderPositionWithFigures({
+          yearsInBusiness: 2,
+          homesFitted: 10,
+          unitsDelivered: 20,
+          districtsCovered: 3,
+        })
+        const stats = [...container.querySelectorAll('[data-testid="position-stat"]')] as HTMLElement[]
+        expect(stats).toHaveLength(4)
+      })
     })
   })
 })

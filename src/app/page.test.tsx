@@ -34,21 +34,12 @@ describe('Home page assembly', () => {
     }
   })
 
-  // Section order: Hero · Position · Figures · WhatWeMake · Work · Film · HowWeWork ·
-  // Materials · Enquiry. Figures is mocked with a known figure here — it is [TBC] by
-  // default and renders nothing, which would make it invisible to this ordering
-  // check.
-  it('lays out the nine sections in the approved order', async () => {
-    vi.doMock('@/data/site', async () => {
-      const actual = await vi.importActual<typeof import('@/data/site')>('@/data/site')
-      return {
-        SITE: { ...actual.SITE, figures: { ...actual.SITE.figures, yearsInBusiness: 7 } },
-      }
-    })
+  // Section order: Hero · Position (carries the stats now) · WhatWeMake · Work ·
+  // Film · HowWeWork · Materials · Enquiry.
+  it('lays out the eight sections in the approved order', async () => {
     await renderPage()
     const top = document.getElementById('top')!
     const position = screen.getByRole('region', { name: 'Position' })
-    const figures = screen.getByRole('region', { name: 'Figures' })
     const whatWeMake = screen.getByRole('region', { name: 'What we make' })
     const work = document.getElementById('work')!
     const film = screen.getByRole('region', { name: 'Measured on site.' })
@@ -56,7 +47,7 @@ describe('Home page assembly', () => {
     const materials = document.getElementById('materials')!
     const enquiry = document.getElementById('enquiry')!
 
-    const order = [top, position, figures, whatWeMake, work, film, how, materials, enquiry]
+    const order = [top, position, whatWeMake, work, film, how, materials, enquiry]
     for (let i = 1; i < order.length; i++) {
       expect(
         order[i - 1].compareDocumentPosition(order[i]) & Node.DOCUMENT_POSITION_FOLLOWING,

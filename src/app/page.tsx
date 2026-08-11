@@ -1,6 +1,5 @@
 import { Hero } from '@/components/sections/Hero'
 import { Position } from '@/components/sections/Position'
-import { Figures } from '@/components/sections/Figures'
 import { WhatWeMake } from '@/components/sections/WhatWeMake'
 import { Work } from '@/components/sections/Work'
 import { Film } from '@/components/sections/Film'
@@ -25,7 +24,6 @@ export default function Home() {
       <main id="main">
         <Hero />
         <Position />
-        <Figures />
         <WhatWeMake />
         <Work />
         <Film />

@@ -29,7 +29,7 @@ export interface SiteConfig {
   mapEmbedUrl: Maybe<string>
   /** Set true ONLY if measurement visits really are free and non-obligatory. */
   freeMeasurementVisit: Maybe<boolean>
-  /** Figures section. Numbers only. */
+  /** Position's stat strip. Numbers only. */
   figures: {
     yearsInBusiness: Maybe<number>
     homesFitted: Maybe<number>
