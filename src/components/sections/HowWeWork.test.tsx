@@ -149,6 +149,52 @@ describe('HowWeWork', () => {
       await waitFor(() => expect(track.dataset.activeIndex).toBe('1'))
       expect(step1.className).toMatch(/bg-yellow/)
     })
+
+    it('centers the row so the active card sits in the middle on initial render', async () => {
+      const { container } = render(<HowWeWork />)
+      const list = container.querySelector('[data-testid="how-track-list"]') as HTMLElement
+      // CARD_SPACING (344) * ((5 - 1) / 2 - active); active = 0 initially
+      await waitFor(() => expect(list.style.transform).toBe('translateX(688px)'))
+    })
+
+    it('translates the row together with the active index as the section scrolls', async () => {
+      const { container } = render(<HowWeWork />)
+      const track = container.querySelector('[data-testid="how-track"]') as HTMLElement
+      const list = container.querySelector('[data-testid="how-track-list"]') as HTMLElement
+      track.getBoundingClientRect = () =>
+        ({
+          top: -300,
+          height: 2000,
+          bottom: 1700,
+          left: 0,
+          right: 0,
+          x: 0,
+          y: -300,
+          width: 0,
+          toJSON() {},
+        }) as DOMRect
+      Object.defineProperty(window, 'innerHeight', { value: 800, configurable: true })
+      fireEvent.scroll(window)
+      await waitFor(() => expect(track.dataset.activeIndex).toBe('1'))
+      await waitFor(() => expect(list.style.transform).toBe('translateX(344px)'))
+    })
+
+    it('dims non-active cards to a contrast-safe opacity, not the fully-visible one', async () => {
+      const { container } = render(<HowWeWork />)
+      const active = container.querySelector('[data-testid="how-step-0"]') as HTMLElement
+      const inactive = container.querySelector('[data-testid="how-step-1"]') as HTMLElement
+      await waitFor(() => expect(active.style.opacity).toBe('1'))
+      await waitFor(() => expect(inactive.style.opacity).toBe('0.7'))
+    })
+
+    it('renders a progress dot per step, marking only the active one', () => {
+      const { container } = render(<HowWeWork />)
+      for (let i = 0; i < 5; i++) {
+        const dot = container.querySelector(`[data-testid="how-dot-${i}"]`) as HTMLElement
+        expect(dot).not.toBeNull()
+        expect(dot.className).toMatch(i === 0 ? /bg-yellow/ : /bg-navy\/20/)
+      }
+    })
   })
 
   describe('under reduced motion or on mobile (compact fallback)', () => {

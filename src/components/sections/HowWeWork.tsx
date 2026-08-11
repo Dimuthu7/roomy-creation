@@ -62,7 +62,7 @@ export function HowWeWork() {
     <section
       id="how"
       aria-labelledby="how-heading"
-      className="on-paper relative overflow-hidden bg-paper py-24 text-navy"
+      className="on-paper relative overflow-x-clip bg-paper py-24 text-navy"
     >
       <DriftingModule />
       <div className="relative mx-auto max-w-6xl px-6">
@@ -75,12 +75,31 @@ export function HowWeWork() {
   )
 }
 
+function StepBody({ step, heaviest }: { step: Step; heaviest: boolean }) {
+  const Icon = HOW_WE_WORK_ICONS[step.icon]
+  return (
+    <>
+      <Icon className={heaviest ? 'h-7 w-7 text-navy' : 'h-6 w-6 text-navy'} />
+      <span className="u-mono mt-3 block text-navy">{step.number}</span>
+      <p
+        className={
+          heaviest
+            ? 'mt-2 font-display text-3xl tracking-tight text-navy'
+            : 'mt-2 font-display text-xl tracking-tight text-navy'
+        }
+      >
+        {step.title}
+      </p>
+      <p className="mt-3 font-body text-sm leading-relaxed text-navy">{step.description}</p>
+    </>
+  )
+}
+
 function CompactSteps() {
   return (
     <ol className="mt-10 grid gap-6 md:grid-cols-5">
       {STEPS.map((step, i) => {
         const heaviest = i === 1
-        const Icon = HOW_WE_WORK_ICONS[step.icon]
         return (
           // The reveal sits INSIDE the <li>, not around it: WeaveReveal renders a
           // motion.div, and a <div> between <ol> and <li> is invalid and costs the
@@ -91,18 +110,7 @@ function CompactSteps() {
             className={heaviest ? 'bg-yellow' : 'border border-navy/20'}
           >
             <WeaveReveal from={i % 2 === 0 ? 'left' : 'right'} delay={i * 0.05} className="p-6">
-              <Icon className={heaviest ? 'h-7 w-7 text-navy' : 'h-6 w-6 text-navy'} />
-              <span className="u-mono mt-3 block text-navy">{step.number}</span>
-              <p
-                className={
-                  heaviest
-                    ? 'mt-2 font-display text-3xl tracking-tight text-navy'
-                    : 'mt-2 font-display text-xl tracking-tight text-navy'
-                }
-              >
-                {step.title}
-              </p>
-              <p className="mt-3 font-body text-sm leading-relaxed text-navy">{step.description}</p>
+              <StepBody step={step} heaviest={heaviest} />
             </WeaveReveal>
           </li>
         )
@@ -155,36 +163,28 @@ function PinnedSteps() {
     >
       <div className="sticky top-0 flex h-screen flex-col items-center justify-center overflow-hidden">
         <motion.ol
+          data-testid="how-track-list"
           className="flex"
           style={{ gap: `${CARD_GAP}px` }}
-          animate={{ x: -active * CARD_SPACING }}
+          animate={{ x: CARD_SPACING * ((STEPS.length - 1) / 2 - active) }}
           transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
         >
           {STEPS.map((step, i) => {
             const isActive = active === i
             const heaviest = i === 1 && isActive
-            const Icon = HOW_WE_WORK_ICONS[step.icon]
             return (
               <motion.li
                 key={step.number}
                 data-testid={`how-step-${i}`}
-                className={heaviest ? 'bg-yellow p-6' : 'border border-navy/20 p-6'}
+                className={heaviest ? 'bg-yellow p-6 shrink-0' : 'border border-navy/20 p-6 shrink-0'}
                 style={{ width: `${CARD_WIDTH}px` }}
-                animate={{ opacity: isActive ? 1 : 0.4, scale: isActive ? 1 : 0.92 }}
+                // 0.4 was rejected: navy text over paper at 40% opacity composites to
+                // ~2.3:1, below the 4.5:1 AA floor. 0.7 composites to ~5.2:1 (passes)
+                // while still reading as de-emphasized alongside the scale-down.
+                animate={{ opacity: isActive ? 1 : 0.7, scale: isActive ? 1 : 0.92 }}
                 transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
               >
-                <Icon className={heaviest ? 'h-7 w-7 text-navy' : 'h-6 w-6 text-navy'} />
-                <span className="u-mono mt-3 block text-navy">{step.number}</span>
-                <p
-                  className={
-                    heaviest
-                      ? 'mt-2 font-display text-3xl tracking-tight text-navy'
-                      : 'mt-2 font-display text-xl tracking-tight text-navy'
-                  }
-                >
-                  {step.title}
-                </p>
-                <p className="mt-3 font-body text-sm leading-relaxed text-navy">{step.description}</p>
+                <StepBody step={step} heaviest={heaviest} />
               </motion.li>
             )
           })}
