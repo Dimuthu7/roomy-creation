@@ -1,6 +1,8 @@
 import { Logo } from './Logo'
 import { SITE } from '@/data/site'
 import { isTBC } from '@/lib/tbc'
+import { whatsappUrl } from '@/lib/whatsapp'
+import { DistrictsIcon, MapPinIcon, PhoneIcon, SOCIAL_ICONS } from './FooterIcons'
 
 // Every block below is [TBC]-gated exactly like Enquiry.tsx: a heading only renders
 // once it has content beneath it. With today's all-[TBC] site.ts the footer
@@ -15,6 +17,9 @@ export function Footer() {
     { label: 'Instagram', href: SITE.social.instagram },
     { label: 'TikTok', href: SITE.social.tiktok },
   ].filter((s): s is { label: string; href: string } => !isTBC(s.href))
+  // Same "Chat on WhatsApp" pattern as WhatsAppFloat.tsx: null while SITE.whatsappNumber
+  // is [TBC], so the button simply doesn't render rather than linking nowhere.
+  const whatsapp = whatsappUrl(SITE.whatsappNumber, 'Hello Roomy Creations, I have a question.')
 
   return (
     <footer className="bg-navy py-16 text-sky">
@@ -23,59 +28,104 @@ export function Footer() {
             the yellow mark is the one that reads against it. */}
         <Logo variant="yellow" />
 
+        <div className="mt-10 flex flex-col gap-6 border-t border-sky/10 pt-10 sm:flex-row sm:items-center sm:justify-between">
+          <p className="font-display text-xl tracking-tight text-paper">
+            Ready to get started?
+          </p>
+          <div className="flex flex-wrap gap-4">
+            <a
+              href="#enquiry"
+              className="border border-yellow px-6 py-3 font-display text-yellow transition-colors duration-200 hover:bg-yellow hover:text-navy"
+            >
+              Request a quotation
+            </a>
+            {whatsapp && (
+              <a
+                href={whatsapp}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="border border-yellow px-6 py-3 font-display text-yellow transition-colors duration-200 hover:bg-yellow hover:text-navy"
+              >
+                Chat on WhatsApp
+              </a>
+            )}
+          </div>
+        </div>
+
         {(hasContact || hasVisit || hasDistricts || socials.length > 0) && (
-          <div className="mt-10 grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-10 grid gap-10 border-t border-sky/10 pt-10 sm:grid-cols-2 lg:grid-cols-4">
             {hasContact && (
-              <div className="space-y-2">
-                <h3 className="u-mono text-sky">Contact</h3>
-                {!isTBC(SITE.phone) && (
-                  <a href={`tel:${SITE.phone}`} className="block text-sky hover:text-yellow">
-                    {SITE.phone}
-                  </a>
-                )}
-                {!isTBC(SITE.email) && (
-                  <a href={`mailto:${SITE.email}`} className="block text-sky hover:text-yellow">
-                    {SITE.email}
-                  </a>
-                )}
+              <div className="space-y-3">
+                <h3 className="flex items-center gap-2 u-mono text-sky">
+                  <PhoneIcon className="h-4 w-4 text-teal" />
+                  Contact
+                </h3>
+                <div className="space-y-2">
+                  {!isTBC(SITE.phone) && (
+                    <a href={`tel:${SITE.phone}`} className="block text-sky hover:text-yellow">
+                      {SITE.phone}
+                    </a>
+                  )}
+                  {!isTBC(SITE.email) && (
+                    <a href={`mailto:${SITE.email}`} className="block text-sky hover:text-yellow">
+                      {SITE.email}
+                    </a>
+                  )}
+                </div>
               </div>
             )}
 
             {hasVisit && (
-              <div className="space-y-2">
-                <h3 className="u-mono text-sky">Visit</h3>
-                {!isTBC(SITE.addressLines) &&
-                  SITE.addressLines.map((line) => (
-                    <p key={line} className="text-sky">
-                      {line}
-                    </p>
-                  ))}
-                {!isTBC(SITE.city) && <p className="text-sky">{SITE.city}</p>}
-                {!isTBC(SITE.openingHours) &&
-                  SITE.openingHours.map((hours) => (
-                    <p key={hours} className="text-sky">
-                      {hours}
-                    </p>
-                  ))}
+              <div className="space-y-3">
+                <h3 className="flex items-center gap-2 u-mono text-sky">
+                  <MapPinIcon className="h-4 w-4 text-teal" />
+                  Visit
+                </h3>
+                <div className="space-y-2">
+                  {!isTBC(SITE.addressLines) &&
+                    SITE.addressLines.map((line) => (
+                      <p key={line} className="text-sky">
+                        {line}
+                      </p>
+                    ))}
+                  {!isTBC(SITE.city) && <p className="text-sky">{SITE.city}</p>}
+                  {!isTBC(SITE.openingHours) &&
+                    SITE.openingHours.map((hours) => (
+                      <p key={hours} className="text-sky">
+                        {hours}
+                      </p>
+                    ))}
+                </div>
               </div>
             )}
 
             {hasDistricts && (
-              <div className="space-y-2">
-                <h3 className="u-mono text-sky">Districts we cover</h3>
+              <div className="space-y-3">
+                <h3 className="flex items-center gap-2 u-mono text-sky">
+                  <DistrictsIcon className="h-4 w-4 text-teal" />
+                  Districts we cover
+                </h3>
                 <p className="text-sky">{(SITE.districts as string[]).join(', ')}</p>
               </div>
             )}
 
             {socials.length > 0 && (
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <h3 className="u-mono text-sky">Follow</h3>
-                <div className="flex gap-4">
-                  {socials.map((s) => (
-                    <a key={s.label} href={s.href} className="text-sky underline hover:text-yellow">
-                      {s.label}
-                    </a>
-                  ))}
+                <div className="flex gap-3">
+                  {socials.map((s) => {
+                    const Icon = SOCIAL_ICONS[s.label]
+                    return (
+                      <a
+                        key={s.label}
+                        href={s.href}
+                        aria-label={s.label}
+                        className="group inline-flex h-10 w-10 items-center justify-center rounded-full border border-teal/40 text-sky transition-colors duration-200 hover:border-teal hover:text-teal"
+                      >
+                        <Icon className="h-4 w-4" />
+                      </a>
+                    )
+                  })}
                 </div>
               </div>
             )}
@@ -84,7 +134,9 @@ export function Footer() {
 
         {/* Nothing else on this line: no "all rights reserved", no tagline, no
             invented registration number. */}
-        <p className="u-mono mt-12 text-sky">© {new Date().getFullYear()} Roomy Creations</p>
+        <p className="u-mono mt-12 border-t border-sky/10 pt-8 text-sky">
+          © {new Date().getFullYear()} Roomy Creations
+        </p>
       </div>
     </footer>
   )
