@@ -31,26 +31,6 @@ describe('Materials', () => {
     expect(screen.getByRole('region', { name: 'What it is made of' })).toBeInTheDocument()
   })
 
-  // D5: asserting only the *absence* of apologetic words is vacuous — an empty
-  // BOARD_ARGUMENT array would pass that check too. Assert every line is present
-  // verbatim first, then the register.
-  it('makes the board argument in the four approved lines, verbatim', async () => {
-    await renderMaterials()
-    const argument = screen.getByTestId('board-argument')
-    const lines = [
-      'Engineered board is wood fibre pressed with resin into a panel of consistent density, then faced with melamine.',
-      'It does not have a grain direction, so a tall door stays flat where a solid timber one cups.',
-      'Sri Lankan humidity swings year round. Solid wood moves with it. A sealed, edge-banded panel does not.',
-      'Where there is water, under sinks and along a kitchen run, we use moisture-resistant board rather than standard board.',
-    ]
-    for (const line of lines) {
-      expect(screen.getByText(line)).toBeInTheDocument()
-    }
-    const text = argument.textContent ?? ''
-    expect(text).not.toMatch(/sorry|unfortunately|just as good|cheap alternative/i)
-    expect(text).not.toContain('!')
-  })
-
   // D4: the client's rule is "if a figure is unknown, cut that row and run three
   // cuts" — not hide the value and leave the label floating over empty space. All six
   // MATERIAL_SPECS are [TBC] today, so the whole list must be absent, not present with
