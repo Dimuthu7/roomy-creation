@@ -79,13 +79,38 @@ describe('enquirySchema', () => {
     }
   })
 
-  it('asks for an email when the field is blank', () => {
+  it('accepts a blank email, since phone alone is enough to follow up on', () => {
     const r = enquirySchema.safeParse({ ...valid, email: '' })
+    expect(r.success).toBe(true)
+    if (r.success) expect(r.data.email).toBe('')
+  })
+
+  it('rejects how-you-found-us when it is missing or not one of the known options', () => {
+    const r = enquirySchema.safeParse({ ...valid, source: 'google' })
+    expect(r.success).toBe(false)
+    if (!r.success) expect(r.error.issues[0].message).toBe('Choose how you found us')
+  })
+
+  it('requires "what else" once Other is checked under needs', () => {
+    const r = enquirySchema.safeParse({ ...valid, needs: ['other'] })
     expect(r.success).toBe(false)
     if (!r.success) {
-      const hasMinMessage = r.error.issues.some((issue) => issue.message === 'Enter an email address')
-      expect(hasMinMessage).toBe(true)
+      expect(r.error.issues[0].path).toEqual(['needsOther'])
+      expect(r.error.issues[0].message).toBe('Tell us what else you need')
     }
+  })
+
+  it('accepts Other once "what else" is filled in', () => {
+    const r = enquirySchema.safeParse({ ...valid, needs: ['other'], needsOther: 'A custom bookshelf' })
+    expect(r.success).toBe(true)
+  })
+
+  it('does not require "what else" when Other was never selected', () => {
+    expect(enquirySchema.safeParse(valid).success).toBe(true)
+  })
+
+  it('allows an empty remarks field, which is optional', () => {
+    expect(enquirySchema.safeParse({ ...valid, remarks: '' }).success).toBe(true)
   })
 
   it('fills in an absent budget rather than rejecting it', () => {
@@ -135,10 +160,20 @@ describe('field length bounds', () => {
     if (!r.success) expect(r.error.issues[0].message).toBe('Use 100 characters or fewer')
   })
 
-  it('rejects a source string over 200 characters', () => {
-    const r = enquirySchema.safeParse({ ...valid, source: 'a'.repeat(201) })
+  it('rejects a "what else" note over 200 characters', () => {
+    const r = enquirySchema.safeParse({
+      ...valid,
+      needs: ['other'],
+      needsOther: 'a'.repeat(201),
+    })
     expect(r.success).toBe(false)
     if (!r.success) expect(r.error.issues[0].message).toBe('Use 200 characters or fewer')
+  })
+
+  it('rejects remarks over 2000 characters', () => {
+    const r = enquirySchema.safeParse({ ...valid, remarks: 'a'.repeat(2001) })
+    expect(r.success).toBe(false)
+    if (!r.success) expect(r.error.issues[0].message).toBe('Use 2000 characters or fewer')
   })
 
   it('still asks for a name first when the field is empty, ahead of any max-length concern', () => {

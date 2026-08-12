@@ -1,5 +1,10 @@
 import { Resend } from 'resend'
-import { enquirySchema } from '@/lib/enquirySchema'
+import { enquirySchema, SOURCE_OPTIONS } from '@/lib/enquirySchema'
+
+const SOURCE_LABELS = Object.fromEntries(SOURCE_OPTIONS.map((s) => [s.id, s.label])) as Record<
+  (typeof SOURCE_OPTIONS)[number]['id'],
+  string
+>
 
 // The client ruled out a CAPTCHA as a conversion killer, which leaves field validation
 // as the only thing standing between this endpoint and an abuse script. The form can
@@ -72,17 +77,21 @@ export async function POST(request: Request) {
   const { error } = await resend.emails.send({
     from: fromAddress,
     to: [toAddress],
-    replyTo: e.email,
+    // Sending replyTo: '' would make "reply" in the visitor's inbox go nowhere, so an
+    // enquiry with no email (email is optional — phone is the fallback contact) omits
+    // the header entirely rather than sending it empty.
+    ...(e.email ? { replyTo: e.email } : {}),
     subject: `Quotation request — ${subjectName}, ${e.propertyType}`,
     text: [
       `Name: ${e.name}`,
       `Phone: ${e.phone}`,
-      `Email: ${e.email}`,
+      `Email: ${e.email || '—'}`,
       `Property: ${e.propertyType}`,
-      `Needs: ${e.needs.join(', ')}`,
+      `Needs: ${e.needs.join(', ')}${e.needsOther ? ` (other: ${e.needsOther})` : ''}`,
       `Dimensions: ${e.dimensions || '—'}`,
       `Budget: ${e.budget || '—'}`,
-      `Found us via: ${e.source || '—'}`,
+      `Found us via: ${SOURCE_LABELS[e.source]}`,
+      `Remarks: ${e.remarks || '—'}`,
     ].join('\n'),
   })
 

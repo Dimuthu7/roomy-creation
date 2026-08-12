@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import { Outfit, Instrument_Sans, IBM_Plex_Mono } from 'next/font/google'
+import { Toaster } from 'sonner'
 import { SmoothScroll } from '@/components/chrome/SmoothScroll'
 import { CustomCursor } from '@/components/chrome/CustomCursor'
 import { Nav } from '@/components/chrome/Nav'
@@ -32,6 +33,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {children}
         <Footer />
         <WhatsAppFloat />
+        <Toaster position="top-right" richColors closeButton />
       </body>
     </html>
   )

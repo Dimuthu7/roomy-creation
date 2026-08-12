@@ -16,7 +16,7 @@ const valid = {
   needs: ['wardrobe'],
   dimensions: '',
   budget: '',
-  source: '',
+  source: 'facebook',
 }
 
 function post(body: unknown) {
@@ -182,5 +182,34 @@ describe('POST /api/enquiry', () => {
     const call = send.mock.calls[0][0]
     expect(call.subject).not.toContain('\n')
     expect(call.subject).toBe('Quotation request — Nimal Bcc: victim@example.com, apartment')
+  })
+
+  it('omits replyTo entirely rather than sending it empty when email was left blank', async () => {
+    const { POST } = await import('./route')
+    await POST(post({ ...valid, email: '' }))
+    const call = send.mock.calls[0][0]
+    expect(call).not.toHaveProperty('replyTo')
+  })
+
+  it('shows the human-readable label for how the visitor found us, not the raw id', async () => {
+    const { POST } = await import('./route')
+    await POST(post({ ...valid, source: 'webPortal' }))
+    const call = send.mock.calls[0][0]
+    expect(call.text).toContain('Found us via: Web Portal')
+  })
+
+  it('notes the "other" need and any remarks in the email body when provided', async () => {
+    const { POST } = await import('./route')
+    await POST(
+      post({
+        ...valid,
+        needs: ['other'],
+        needsOther: 'Custom bookshelf',
+        remarks: 'Prefer a matte finish',
+      }),
+    )
+    const call = send.mock.calls[0][0]
+    expect(call.text).toContain('Needs: other (other: Custom bookshelf)')
+    expect(call.text).toContain('Remarks: Prefer a matte finish')
   })
 })

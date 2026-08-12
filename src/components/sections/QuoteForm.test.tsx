@@ -32,12 +32,34 @@ function renderFormWithPrefill() {
   )
 }
 
+// Property type and "How you found us" are Headless UI Listboxes, not native <select>
+// elements, so `user.selectOptions` (which only understands native selects) cannot
+// drive them — this opens the listbox and clicks the option instead, the same two
+// steps a visitor takes. The panel closing is not proof the selection committed: under
+// jsdom (no real browser, verified fine there) the button's displayed text has been
+// observed to still read "Choose one" for a beat after the options panel is already
+// gone, so this waits on the one signal that actually matters — the button showing the
+// label the visitor just picked — rather than a proxy for it.
+async function chooseOption(
+  user: ReturnType<typeof userEvent.setup>,
+  fieldName: RegExp,
+  optionName: string,
+) {
+  await user.click(screen.getByRole('button', { name: fieldName }))
+  const option = await screen.findByRole('option', { name: optionName })
+  await user.click(option)
+  await waitFor(() =>
+    expect(screen.getByRole('button', { name: fieldName })).toHaveTextContent(optionName),
+  )
+}
+
 async function fillValid(user: ReturnType<typeof userEvent.setup>) {
   await user.type(screen.getByLabelText(/name/i), 'Nimal')
   await user.type(screen.getByLabelText(/phone/i), '0771234567')
   await user.type(screen.getByLabelText(/email/i), 'nimal@example.lk')
-  await user.selectOptions(screen.getByLabelText(/property type/i), 'apartment')
+  await chooseOption(user, /property type/i, 'Apartment')
   await user.click(screen.getByRole('checkbox', { name: /Wardrobe/i }))
+  await chooseOption(user, /how you found us/i, 'Facebook')
 }
 
 beforeEach(() => {
@@ -65,8 +87,20 @@ describe('QuoteForm', () => {
     // kitchen have not measured anything, and without permission to say so they either
     // guess a number or abandon the form. It is approved copy — do not shorten it.
     expect(screen.getByText("Rough room dimensions, or 'not sure yet'")).toBeInTheDocument()
-    expect(screen.getByText('Budget range (optional)')).toBeInTheDocument()
+    expect(screen.getByText('Budget range')).toBeInTheDocument()
     expect(screen.getByText('How you found us')).toBeInTheDocument()
+    expect(screen.getByText('Remarks')).toBeInTheDocument()
+  })
+
+  it('marks Name, Phone, Property type, What you need and How you found us as required, and nothing else', () => {
+    renderForm()
+    expect(screen.getByLabelText(/name/i)).toHaveAttribute('aria-required', 'true')
+    expect(screen.getByLabelText(/phone/i)).toHaveAttribute('aria-required', 'true')
+    expect(screen.getByLabelText(/property type/i)).toHaveAttribute('aria-required', 'true')
+    expect(screen.getByLabelText(/how you found us/i)).toHaveAttribute('aria-required', 'true')
+    expect(screen.getByLabelText(/^email/i)).not.toHaveAttribute('aria-required')
+    expect(screen.getByLabelText(/budget range/i)).not.toHaveAttribute('aria-required')
+    expect(screen.getByLabelText(/remarks/i)).not.toHaveAttribute('aria-required')
   })
 
   it('promises a reply time in the static footer line', () => {
@@ -104,16 +138,63 @@ describe('QuoteForm', () => {
     expect(await screen.findByText('Enter your name')).toBeInTheDocument()
   })
 
-  it('keeps the first issue per field, so a blank email is not told it is missing a domain', async () => {
+  it('treats email as optional — a blank email does not block submission', async () => {
     const user = userEvent.setup()
     renderForm()
     await user.type(screen.getByLabelText(/name/i), 'Nimal')
     await user.type(screen.getByLabelText(/phone/i), '0771234567')
-    await user.selectOptions(screen.getByLabelText(/property type/i), 'apartment')
+    await chooseOption(user, /property type/i, 'Apartment')
+    await user.click(screen.getByRole('checkbox', { name: /Wardrobe/i }))
+    await chooseOption(user, /how you found us/i, 'Facebook')
+    await user.click(screen.getByRole('button', { name: 'Send enquiry' }))
+    await waitFor(() => expect(fetch).toHaveBeenCalledWith('/api/enquiry', expect.anything()))
+    expect(screen.queryByText(/enter an email address/i)).toBeNull()
+  })
+
+  it('still validates a malformed email even though the field is optional', async () => {
+    const user = userEvent.setup()
+    renderForm()
+    await user.type(screen.getByLabelText(/name/i), 'Nimal')
+    await user.type(screen.getByLabelText(/phone/i), '0771234567')
+    await user.type(screen.getByLabelText(/^email/i), 'not-an-email')
+    await chooseOption(user, /property type/i, 'Apartment')
+    await user.click(screen.getByRole('checkbox', { name: /Wardrobe/i }))
+    await chooseOption(user, /how you found us/i, 'Facebook')
+    await user.click(screen.getByRole('button', { name: 'Send enquiry' }))
+    expect(await screen.findByText('That email address is missing a domain')).toBeInTheDocument()
+    expect(fetch).not.toHaveBeenCalled()
+  })
+
+  it('requires choosing how the visitor found us', async () => {
+    const user = userEvent.setup()
+    renderForm()
+    await user.type(screen.getByLabelText(/name/i), 'Nimal')
+    await user.type(screen.getByLabelText(/phone/i), '0771234567')
+    await chooseOption(user, /property type/i, 'Apartment')
     await user.click(screen.getByRole('checkbox', { name: /Wardrobe/i }))
     await user.click(screen.getByRole('button', { name: 'Send enquiry' }))
-    expect(await screen.findByText('Enter an email address')).toBeInTheDocument()
-    expect(screen.queryByText('That email address is missing a domain')).toBeNull()
+    expect(await screen.findByText('Choose how you found us')).toBeInTheDocument()
+    expect(fetch).not.toHaveBeenCalled()
+  })
+
+  it('reveals a required "what else" field once Other is checked under What you need', async () => {
+    const user = userEvent.setup()
+    renderForm()
+    expect(screen.queryByLabelText(/what else/i)).toBeNull()
+    await user.click(screen.getByRole('checkbox', { name: /^Other$/i }))
+    expect(screen.getByLabelText(/what else/i)).toBeInTheDocument()
+
+    await user.type(screen.getByLabelText(/name/i), 'Nimal')
+    await user.type(screen.getByLabelText(/phone/i), '0771234567')
+    await chooseOption(user, /property type/i, 'Apartment')
+    await chooseOption(user, /how you found us/i, 'Facebook')
+    await user.click(screen.getByRole('button', { name: 'Send enquiry' }))
+    expect(await screen.findByText('Tell us what else you need')).toBeInTheDocument()
+    expect(fetch).not.toHaveBeenCalled()
+
+    await user.type(screen.getByLabelText(/what else/i), 'A custom bookshelf')
+    await user.click(screen.getByRole('button', { name: 'Send enquiry' }))
+    await waitFor(() => expect(fetch).toHaveBeenCalledWith('/api/enquiry', expect.anything()))
   })
 
   it('does not submit when validation fails', async () => {
