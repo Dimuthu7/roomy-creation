@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next'
-import { Outfit, Instrument_Sans, IBM_Plex_Mono } from 'next/font/google'
+import { Outfit, Instrument_Sans, IBM_Plex_Mono, Bree_Serif } from 'next/font/google'
 import { Toaster } from 'sonner'
 import { SmoothScroll } from '@/components/chrome/SmoothScroll'
 import { CustomCursor } from '@/components/chrome/CustomCursor'
@@ -13,6 +13,9 @@ import './globals.css'
 const outfit = Outfit({ subsets: ['latin'], variable: '--font-outfit', weight: ['600', '700'] })
 const instrument = Instrument_Sans({ subsets: ['latin'], variable: '--font-instrument' })
 const plexMono = IBM_Plex_Mono({ subsets: ['latin'], variable: '--font-plex-mono', weight: ['400', '500'] })
+// Wordmark-only: matches the client's supplied logo mark, not a general display font —
+// everything else in the chrome keeps using --font-display (Outfit).
+const breeSerif = Bree_Serif({ subsets: ['latin'], variable: '--font-bree', weight: '400' })
 
 export const metadata: Metadata = buildMetadata(SITE)
 
@@ -22,7 +25,10 @@ export const viewport: Viewport = siteViewport
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${outfit.variable} ${instrument.variable} ${plexMono.variable}`}>
+    <html
+      lang="en"
+      className={`${outfit.variable} ${instrument.variable} ${plexMono.variable} ${breeSerif.variable}`}
+    >
       <body>
         {/* page.tsx itself wraps its content in EnquiryPrefillProvider (see
             page.test.tsx) — the chrome below does not need that context, so it stays

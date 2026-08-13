@@ -10,6 +10,7 @@
   --font-display: var(--font-outfit);
   --font-body: var(--font-instrument);
   --font-mono: var(--font-plex-mono);
+  --font-wordmark: var(--font-bree);
 }
 
 html {

@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
-import { Logo } from './Logo'
 import { TBC } from '@/lib/tbc'
 
 async function renderFooter() {
@@ -22,10 +21,8 @@ describe('Footer', () => {
   // brief §4: the navy variant on a navy footer would be invisible — the yellow mark
   // is the one that reads against it.
   it('renders the yellow logo variant, not the navy one that would vanish on navy', async () => {
-    const { container } = await renderFooter()
-    const navySrc = render(<Logo variant="navy" />).container.querySelector('img')?.getAttribute('src')
-    const footerSrc = container.querySelector('img')?.getAttribute('src')
-    expect(footerSrc).not.toBe(navySrc)
+    await renderFooter()
+    expect(screen.getByText('Roomy Creations')).toHaveClass('text-yellow')
   })
 
   // Every block is [TBC]-gated exactly like Enquiry.tsx: a heading only renders once

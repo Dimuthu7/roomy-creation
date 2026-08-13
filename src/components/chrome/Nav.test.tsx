@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Nav } from './Nav'
-import { Logo } from './Logo'
 
 describe('Nav', () => {
   // Without this, every keyboard visitor tabs the whole nav before reaching content.
@@ -36,14 +35,12 @@ describe('Nav', () => {
     expect(logoLink).toHaveAttribute('href', '#top')
   })
 
-  // Nav sits on a navy bar, so it needs the yellow mark specifically — the navy
+  // Nav sits on a navy bar, so it needs the yellow wordmark specifically — the navy
   // variant would be invisible against it, the same defect the brief flags for
   // Footer (§4).
   it('renders the yellow logo variant, not the navy one that would vanish on the bar', () => {
-    const { container } = render(<Nav />)
-    const navySrc = render(<Logo variant="navy" />).container.querySelector('img')?.getAttribute('src')
-    const navSrc = container.querySelector('img')?.getAttribute('src')
-    expect(navSrc).not.toBe(navySrc)
+    render(<Nav />)
+    expect(screen.getByText('Roomy Creations')).toHaveClass('text-yellow')
   })
 
   // Nav labels are not client-approved yet — flagged for sign-off, brief §8.

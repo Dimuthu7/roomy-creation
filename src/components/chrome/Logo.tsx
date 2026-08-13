@@ -1,22 +1,19 @@
 import Image from 'next/image'
-import logoYellow from '@/assets/logo.svg'
-import logoNavy from '@/assets/logo-navy.svg'
+import logoMark from '@/assets/logo-mark.png'
 
-const SOURCES = { yellow: logoYellow, navy: logoNavy }
+const TEXT_COLOR = { yellow: 'text-yellow', navy: 'text-navy' } as const
 
 /**
- * The client has supplied no mark yet, so both `src/assets/logo*.svg` files are
- * placeholders (each keeps a `<!-- PLACEHOLDER -->` comment so nobody mistakes them
- * for the real thing). The accessible name is set explicitly here rather than relying
- * on the SVG's own internal `aria-label` — once rendered through `next/image` the file
- * is opaque to assistive tech, so the outer `alt` is what actually gets announced.
- *
- * Explicit width/height (matching the artwork's 240:64 viewBox) rather than `fill`:
- * this is a small chrome mark, not a photo, and it needs to lay out correctly
- * wherever it is dropped without a positioned parent.
+ * The mark is the client's supplied woven-interlace icon, cropped to just the circle
+ * (no background) so it drops onto any surface. The wordmark is real text rather than
+ * baked into the image: it stays crisp at any size, and it's what actually carries the
+ * accessible name — the icon next to it is decorative (`alt=""`).
  */
 export function Logo({ variant = 'yellow' }: { variant?: 'yellow' | 'navy' }) {
   return (
-    <Image src={SOURCES[variant]} alt="Roomy Creations" width={120} height={32} className="h-8 w-auto" />
+    <span className="flex items-center gap-2">
+      <Image src={logoMark} alt="" width={32} height={32} className="h-8 w-8" />
+      <span className={`font-wordmark text-xl ${TEXT_COLOR[variant]}`}>Roomy Creations</span>
+    </span>
   )
 }
