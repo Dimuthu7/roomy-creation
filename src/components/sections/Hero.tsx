@@ -60,21 +60,39 @@ export function Hero() {
           actually have.
         </p>
         <div className="mt-10 flex flex-wrap gap-4">
-          <a href="#enquiry" className="bg-yellow px-7 py-4 font-display text-navy">
+          <a
+            href="#enquiry"
+            className="group inline-flex items-center gap-2 bg-yellow px-7 py-4 font-display text-navy transition duration-300 ease-out hover:-translate-y-0.5 hover:shadow-lg hover:shadow-yellow/30 focus-visible:-translate-y-0.5"
+          >
             Request a quotation
+            <span
+              aria-hidden="true"
+              className="-translate-x-2 opacity-0 transition duration-300 ease-out group-hover:translate-x-0 group-hover:opacity-100 group-focus-visible:translate-x-0 group-focus-visible:opacity-100"
+            >
+              →
+            </span>
           </a>
-          {/* A5: border-sky, not border-teal. Teal measures 2.28:1 against the hero
-              photo where WCAG 1.4.11 needs 3:1 for a control boundary, and darkening
-              the overlay cannot save it — swept to 88% it still only reaches 2.88.
-              Sky clears at 3.45 with the overlay left where it is. */}
-          <a href="#work" className="border border-sky px-7 py-4 font-display text-sky">
+          {/* A5: border-sky, not border-teal, as the resting state. Teal measures
+              2.28:1 against the hero photo where WCAG 1.4.11 needs 3:1 for a control
+              boundary, and darkening the overlay cannot save it — swept to 88% it
+              still only reaches 2.88. Sky clears at 3.45 with the overlay left where
+              it is. The hover/focus state brightens to paper (5.94:1), strictly
+              higher contrast than the resting state, so it carries no new risk. */}
+          <a
+            href="#work"
+            className="border border-sky px-7 py-4 font-display text-sky transition duration-300 ease-out hover:-translate-y-0.5 hover:border-paper hover:text-paper hover:shadow-lg hover:shadow-sky/20 focus-visible:-translate-y-0.5"
+          >
             See our work
           </a>
         </div>
       </div>
 
       {!cutoutFailed && (
-        <div className="pointer-events-none absolute -right-16 bottom-0 hidden w-[38vw] lg:block">
+        // Shrunk from 38vw and darkened to match the dimmed backdrop it sits over —
+        // full-opacity and half-viewport-wide, it was the only sharp, undimmed thing
+        // in the hero and read as "this is a sofa company." Softening it (rather than
+        // lightening bg-navy/72 above) keeps the A5-measured text contrast untouched.
+        <div className="pointer-events-none absolute -right-10 bottom-0 hidden w-[26vw] lg:block">
           <Image
             data-testid="hero-cutout"
             src="/media/cutout-sofa.png"
@@ -82,7 +100,7 @@ export function Hero() {
             aria-hidden="true"
             width={900}
             height={600}
-            className="h-auto w-full"
+            className="h-auto w-full brightness-[0.92] drop-shadow-2xl"
             onError={() => setCutoutFailed(true)}
           />
         </div>
