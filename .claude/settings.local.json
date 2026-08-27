@@ -15,7 +15,22 @@
       "Bash(npx tsc *)",
       "Bash(npx eslint *)",
       "Bash(git add *)",
-      "Bash(git check-ignore *)"
+      "Bash(git check-ignore *)",
+      "Bash(nohup npm run dev)",
+      "Bash(disown)",
+      "Bash(timeout 30 bash -c 'until curl -sf http://localhost:3000 >/dev/null; do sleep 1; done')",
+      "Bash(curl -sf http://localhost:3000)",
+      "Bash(break)",
+      "Bash(chromium-cli --help)",
+      "Bash(node -e \"require.resolve\\('playwright'\\)\")",
+      "Bash(npx --no-install playwright --version)",
+      "Bash(npx --yes playwright screenshot --viewport-size=1440,900 http://localhost:3000 /private/tmp/claude-501/-Users-dimuthuabeysinghe-My-Files-06-Development-Commercial-Projects-Roomy-Creation-roomy-creation/8b8c33a7-5e38-487a-89f3-0aaf84b7d865/scratchpad/hero.png)",
+      "Bash(npx --yes -p playwright node scroll-check.mjs)",
+      "Bash(npm init *)",
+      "Bash(npm install *)",
+      "Bash(node scroll-check.mjs)",
+      "Bash(node console-check.mjs)",
+      "Bash(node network-check.mjs)"
     ],
     "additionalDirectories": [
       "/Users/dimuthuabeysinghe/.npm/_npx/e41f203b7505f1fb",
