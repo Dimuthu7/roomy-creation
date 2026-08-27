@@ -1,7 +1,15 @@
 import { describe, it, expect } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, act } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { setPrefersReducedMotion } from '@/test/browserStubs'
 import { Nav } from './Nav'
+
+function scrollTo(y: number) {
+  Object.defineProperty(window, 'scrollY', { value: y, configurable: true })
+  act(() => {
+    window.dispatchEvent(new Event('scroll'))
+  })
+}
 
 describe('Nav', () => {
   // Without this, every keyboard visitor tabs the whole nav before reaching content.
@@ -94,5 +102,50 @@ describe('Nav', () => {
   it('never uses text-white', () => {
     const { container } = render(<Nav />)
     expect(container.innerHTML).not.toMatch(/text-white/)
+  })
+
+  describe('scroll shrink', () => {
+    it('renders at resting size before any scroll', () => {
+      render(<Nav />)
+      const nav = screen.getByRole('navigation', { name: 'Primary' })
+      const logoLink = screen.getByRole('link', { name: 'Roomy Creations' })
+      expect(nav.className).toMatch(/py-4/)
+      expect(logoLink.className).toMatch(/scale-100/)
+    })
+
+    it('shrinks the main row and logo once scrolled past the threshold', () => {
+      render(<Nav />)
+      const nav = screen.getByRole('navigation', { name: 'Primary' })
+      const logoLink = screen.getByRole('link', { name: 'Roomy Creations' })
+      scrollTo(200)
+      expect(nav.className).toMatch(/py-2\.5/)
+      expect(nav.className).not.toMatch(/py-4/)
+      expect(logoLink.className).toMatch(/scale-90/)
+    })
+
+    it('grows back to resting size once scrolled back near the top', () => {
+      render(<Nav />)
+      const nav = screen.getByRole('navigation', { name: 'Primary' })
+      scrollTo(200)
+      scrollTo(0)
+      expect(nav.className).toMatch(/py-4/)
+    })
+
+    it('lifts the header with a translucent, blurred background once scrolled', () => {
+      const { container } = render(<Nav />)
+      const header = container.querySelector('header') as HTMLElement
+      scrollTo(200)
+      expect(header.className).toMatch(/bg-navy\/95/)
+      expect(header.className).toMatch(/backdrop-blur-sm/)
+    })
+
+    it('never shrinks when the user prefers reduced motion', () => {
+      setPrefersReducedMotion(true)
+      render(<Nav />)
+      const nav = screen.getByRole('navigation', { name: 'Primary' })
+      scrollTo(200)
+      expect(nav.className).toMatch(/py-4/)
+      expect(nav.className).not.toMatch(/py-2\.5/)
+    })
   })
 })

@@ -2,6 +2,7 @@ import { Logo } from './Logo'
 import { SITE } from '@/data/site'
 import { isTBC } from '@/lib/tbc'
 import { whatsappUrl } from '@/lib/whatsapp'
+import { getActiveSocials } from '@/lib/socials'
 import { DistrictsIcon, MapPinIcon, PhoneIcon, SOCIAL_ICONS } from './FooterIcons'
 
 // Every block below is [TBC]-gated exactly like Enquiry.tsx: a heading only renders
@@ -12,11 +13,7 @@ export function Footer() {
   const hasContact = !isTBC(SITE.phone) || !isTBC(SITE.email)
   const hasVisit = !isTBC(SITE.addressLines) || !isTBC(SITE.city) || !isTBC(SITE.openingHours)
   const hasDistricts = !isTBC(SITE.districts)
-  const socials = [
-    { label: 'Facebook', href: SITE.social.facebook },
-    { label: 'Instagram', href: SITE.social.instagram },
-    { label: 'TikTok', href: SITE.social.tiktok },
-  ].filter((s): s is { label: string; href: string } => !isTBC(s.href))
+  const socials = getActiveSocials(SITE.social)
   // Same "Chat on WhatsApp" pattern as WhatsAppFloat.tsx: null while SITE.whatsappNumber
   // is [TBC], so the button simply doesn't render rather than linking nowhere.
   const whatsapp = whatsappUrl(SITE.whatsappNumber, 'Hello Roomy Creations, I have a question.')

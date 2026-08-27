@@ -1,4 +1,8 @@
+'use client'
+
+import { useEffect, useState } from 'react'
 import { Logo } from './Logo'
+import { useMotionLevel } from '@/hooks/useMotionLevel'
 
 // Not client-approved — flagged for sign-off, brief §8. "Process" names the #how
 // section, whose own heading reads "How we work"; the nav keeps the shorter word a
@@ -9,7 +13,29 @@ const LINKS = [
   { href: '#materials', label: 'Materials' },
 ] as const
 
+// Past this many pixels the bar has visibly left the hero, so it's fair to shrink it;
+// scrolling back below it restores the resting size.
+const SCROLL_SHRINK_THRESHOLD = 24
+
+// The back-out easing (overshoot then settle) is what gives the grow-back-to-top
+// motion its "zoom" pop, rather than a flat linear resize.
+const SHRINK_TRANSITION = 'transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]'
+
 export function Nav() {
+  const level = useMotionLevel()
+  const [scrolled, setScrolled] = useState(false)
+
+  useEffect(() => {
+    // Reduced motion keeps the bar at its resting, full size always — the same "safe
+    // state: content visible, nothing transformed" contract useMotionLevel itself
+    // documents for this case.
+    if (level === 'reduced') return
+    const onScroll = () => setScrolled(window.scrollY > SCROLL_SHRINK_THRESHOLD)
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [level])
+
   return (
     <>
       {/* F2 skip link: without it, every keyboard visitor tabs the whole nav before
@@ -26,12 +52,21 @@ export function Nav() {
 
       {/* z-50: sits above a navy hero. The hairline is what keeps it visible at rest
           against a navy section beneath it. */}
-      <header className="fixed inset-x-0 top-0 z-50 border-b border-teal/30 bg-navy">
+      <header
+        className={`fixed inset-x-0 top-0 z-50 border-b border-teal/30 ${SHRINK_TRANSITION} ${
+          scrolled ? 'bg-navy/95 shadow-lg shadow-navy/30 backdrop-blur-sm' : 'bg-navy'
+        }`}
+      >
         <nav
           aria-label="Primary"
-          className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-4"
+          className={`mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 ${SHRINK_TRANSITION} ${
+            scrolled ? 'py-2.5' : 'py-4'
+          }`}
         >
-          <a href="#top" className="shrink-0">
+          <a
+            href="#top"
+            className={`shrink-0 origin-left ${SHRINK_TRANSITION} ${scrolled ? 'scale-90' : 'scale-100'}`}
+          >
             <Logo variant="yellow" />
           </a>
 
