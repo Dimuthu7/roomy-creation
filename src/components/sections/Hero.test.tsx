@@ -1,6 +1,15 @@
 import { describe, it, expect } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, act } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { Hero } from './Hero'
+import { setPrefersReducedMotion, getScrollIntoViewCalls } from '@/test/browserStubs'
+
+function scrollTo(y: number) {
+  Object.defineProperty(window, 'scrollY', { value: y, configurable: true })
+  act(() => {
+    window.dispatchEvent(new Event('scroll'))
+  })
+}
 
 function heroImage(): HTMLImageElement {
   return screen.getByRole('img', { name: /wardrobes and upholstered seating/i })
@@ -128,5 +137,51 @@ describe('Hero', () => {
     const secondary = screen.getByRole('link', { name: 'See our work' })
     expect(secondary.className).toMatch(/border-sky/)
     expect(secondary.className).not.toMatch(/border-teal/)
+  })
+
+  it('carries a scroll cue distinct from the "See our work" link, targeting #position', () => {
+    render(<Hero />)
+    const cue = screen.getByRole('link', { name: 'Scroll down' })
+    expect(cue).toHaveAttribute('href', '#position')
+    expect(cue).not.toBe(screen.getByRole('link', { name: 'See our work' }))
+  })
+
+  it('fades the scroll cue out and removes it from tab order once scrolled past the hero', () => {
+    render(<Hero />)
+    const cue = screen.getByRole('link', { name: 'Scroll down' })
+    expect(cue.className).not.toMatch(/opacity-0/)
+    expect(cue).not.toHaveAttribute('tabindex')
+
+    scrollTo(80)
+
+    expect(cue.className).toMatch(/opacity-0/)
+    expect(cue).toHaveAttribute('tabindex', '-1')
+  })
+
+  it('smooth-scrolls to #position when the scroll cue is clicked', async () => {
+    const user = userEvent.setup()
+    render(
+      <>
+        <Hero />
+        <div id="position" />
+      </>,
+    )
+    await user.click(screen.getByRole('link', { name: 'Scroll down' }))
+    const calls = getScrollIntoViewCalls()
+    expect(calls[calls.length - 1].arg).toEqual({ behavior: 'smooth' })
+  })
+
+  it('scrolls to #position instantly under reduced motion', async () => {
+    setPrefersReducedMotion(true)
+    const user = userEvent.setup()
+    render(
+      <>
+        <Hero />
+        <div id="position" />
+      </>,
+    )
+    await user.click(screen.getByRole('link', { name: 'Scroll down' }))
+    const calls = getScrollIntoViewCalls()
+    expect(calls[calls.length - 1].arg).toEqual({ behavior: 'auto' })
   })
 })

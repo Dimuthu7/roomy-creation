@@ -72,6 +72,12 @@ describe('Position', () => {
     expect(screen.queryByRole('heading')).not.toBeInTheDocument()
   })
 
+  // Hero's scroll cue targets #position — the section straight after the hero.
+  it('carries id="position" so it can be scrolled to directly', () => {
+    render(<Position />)
+    expect(document.getElementById('position')).not.toBeNull()
+  })
+
   describe('at full motion (pinned scroll reveal)', () => {
     // Point 0 has both a main and a sub line — they must load together on the very
     // first render, not as two separate scroll steps. Points 1-3 wait for scroll.

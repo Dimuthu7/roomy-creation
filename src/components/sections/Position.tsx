@@ -95,7 +95,7 @@ function CompactPosition() {
   const knownStats = STAT_ROWS.filter(([key]) => !isTBC(SITE.figures[key]))
 
   return (
-    <section aria-label="Position" className="relative overflow-hidden bg-navy py-28">
+    <section id="position" aria-label="Position" className="relative overflow-hidden bg-navy py-28">
       <WeaveTexture />
       <div
         data-testid="position-points"
@@ -158,6 +158,7 @@ function PinnedPosition() {
 
   return (
     <section
+      id="position"
       aria-label="Position"
       ref={trackRef}
       className="relative bg-navy"

@@ -101,3 +101,23 @@ body {
 .how-nudge {
   animation: how-nudge 1.1s ease-in-out 0.8s 1;
 }
+
+/*
+ * Hero's "scroll down" cue. A continuous loop, unlike how-nudge's one-shot hint above
+ * — this is a standing affordance, not a nudge that should stop calling attention to
+ * itself. Caught by the prefers-reduced-motion guard above like any other animation,
+ * so no separate JS gating is needed for the bounce itself.
+ */
+@keyframes scroll-cue-bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(8px);
+  }
+}
+
+.animate-scroll-cue {
+  animation: scroll-cue-bounce 1.6s ease-in-out infinite;
+}
