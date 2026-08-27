@@ -1,7 +1,25 @@
 {
   "permissions": {
     "allow": [
-      "Read(//Users/dimuthuabeysinghe/My Files/06_Development/Projects/Projects/Roomy Creation/**)"
+      "Read(//Users/dimuthuabeysinghe/My Files/06_Development/Projects/Projects/Roomy Creation/**)",
+      "Bash(lsof -ti:3000 -sTCP:LISTEN)",
+      "Bash(xargs -r kill)",
+      "Bash(git stash *)",
+      "Bash(git checkout *)",
+      "Read(//Users/dimuthuabeysinghe/.npm/_npx/e41f203b7505f1fb/**)",
+      "Bash(node check-nav.mjs)",
+      "Read(//tmp/**)",
+      "Read(//private/tmp/**)",
+      "Bash(cd \"/Users/dimuthuabeysinghe/My Files/06_Development/Commercial_Projects/Roomy Creation/roomy-creation\" && lsof -ti:3000 -sTCP:LISTEN | xargs -r kill *)",
+      "Bash(npx vitest *)",
+      "Bash(npx tsc *)",
+      "Bash(npx eslint *)",
+      "Bash(git add *)",
+      "Bash(git check-ignore *)"
+    ],
+    "additionalDirectories": [
+      "/Users/dimuthuabeysinghe/.npm/_npx/e41f203b7505f1fb",
+      "/tmp"
     ]
   }
 }
