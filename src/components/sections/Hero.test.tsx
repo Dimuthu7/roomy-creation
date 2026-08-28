@@ -114,19 +114,22 @@ describe('Hero', () => {
    * A5. These two are contrast fixes, not styling preferences, so they are pinned.
    *
    * Measured in a real browser against the delivered hero-master.jpg — sampling the
-   * actual photo pixels beneath each element and compositing bg-navy/72 over them,
-   * plus the WeaveTexture's teal at 0.14 as the worst case:
+   * actual photo pixels beneath each element and compositing bg-navy/72 over them:
    *
-   *   sub-line as text-sky   4.20:1  (3.68 worst case) — AA normal text needs 4.5
-   *   sub-line as text-paper 5.94:1                    — passes with margin
-   *   border-teal            2.28:1  (2.03 worst case) — 1.4.11 non-text needs 3.0
-   *   border-sky             3.45:1                    — passes
+   *   sub-line as text-sky   4.20:1 — AA normal text needs 4.5
+   *   sub-line as text-paper 5.94:1 — passes with margin
+   *   border-teal            2.28:1 — 1.4.11 non-text needs 3.0
+   *   border-sky             3.45:1 — passes
    *
    * Teal cannot be rescued by darkening the overlay: swept across 0.72/0.76/0.80/
    * 0.84/0.88 it reaches only 2.03/2.21/2.42/2.64/2.88 and never touches 3:1. That is
    * why the border colour changes rather than the overlay. The sub-line is the one
    * deliberate exception to D2's "text-sky carries body copy" — chosen over darkening
    * the overlay so the hero photograph stays visible.
+   *
+   * The backdrop behind the text is now a vignette + grain (HeroBackdrop in Hero.tsx)
+   * rather than WeaveTexture's teal wash — the vignette only ever darkens toward the
+   * edges, so it cannot make these numbers worse, but hasn't been re-sampled since.
    */
   it('keeps the hero sub-line and secondary CTA at their measured contrast colours', () => {
     render(<Hero />)

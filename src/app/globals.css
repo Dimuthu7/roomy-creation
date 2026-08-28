@@ -121,3 +121,19 @@ body {
 .animate-scroll-cue {
   animation: scroll-cue-bounce 1.6s ease-in-out infinite;
 }
+
+/*
+ * Hero headline extrusion. The front face stays text-paper (already
+ * contrast-checked against the photo — see Hero.tsx's A5 note, untouched here since
+ * text-shadow doesn't affect the measured fill color); the depth is a single navy
+ * tone stepping down in opacity. An earlier version shaded each step through sky and
+ * teal, which read as colour fringing rather than depth and hurt legibility — a
+ * monochrome shadow reads as solid extrusion instead.
+ */
+.text-extrude {
+  text-shadow:
+    1px 1px 0 rgba(2, 48, 72, 0.85),
+    2px 2px 0 rgba(2, 48, 72, 0.7),
+    3px 3px 0 rgba(2, 48, 72, 0.55),
+    4px 5px 6px rgba(2, 48, 72, 0.5);
+}

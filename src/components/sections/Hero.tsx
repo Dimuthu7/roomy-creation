@@ -1,7 +1,6 @@
 'use client'
 import Image from 'next/image'
 import { useEffect, useState } from 'react'
-import { WeaveTexture } from '@/components/weave/WeaveTexture'
 import { useMotionLevel } from '@/hooks/useMotionLevel'
 
 // Past this many pixels the cue has served its purpose — the visitor is already
@@ -64,14 +63,14 @@ export function Hero() {
         />
       )}
       <div className="absolute inset-0 bg-navy/72" />
-      <WeaveTexture />
+      <HeroBackdrop />
 
       <div className="relative z-10 mx-auto w-full max-w-6xl px-6 lg:px-12">
         {/* D2: pure white is not in the brand palette. text-paper carries display
             type on navy, text-sky carries body copy. */}
         <h1
           id="hero-heading"
-          className="max-w-3xl font-display text-5xl leading-[1.05] tracking-tight text-paper lg:text-7xl"
+          className="text-extrude max-w-3xl font-display text-5xl leading-[1.05] tracking-tight text-paper lg:text-7xl"
         >
           We measure your wall, then build to it.
         </h1>
@@ -149,6 +148,30 @@ export function Hero() {
         <ChevronDownIcon />
       </a>
     </section>
+  )
+}
+
+// Replaces the tiled weave pattern (WeaveTexture), which read as clutter over the
+// photo at hero scale — the same reason it was pulled from Position's background.
+// A vignette darkens the frame and fine grain adds texture, without a repeating
+// shape competing with the photo or the headline.
+function HeroBackdrop() {
+  return (
+    <div className="pointer-events-none absolute inset-0" aria-hidden="true">
+      <div
+        className="absolute inset-0"
+        style={{
+          background: 'radial-gradient(ellipse at center, transparent 38%, rgba(2,48,72,0.6) 100%)',
+        }}
+      />
+      <svg className="absolute inset-0 h-full w-full opacity-50 mix-blend-overlay">
+        <filter id="hero-grain">
+          <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" stitchTiles="stitch" result="noise" />
+          <feColorMatrix in="noise" type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.05 0" />
+        </filter>
+        <rect width="100%" height="100%" filter="url(#hero-grain)" />
+      </svg>
+    </div>
   )
 }
 
