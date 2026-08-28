@@ -99,7 +99,14 @@ function CompactPosition() {
   const knownStats = STAT_ROWS.filter(([key]) => !isTBC(SITE.figures[key]))
 
   return (
-    <section id="position" aria-label="Position" className="relative overflow-hidden bg-navy py-28">
+    // No overflow-hidden here: it would become the nearest scroll container for the
+    // mobile stat pin's position: sticky below, and since this section never scrolls
+    // on its own (the page scrolls around it), the sticky element would never
+    // actually engage — it'd just sit at its static top-of-flow position instead of
+    // centering. WeaveReveal's horizontal offset is already forced to 0 at the
+    // 'mobile' motion level (and it's a no-op under 'reduced'), the only two levels
+    // this component ever renders at, so there was never anything left to clip here.
+    <section id="position" aria-label="Position" className="relative bg-navy py-28">
       <div
         data-testid="position-points"
         className="relative z-10 mx-auto grid max-w-4xl grid-cols-[1.25rem_1fr] gap-x-4 gap-y-[var(--pos-gap)] px-6 [--pos-gap:2.5rem] sm:grid-cols-[2rem_1fr] sm:gap-x-8 sm:[--pos-gap:3rem] lg:[--pos-gap:3.5rem]"

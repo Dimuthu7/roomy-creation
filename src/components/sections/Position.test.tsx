@@ -332,6 +332,30 @@ describe('Position', () => {
         }
       })
 
+      // An ancestor with any overflow other than visible (including hidden) becomes
+      // the nearest "scroll container" position: sticky computes against — and since
+      // that ancestor is the section itself, which never scrolls on its own (the
+      // *page* scrolls around it), a sticky descendant inside it never actually
+      // engages: it just renders at its static top-of-flow position and never
+      // centers, which is invisible to jsdom (it doesn't lay out real sticky
+      // positioning) but very visible on a real phone as content glued to the top
+      // with dead space where the centered pin should be.
+      it('does not wrap the pinned stat track in any ancestor with overflow other than visible, which would stop it sticking', async () => {
+        window.innerWidth = 600
+        const { container } = await renderPositionWithFigures({
+          yearsInBusiness: 2,
+          homesFitted: 10,
+          unitsDelivered: 20,
+          districtsCovered: 3,
+        })
+        const track = container.querySelector('[data-testid="position-stats-track"]') as HTMLElement
+        let node: HTMLElement | null = track.parentElement
+        while (node && node !== container) {
+          expect(node.className).not.toMatch(/overflow-(hidden|auto|scroll|clip)/)
+          node = node.parentElement
+        }
+      })
+
       it('keeps the stats in the same compact 2-column block, reverting to a row from sm up', async () => {
         window.innerWidth = 600
         const { container } = await renderPositionWithFigures({
