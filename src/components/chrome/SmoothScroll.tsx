@@ -7,12 +7,21 @@ import { useMotionLevel } from '@/hooks/useMotionLevel'
 
 gsap.registerPlugin(ScrollTrigger)
 
+let activeLenis: Lenis | null = null
+
+// Lets other chrome (ScrollToTop) drive the same smoothed scroll engine instead of
+// fighting it with a second, independent scroll mechanism.
+export function getLenis(): Lenis | null {
+  return activeLenis
+}
+
 export function SmoothScroll() {
   const level = useMotionLevel()
 
   useEffect(() => {
     if (level === 'reduced') return
     const lenis = new Lenis({ duration: 1.05, smoothWheel: true })
+    activeLenis = lenis
 
     lenis.on('scroll', ScrollTrigger.update)
     const tick = (time: number) => lenis.raf(time * 1000)
@@ -39,6 +48,7 @@ export function SmoothScroll() {
       resizeObserver.disconnect()
       gsap.ticker.remove(tick)
       lenis.destroy()
+      activeLenis = null
     }
   }, [level])
 

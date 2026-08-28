@@ -6,6 +6,7 @@ import { CustomCursor } from '@/components/chrome/CustomCursor'
 import { Nav } from '@/components/chrome/Nav'
 import { Footer } from '@/components/chrome/Footer'
 import { WhatsAppFloat } from '@/components/chrome/WhatsAppFloat'
+import { ScrollToTop } from '@/components/chrome/ScrollToTop'
 import { buildMetadata, viewport as siteViewport } from '@/lib/metadata'
 import { SITE } from '@/data/site'
 import './globals.css'
@@ -39,6 +40,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {children}
         <Footer />
         <WhatsAppFloat />
+        <ScrollToTop />
         <Toaster position="top-right" richColors closeButton />
       </body>
     </html>
