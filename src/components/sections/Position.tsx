@@ -3,7 +3,6 @@ import { Fragment, useEffect, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import { WeaveReveal } from '@/components/weave/WeaveReveal'
 import { WeaveThreadNode } from '@/components/weave/WeaveThread'
-import { WeaveTexture } from '@/components/weave/WeaveTexture'
 import { activeScrollStep } from '@/lib/scrollProgress'
 import { useMotionLevel } from '@/hooks/useMotionLevel'
 import { useCountUp } from '@/hooks/useCountUp'
@@ -96,7 +95,6 @@ function CompactPosition() {
 
   return (
     <section id="position" aria-label="Position" className="relative overflow-hidden bg-navy py-28">
-      <WeaveTexture />
       <div
         data-testid="position-points"
         className="relative z-10 mx-auto grid max-w-4xl grid-cols-[1.25rem_1fr] gap-x-4 gap-y-[var(--pos-gap)] px-6 [--pos-gap:2.5rem] sm:grid-cols-[2rem_1fr] sm:gap-x-8 sm:[--pos-gap:3rem] lg:[--pos-gap:3.5rem]"
@@ -165,7 +163,6 @@ function PinnedPosition() {
       style={{ height: `${STEP_VH * POINTS.length}vh` }}
     >
       <div className="sticky top-0 flex h-screen items-center overflow-hidden">
-        <WeaveTexture />
         <div className="relative z-10 mx-auto w-full max-w-4xl px-6">
           <div data-testid="position-points" className="grid">
             {POINTS.map((point, i) => {
