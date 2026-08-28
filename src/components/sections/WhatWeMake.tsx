@@ -73,6 +73,10 @@ function Card({ index, label }: { index: number; label: string }) {
       // onclick), so without this the active: glow below would never fire on a touch
       // tap, only on desktop's :hover.
       onClick={() => {}}
+      // `whileTap` alone makes framer-motion inject tabIndex=0 on mount (it assumes
+      // anything tappable should be keyboard-operable) — this card is a presentational
+      // touch effect, not a control, so that has to be overridden explicitly.
+      tabIndex={-1}
       style={level === 'full' ? { rotateX, rotateY, transformPerspective: 900 } : undefined}
       whileTap={reduced ? undefined : { scale: 0.96 }}
       className="group rounded-2xl border border-teal/30 bg-teal/5 p-8 transition-colors duration-300 hover:border-teal/50 active:border-teal/60 active:bg-teal/15"

@@ -100,4 +100,12 @@ describe('WhatWeMake', () => {
     expect(reducedCard.className).toMatch(/active:border-teal\/60/)
     expect(reducedCard.className).toMatch(/active:bg-teal\/15/)
   })
+
+  // `whileTap` makes framer-motion auto-inject tabIndex=0 on mount, turning a
+  // presentational card into a dead keyboard stop — the explicit override has to hold.
+  it('does not turn cards into keyboard tab stops', () => {
+    const { container } = render(<WhatWeMake />)
+    const card = container.querySelector('[data-testid="make-card-0"]') as HTMLElement
+    expect(card.tabIndex).toBe(-1)
+  })
 })
