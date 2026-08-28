@@ -36,6 +36,13 @@ export function Hero() {
     })
   }
 
+  function scrollToWork(e: React.MouseEvent) {
+    e.preventDefault()
+    document.getElementById('work')?.scrollIntoView({
+      behavior: level === 'reduced' ? 'auto' : 'smooth',
+    })
+  }
+
   return (
     <section
       id="top"
@@ -103,6 +110,7 @@ export function Hero() {
               higher contrast than the resting state, so it carries no new risk. */}
           <a
             href="#work"
+            onClick={scrollToWork}
             className="flex w-full items-center justify-center border border-sky px-7 py-4 font-display text-sky transition duration-300 ease-out hover:-translate-y-0.5 hover:border-paper hover:text-paper hover:shadow-lg hover:shadow-sky/20 focus-visible:-translate-y-0.5 active:scale-95 sm:w-auto"
           >
             See our work
