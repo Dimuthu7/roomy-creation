@@ -76,4 +76,28 @@ describe('WhatWeMake', () => {
     render(<WhatWeMake />)
     expect(screen.getByRole('region', { name: 'What we make' })).toBeInTheDocument()
   })
+
+  it('gives each card its own icon, above the label', () => {
+    const { container } = render(<WhatWeMake />)
+    LABELS.forEach((_, i) => {
+      const card = container.querySelector(`[data-testid="make-card-${i}"]`) as HTMLElement
+      expect(card.querySelector('svg')).not.toBeNull()
+    })
+  })
+
+  // Not styled via `:hover` alone — a bordered box with a flat navy fill read as an
+  // empty outline rather than something a visitor could touch, on the mobile view
+  // this section actually ships on.
+  it('brightens a card’s border and background on press, a colour change so it still plays under reduced motion', () => {
+    const { container } = render(<WhatWeMake />)
+    const card = container.querySelector('[data-testid="make-card-0"]') as HTMLElement
+    expect(card.className).toMatch(/active:border-teal\/60/)
+    expect(card.className).toMatch(/active:bg-teal\/15/)
+
+    setPrefersReducedMotion(true)
+    const { container: reducedContainer } = render(<WhatWeMake />)
+    const reducedCard = reducedContainer.querySelector('[data-testid="make-card-0"]') as HTMLElement
+    expect(reducedCard.className).toMatch(/active:border-teal\/60/)
+    expect(reducedCard.className).toMatch(/active:bg-teal\/15/)
+  })
 })
