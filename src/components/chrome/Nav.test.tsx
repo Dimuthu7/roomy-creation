@@ -91,14 +91,6 @@ describe('Nav', () => {
     expect(header.className).toMatch(/border-teal\/30/)
   })
 
-  // No hamburger drawer: four anchors fit in a horizontally scrollable row, and a
-  // drawer is a focus-trap that would have to be written, tested and maintained for
-  // four links.
-  it('builds no hamburger menu button — the link row itself collapses on mobile', () => {
-    render(<Nav />)
-    expect(screen.queryByRole('button')).not.toBeInTheDocument()
-  })
-
   it('never uses text-white', () => {
     const { container } = render(<Nav />)
     expect(container.innerHTML).not.toMatch(/text-white/)
@@ -201,6 +193,84 @@ describe('Nav', () => {
       scrollTo(200)
       expect(nav.className).toMatch(/py-4/)
       expect(nav.className).not.toMatch(/py-2\.5/)
+    })
+  })
+
+  // Below `sm:` the link row collapses behind a hamburger so it no longer needs to
+  // horizontally scroll; at `sm:` and up it reverts to the plain inline row.
+  describe('mobile menu', () => {
+    it('shows exactly one hamburger toggle, closed by default, hidden from `sm:` up', () => {
+      render(<Nav />)
+      const toggle = screen.getByRole('button', { name: 'Open menu' })
+      expect(toggle).toHaveAttribute('aria-expanded', 'false')
+      expect(toggle.className).toMatch(/sm:hidden/)
+    })
+
+    it('opens the link panel and relabels the toggle when clicked, and closes again on a second click', async () => {
+      const user = userEvent.setup()
+      render(<Nav />)
+      await user.click(screen.getByRole('button', { name: 'Open menu' }))
+      expect(screen.getByRole('button', { name: 'Close menu' })).toHaveAttribute(
+        'aria-expanded',
+        'true',
+      )
+      await user.click(screen.getByRole('button', { name: 'Close menu' }))
+      expect(screen.getByRole('button', { name: 'Open menu' })).toHaveAttribute(
+        'aria-expanded',
+        'false',
+      )
+    })
+
+    it('associates the toggle with the panel it controls', () => {
+      render(<Nav />)
+      const toggle = screen.getByRole('button', { name: 'Open menu' })
+      const panelId = toggle.getAttribute('aria-controls')
+      expect(panelId).toBeTruthy()
+      expect(document.getElementById(panelId as string)).not.toBeNull()
+    })
+
+    it('closes the panel once a link inside it is clicked, after smooth-scrolling to that section', async () => {
+      const user = userEvent.setup()
+      render(
+        <>
+          <Nav />
+          <div id="work" />
+        </>,
+      )
+      await user.click(screen.getByRole('button', { name: 'Open menu' }))
+      await user.click(screen.getByRole('link', { name: 'Work' }))
+      const calls = getScrollIntoViewCalls()
+      expect(calls[calls.length - 1].arg).toEqual({ behavior: 'smooth' })
+      expect(screen.getByRole('button', { name: 'Open menu' })).toBeInTheDocument()
+    })
+
+    it('puts the CTA inside the collapsible panel, alongside the links, so it opens and closes with the menu', () => {
+      render(<Nav />)
+      const cta = screen.getByRole('link', { name: 'Request a quotation' })
+      const panel = document.getElementById('mobile-nav-panel')
+      expect(panel?.contains(cta)).toBe(true)
+    })
+
+    it('collapses the panel to zero height and opacity when closed, and expands it when opened', async () => {
+      const user = userEvent.setup()
+      render(<Nav />)
+      const panel = document.getElementById('mobile-nav-panel') as HTMLElement
+      expect(panel.className).toMatch(/max-h-0/)
+      expect(panel.className).toMatch(/opacity-0/)
+      await user.click(screen.getByRole('button', { name: 'Open menu' }))
+      expect(panel.className).toMatch(/max-h-96/)
+      expect(panel.className).toMatch(/opacity-100/)
+    })
+
+    it('animates the panel open under normal motion, but snaps instantly under reduced motion', () => {
+      const panel = () => document.getElementById('mobile-nav-panel') as HTMLElement
+      const { unmount } = render(<Nav />)
+      expect(panel().className).toMatch(/transition-\[max-height,opacity\]/)
+      unmount()
+
+      setPrefersReducedMotion(true)
+      render(<Nav />)
+      expect(panel().className).not.toMatch(/transition-\[max-height,opacity\]/)
     })
   })
 })

@@ -23,18 +23,20 @@ const SHRINK_TRANSITION = 'transition-all duration-500 ease-[cubic-bezier(0.34,1
 
 export function Nav() {
   const level = useMotionLevel()
+  const reduced = level === 'reduced'
   const [scrolled, setScrolled] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
 
   useEffect(() => {
     // Reduced motion keeps the bar at its resting, full size always — the same "safe
     // state: content visible, nothing transformed" contract useMotionLevel itself
     // documents for this case.
-    if (level === 'reduced') return
+    if (reduced) return
     const onScroll = () => setScrolled(window.scrollY > SCROLL_SHRINK_THRESHOLD)
     onScroll()
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
-  }, [level])
+  }, [reduced])
 
   // Plain anchors jump instantly with no easing. Matches Hero's own scroll cue and
   // the enquiry prefill's scrollIntoView pattern — an explicit `behavior` here beats
@@ -42,8 +44,9 @@ export function Nav() {
   // rather than left at the default 'smooth'.
   function scrollToSection(e: React.MouseEvent<HTMLAnchorElement>, href: string) {
     e.preventDefault()
+    setMenuOpen(false)
     document.querySelector(href)?.scrollIntoView({
-      behavior: level === 'reduced' ? 'auto' : 'smooth',
+      behavior: reduced ? 'auto' : 'smooth',
     })
   }
 
@@ -70,7 +73,7 @@ export function Nav() {
       >
         <nav
           aria-label="Primary"
-          className={`mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 ${SHRINK_TRANSITION} ${
+          className={`mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-6 ${SHRINK_TRANSITION} ${
             scrolled ? 'py-2.5' : 'py-4'
           }`}
         >
@@ -81,11 +84,35 @@ export function Nav() {
             <Logo variant="yellow" />
           </a>
 
-          {/* No hamburger drawer: four anchors fit in a horizontally scrollable row on
-              a narrow viewport, and a drawer is a focus-trap this component would then
-              have to build, test and maintain for four links. The CTA stays in this
-              same row so it is always visible, never hidden behind a toggle. */}
-          <div className="flex items-center gap-6 overflow-x-auto">
+          {/* Below `sm:` this is the only other thing in the bar's first row, so it
+              lands top-right against the logo for free via `justify-between` — no CTA
+              competing for that row on mobile any more; the CTA moved into the panel
+              below instead. */}
+          <button
+            type="button"
+            onClick={() => setMenuOpen((open) => !open)}
+            aria-expanded={menuOpen}
+            aria-controls="mobile-nav-panel"
+            aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded text-sky transition-transform duration-150 active:scale-95 sm:hidden"
+          >
+            <MenuIcon open={menuOpen} />
+          </button>
+
+          {/* One set of links and one CTA, not two: `w-full` plus the nav's own
+              `flex-wrap` is what drops this onto its own row below `sm:`, so there is
+              nothing to duplicate between the mobile panel and the desktop row —
+              `sm:flex` just makes it part of the same row again, CTA included. The
+              open/close animation is a max-height + opacity transition rather than a
+              hidden/flex swap, since a plain display toggle cannot animate; reduced
+              motion drops straight to instant per the same contract every other
+              transition in this file follows. */}
+          <div
+            id="mobile-nav-panel"
+            className={`flex w-full flex-col items-start gap-1 overflow-hidden border-t border-teal/30 sm:order-1 sm:w-auto sm:flex-row sm:items-center sm:gap-6 sm:overflow-visible sm:border-0 sm:!max-h-none sm:!opacity-100 sm:!pt-0 ${
+              reduced ? '' : 'transition-[max-height,opacity] duration-300 ease-out'
+            } ${menuOpen ? 'max-h-96 pt-4 opacity-100' : 'max-h-0 pt-0 opacity-0'}`}
+          >
             {LINKS.map((link) => (
               <a
                 key={link.href}
@@ -101,7 +128,7 @@ export function Nav() {
             <a
               href="#enquiry"
               onClick={(e) => scrollToSection(e, '#enquiry')}
-              className="shrink-0 rounded-full bg-yellow px-4 py-2 font-display text-sm text-navy whitespace-nowrap transition-transform duration-150 active:scale-95"
+              className="mt-2 shrink-0 rounded-full bg-yellow px-4 py-2 font-display text-sm text-navy whitespace-nowrap transition-transform duration-150 active:scale-95 sm:mt-0"
             >
               Request a quotation
             </a>
@@ -109,5 +136,17 @@ export function Nav() {
         </nav>
       </header>
     </>
+  )
+}
+
+function MenuIcon({ open }: { open: boolean }) {
+  return (
+    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor">
+      {open ? (
+        <path d="M6 6l12 12M18 6L6 18" strokeWidth="2" strokeLinecap="round" />
+      ) : (
+        <path d="M4 7h16M4 12h16M4 17h16" strokeWidth="2" strokeLinecap="round" />
+      )}
+    </svg>
   )
 }
