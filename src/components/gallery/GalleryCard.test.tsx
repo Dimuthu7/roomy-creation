@@ -14,6 +14,11 @@ describe('GalleryCard', () => {
     expect(screen.queryByTestId('card-fallback')).not.toBeInTheDocument()
   })
 
+  it('compresses slightly on tap', () => {
+    render(<GalleryCard work={work} index={1} eager onOpen={vi.fn()} />)
+    expect(screen.getByRole('button').className).toMatch(/active:scale-\[0\.97\]/)
+  })
+
   it('calls onOpen with the given index when clicked', async () => {
     const user = userEvent.setup()
     const onOpen = vi.fn()

@@ -20,7 +20,7 @@ export function FilterRow({
             type="button"
             aria-pressed={isActive}
             onClick={() => onChange(c.id)}
-            className={`u-mono rounded-full px-4 py-2 transition-colors duration-200 ${
+            className={`u-mono rounded-full px-4 py-2 transition duration-200 active:scale-95 ${
               isActive
                 ? 'bg-yellow text-navy'
                 : 'border border-teal/40 text-sky hover:border-teal'

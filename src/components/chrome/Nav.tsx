@@ -36,6 +36,17 @@ export function Nav() {
     return () => window.removeEventListener('scroll', onScroll)
   }, [level])
 
+  // Plain anchors jump instantly with no easing. Matches Hero's own scroll cue and
+  // the enquiry prefill's scrollIntoView pattern — an explicit `behavior` here beats
+  // the CSS `scroll-behavior` reduced-motion guard, so it's computed from `level`
+  // rather than left at the default 'smooth'.
+  function scrollToSection(e: React.MouseEvent<HTMLAnchorElement>, href: string) {
+    e.preventDefault()
+    document.querySelector(href)?.scrollIntoView({
+      behavior: level === 'reduced' ? 'auto' : 'smooth',
+    })
+  }
+
   return (
     <>
       {/* F2 skip link: without it, every keyboard visitor tabs the whole nav before
@@ -79,7 +90,8 @@ export function Nav() {
               <a
                 key={link.href}
                 href={link.href}
-                className="u-mono shrink-0 whitespace-nowrap text-sky hover:text-yellow"
+                onClick={(e) => scrollToSection(e, link.href)}
+                className="u-mono shrink-0 whitespace-nowrap text-sky transition-opacity duration-150 hover:text-yellow active:opacity-60"
               >
                 {link.label}
               </a>
@@ -88,7 +100,8 @@ export function Nav() {
                 control, teal is 2.7:1 and a line/edge colour only. */}
             <a
               href="#enquiry"
-              className="shrink-0 rounded-full bg-yellow px-4 py-2 font-display text-sm text-navy whitespace-nowrap"
+              onClick={(e) => scrollToSection(e, '#enquiry')}
+              className="shrink-0 rounded-full bg-yellow px-4 py-2 font-display text-sm text-navy whitespace-nowrap transition-transform duration-150 active:scale-95"
             >
               Request a quotation
             </a>

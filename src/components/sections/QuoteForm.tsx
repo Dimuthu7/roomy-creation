@@ -270,7 +270,7 @@ export function QuoteForm() {
       <button
         type="submit"
         disabled={state === 'sending'}
-        className="w-full rounded-full bg-yellow px-6 py-4 font-display text-navy transition-colors duration-200 hover:bg-yellow/80 disabled:opacity-60"
+        className="w-full rounded-full bg-yellow px-6 py-4 font-display text-navy transition duration-200 hover:bg-yellow/80 active:scale-95 disabled:opacity-60"
       >
         {state === 'sending' ? 'Sending' : 'Send enquiry'}
       </button>

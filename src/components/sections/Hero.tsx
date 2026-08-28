@@ -82,10 +82,10 @@ export function Hero() {
           Built-in wardrobes, pantry cupboards and upholstered seating, cut to the room you
           actually have.
         </p>
-        <div className="mt-10 flex flex-wrap gap-4">
+        <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:flex-wrap">
           <a
             href="#enquiry"
-            className="group inline-flex items-center gap-2 bg-yellow px-7 py-4 font-display text-navy transition duration-300 ease-out hover:-translate-y-0.5 hover:shadow-lg hover:shadow-yellow/30 focus-visible:-translate-y-0.5"
+            className="group inline-flex w-full items-center justify-center gap-2 bg-yellow px-7 py-4 font-display text-navy transition duration-300 ease-out hover:-translate-y-0.5 hover:shadow-lg hover:shadow-yellow/30 focus-visible:-translate-y-0.5 active:scale-95 sm:w-auto"
           >
             Request a quotation
             <span
@@ -103,7 +103,7 @@ export function Hero() {
               higher contrast than the resting state, so it carries no new risk. */}
           <a
             href="#work"
-            className="border border-sky px-7 py-4 font-display text-sky transition duration-300 ease-out hover:-translate-y-0.5 hover:border-paper hover:text-paper hover:shadow-lg hover:shadow-sky/20 focus-visible:-translate-y-0.5"
+            className="flex w-full items-center justify-center border border-sky px-7 py-4 font-display text-sky transition duration-300 ease-out hover:-translate-y-0.5 hover:border-paper hover:text-paper hover:shadow-lg hover:shadow-sky/20 focus-visible:-translate-y-0.5 active:scale-95 sm:w-auto"
           >
             See our work
           </a>

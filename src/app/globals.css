@@ -137,3 +137,19 @@ body {
     3px 3px 0 rgba(2, 48, 72, 0.55),
     4px 5px 6px rgba(2, 48, 72, 0.5);
 }
+
+/*
+ * Position's mobile stat pin (PinnedStats in Position.tsx) needs 100dvh, not the
+ * static 100vh mobile browsers report as their layout viewport, so the pin doesn't
+ * jump when the address bar collapses/expands mid-scroll. Declared twice — the vh
+ * fallback first, dvh after — rather than as a single value: a browser that does not
+ * understand dvh treats that whole declaration as invalid and drops it, keeping
+ * whatever the previous declaration in the same rule set. Without the vh line first,
+ * that failure mode leaves no height enforced at all — the pinned box collapses to
+ * its content height and sticks at the top of the screen, exposing the rest of the
+ * scroll track underneath as blank space, exactly the bug this replaced.
+ */
+.stat-pin-viewport {
+  height: 100vh;
+  height: 100dvh;
+}

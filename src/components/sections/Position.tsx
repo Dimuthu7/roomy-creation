@@ -83,6 +83,11 @@ export function Position() {
 const STAGGER = 0.15
 
 function CompactPosition() {
+  // Only ever rendered for 'mobile' or 'reduced' (Position() keeps 'full' on
+  // PinnedPosition) — this just distinguishes the two so the stat strip below can
+  // pin-and-reveal on mobile while staying static and un-animated under reduced
+  // motion, same contract PinnedPosition itself follows.
+  const level = useMotionLevel()
   const rows = POINTS.flatMap((point, i) => {
     const entries = [{ key: `${i}-main`, text: point.main, className: mainStyle(i) }]
     if (point.sub) entries.push({ key: `${i}-sub`, text: point.sub, className: STYLE_SUB })
@@ -112,20 +117,73 @@ function CompactPosition() {
         })}
       </div>
 
-      {knownStats.length > 0 && (
-        <div className="relative z-10 mx-auto mt-4 grid max-w-4xl grid-cols-2 gap-x-8 gap-y-6 px-6 sm:grid-cols-4 sm:gap-x-10 lg:mt-8">
-          {knownStats.map(([key, label], i) => (
-            <WeaveReveal
-              key={key}
-              from={i % 2 === 0 ? 'left' : 'right'}
-              delay={rows.length * STAGGER + i * STAGGER}
-            >
-              <PositionStat value={SITE.figures[key] as number} label={label} active />
-            </WeaveReveal>
-          ))}
-        </div>
-      )}
+      {knownStats.length > 0 &&
+        (level === 'reduced' ? (
+          <div className="relative z-10 mx-auto mt-4 grid max-w-4xl grid-cols-2 gap-x-8 gap-y-6 px-6 sm:grid-cols-4 sm:gap-x-10 lg:mt-8">
+            {knownStats.map(([key, label]) => (
+              <PositionStat key={key} value={SITE.figures[key] as number} label={label} active />
+            ))}
+          </div>
+        ) : (
+          <PinnedStats knownStats={knownStats} />
+        ))}
     </section>
+  )
+}
+
+// Scroll distance (in viewport heights) spent pinned per stat — mirrors
+// PinnedPosition's STEP_VH below, just sized for 4 short stats rather than 4 whole
+// statements. Mobile gets the same scroll-linked mechanism desktop already uses
+// (activeScrollStep, cumulative reveal) rather than a canned timer, because that's
+// what actually reads as "keep scrolling to see the next one" instead of a
+// fire-once animation the visitor has no control over.
+const STAT_STEP_VH = 45
+
+function PinnedStats({ knownStats }: { knownStats: ReadonlyArray<(typeof STAT_ROWS)[number]> }) {
+  const trackRef = useRef<HTMLDivElement>(null)
+  const [active, setActive] = useState(0)
+
+  useEffect(() => {
+    function onScroll() {
+      const track = trackRef.current
+      if (!track) return
+      const rect = track.getBoundingClientRect()
+      setActive(activeScrollStep(rect.top, rect.height, window.innerHeight, knownStats.length))
+    }
+    onScroll()
+    window.addEventListener('scroll', onScroll)
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [knownStats.length])
+
+  return (
+    <div
+      ref={trackRef}
+      data-testid="position-stats-track"
+      className="relative mt-4"
+      style={{ height: `${STAT_STEP_VH * knownStats.length}vh` }}
+    >
+      {/* stat-pin-viewport (globals.css): 100dvh, not Tailwind's h-screen (100vh) — a
+          static vh pin height is the exact "address-bar collapse" jank the
+          reduced-motion note above warns about on a touch viewport, dvh tracks the
+          browser chrome instead of ignoring it. */}
+      <div className="stat-pin-viewport sticky top-0 flex items-center overflow-hidden">
+        <div className="mx-auto grid w-full max-w-4xl grid-cols-2 gap-x-8 gap-y-6 px-6 sm:grid-cols-4 sm:gap-x-10">
+          {knownStats.map(([key, label], i) => {
+            const revealed = i <= active
+            return (
+              <motion.div
+                key={key}
+                initial={false}
+                animate={{ opacity: revealed ? 1 : 0, y: revealed ? 0 : 16 }}
+                transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+              >
+                <PositionStat value={SITE.figures[key] as number} label={label} active={revealed} />
+              </motion.div>
+            )
+          })}
+        </div>
+      </div>
+    </div>
   )
 }
 

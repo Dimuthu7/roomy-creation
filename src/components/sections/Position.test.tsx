@@ -278,7 +278,7 @@ describe('Position', () => {
       })
     })
 
-    describe('under reduced motion or on mobile (compact fallback)', () => {
+    describe('under reduced motion (static fallback)', () => {
       it('renders every known stat at full opacity, with no pinning, under reduced motion', async () => {
         setPrefersReducedMotion(true)
         const { container } = await renderPositionWithFigures({
@@ -289,9 +289,33 @@ describe('Position', () => {
         })
         const stats = [...container.querySelectorAll('[data-testid="position-stat"]')] as HTMLElement[]
         expect(stats).toHaveLength(4)
+        expect(container.querySelector('[data-testid="position-stats-track"]')).toBeNull()
       })
 
-      it('renders every known stat on mobile widths', async () => {
+      // Stats stay in the same compact 2-column (4-column from sm up) block the page
+      // already uses — matching the desktop layout.
+      it('keeps the stats in the same compact 2-column block, reverting to a row from sm up', async () => {
+        setPrefersReducedMotion(true)
+        const { container } = await renderPositionWithFigures({
+          yearsInBusiness: 2,
+          homesFitted: 10,
+          unitsDelivered: 20,
+          districtsCovered: 3,
+        })
+        const stat = container.querySelector('[data-testid="position-stat"]') as HTMLElement
+        const statGrid = stat.parentElement as HTMLElement
+        expect(statGrid.className).toMatch(/grid-cols-2\b/)
+        expect(statGrid.className).toMatch(/sm:grid-cols-4\b/)
+      })
+    })
+
+    // Mobile gets the same scroll-linked mechanism desktop uses for its stats — pinned,
+    // cumulative, driven by activeScrollStep — rather than a canned timer that plays
+    // once the block is on screen regardless of whether the visitor keeps scrolling.
+    // Unlike desktop, it's scoped to the stats alone (no paired point text) and stays
+    // in the same compact 2-column block rather than spreading across full screens.
+    describe('on mobile (pinned, scroll-linked reveal)', () => {
+      it('reveals only the first stat initially — the rest wait for scroll', async () => {
         window.innerWidth = 600
         const { container } = await renderPositionWithFigures({
           yearsInBusiness: 2,
@@ -301,6 +325,58 @@ describe('Position', () => {
         })
         const stats = [...container.querySelectorAll('[data-testid="position-stat"]')] as HTMLElement[]
         expect(stats).toHaveLength(4)
+        const wrappers = stats.map((s) => s.parentElement as HTMLElement)
+        expect(wrappers[0].style.opacity).toBe('1')
+        for (const wrapper of wrappers.slice(1)) {
+          expect(wrapper.style.opacity).toBe('0')
+        }
+      })
+
+      it('keeps the stats in the same compact 2-column block, reverting to a row from sm up', async () => {
+        window.innerWidth = 600
+        const { container } = await renderPositionWithFigures({
+          yearsInBusiness: 2,
+          homesFitted: 10,
+          unitsDelivered: 20,
+          districtsCovered: 3,
+        })
+        const stat = container.querySelector('[data-testid="position-stat"]') as HTMLElement
+        const statGrid = stat.parentElement!.parentElement as HTMLElement
+        expect(statGrid.className).toMatch(/grid-cols-2\b/)
+        expect(statGrid.className).toMatch(/sm:grid-cols-4\b/)
+      })
+
+      it('cumulatively reveals stats as the visitor scrolls through the pinned track — later stats keep earlier ones, not replace them', async () => {
+        window.innerWidth = 600
+        const { container } = await renderPositionWithFigures({
+          yearsInBusiness: 2,
+          homesFitted: 10,
+          unitsDelivered: 20,
+          districtsCovered: 3,
+        })
+        const track = container.querySelector('[data-testid="position-stats-track"]') as HTMLElement
+        track.getBoundingClientRect = () =>
+          ({
+            top: -300,
+            height: 1600,
+            bottom: 1300,
+            left: 0,
+            right: 0,
+            x: 0,
+            y: -400,
+            width: 0,
+            toJSON() {},
+          }) as DOMRect
+        Object.defineProperty(window, 'innerHeight', { value: 800, configurable: true })
+        fireEvent.scroll(window)
+        await waitFor(() => {
+          const stats = [...container.querySelectorAll('[data-testid="position-stat"]')] as HTMLElement[]
+          const wrappers = stats.map((s) => s.parentElement as HTMLElement)
+          expect(wrappers[0].style.opacity).toBe('1')
+          expect(wrappers[1].style.opacity).toBe('1')
+          expect(wrappers[2].style.opacity).toBe('0')
+          expect(wrappers[3].style.opacity).toBe('0')
+        })
       })
     })
   })

@@ -79,6 +79,26 @@ describe('Footer', () => {
     )
   })
 
+  it('dims contact links on tap, since :hover alone does not fire on touch', async () => {
+    vi.doMock('@/data/site', async () => {
+      const actual = await vi.importActual<typeof import('@/data/site')>('@/data/site')
+      return {
+        SITE: { ...actual.SITE, phone: '+94112345678', email: 'hello@example.lk' },
+      }
+    })
+    await renderFooter()
+    expect(screen.getByRole('link', { name: '+94112345678' }).className).toMatch(
+      /active:opacity-60/,
+    )
+  })
+
+  it('compresses the "Request a quotation" CTA on tap', async () => {
+    await renderFooter()
+    expect(screen.getByRole('link', { name: 'Request a quotation' }).className).toMatch(
+      /active:scale-95/,
+    )
+  })
+
   it('shows the visit block once address, city or opening hours is known', async () => {
     vi.doMock('@/data/site', async () => {
       const actual = await vi.importActual<typeof import('@/data/site')>('@/data/site')
@@ -128,6 +148,20 @@ describe('Footer', () => {
       'https://instagram.com/roomycreations',
     )
     expect(screen.queryByRole('link', { name: 'Facebook' })).not.toBeInTheDocument()
+  })
+
+  it('compresses a social icon on tap', async () => {
+    vi.doMock('@/data/site', async () => {
+      const actual = await vi.importActual<typeof import('@/data/site')>('@/data/site')
+      return {
+        SITE: {
+          ...actual.SITE,
+          social: { facebook: TBC, instagram: 'https://instagram.com/roomycreations', tiktok: TBC },
+        },
+      }
+    })
+    await renderFooter()
+    expect(screen.getByRole('link', { name: 'Instagram' }).className).toMatch(/active:scale-95/)
   })
 
   it('never uses text-white', async () => {

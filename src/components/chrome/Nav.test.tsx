@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { render, screen, act } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { setPrefersReducedMotion } from '@/test/browserStubs'
+import { setPrefersReducedMotion, getScrollIntoViewCalls } from '@/test/browserStubs'
 import { Nav } from './Nav'
 
 function scrollTo(y: number) {
@@ -102,6 +102,61 @@ describe('Nav', () => {
   it('never uses text-white', () => {
     const { container } = render(<Nav />)
     expect(container.innerHTML).not.toMatch(/text-white/)
+  })
+
+  // Plain anchors jump instantly with no easing. Every link — section links and the
+  // CTA alike — should animate to its target instead, the same way Hero's own scroll
+  // cue and the enquiry prefill already do.
+  describe('smooth scroll on click', () => {
+    it('smooth-scrolls to the target section when a link is clicked, instead of jumping natively', async () => {
+      const user = userEvent.setup()
+      render(
+        <>
+          <Nav />
+          <div id="work" />
+        </>,
+      )
+      await user.click(screen.getByRole('link', { name: 'Work' }))
+      const calls = getScrollIntoViewCalls()
+      expect(calls[calls.length - 1].arg).toEqual({ behavior: 'smooth' })
+    })
+
+    it('smooth-scrolls when the CTA is clicked too', async () => {
+      const user = userEvent.setup()
+      render(
+        <>
+          <Nav />
+          <div id="enquiry" />
+        </>,
+      )
+      await user.click(screen.getByRole('link', { name: 'Request a quotation' }))
+      const calls = getScrollIntoViewCalls()
+      expect(calls[calls.length - 1].arg).toEqual({ behavior: 'smooth' })
+    })
+
+    it('dims the section links on tap and compresses the CTA pill, since :hover alone does not fire on touch', () => {
+      render(<Nav />)
+      for (const name of ['Work', 'Process', 'Materials']) {
+        expect(screen.getByRole('link', { name }).className).toMatch(/active:opacity-60/)
+      }
+      expect(screen.getByRole('link', { name: 'Request a quotation' }).className).toMatch(
+        /active:scale-95/,
+      )
+    })
+
+    it('scrolls instantly under reduced motion', async () => {
+      setPrefersReducedMotion(true)
+      const user = userEvent.setup()
+      render(
+        <>
+          <Nav />
+          <div id="work" />
+        </>,
+      )
+      await user.click(screen.getByRole('link', { name: 'Work' }))
+      const calls = getScrollIntoViewCalls()
+      expect(calls[calls.length - 1].arg).toEqual({ behavior: 'auto' })
+    })
   })
 
   describe('scroll shrink', () => {

@@ -209,6 +209,11 @@ describe('Film', () => {
     expect(video().paused).toBe(true)
   })
 
+  it('compresses the play/pause control on tap', () => {
+    render(<Film />)
+    expect(screen.getByRole('button', { name: 'Play film' }).className).toMatch(/active:scale-95/)
+  })
+
   it('does not autoplay on a phone, where the data is the visitor to spend', () => {
     const original = window.innerWidth
     Object.defineProperty(window, 'innerWidth', { value: 375, configurable: true })

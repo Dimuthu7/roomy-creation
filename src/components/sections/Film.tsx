@@ -185,7 +185,7 @@ export function Film() {
                 if (el.paused) void el.play()
                 else el.pause()
               }}
-              className="u-mono absolute top-4 right-4 z-20 rounded-full bg-navy/90 px-4 py-2 text-sky hover:text-yellow"
+              className="u-mono absolute top-4 right-4 z-20 rounded-full bg-navy/90 px-4 py-2 text-sky transition-transform duration-150 hover:text-yellow active:scale-95"
             >
               {paused ? 'Play film' : 'Pause film'}
             </button>

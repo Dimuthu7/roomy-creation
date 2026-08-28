@@ -157,6 +157,17 @@ describe('HowWeWork', () => {
       expect(step1.className).toMatch(/bg-yellow/)
     })
 
+    it('compresses the prev/next buttons and dots on tap', () => {
+      render(<HowWeWork />)
+      expect(screen.getByRole('button', { name: 'Previous step' }).className).toMatch(
+        /active:scale-95/,
+      )
+      expect(screen.getByRole('button', { name: 'Next step' }).className).toMatch(/active:scale-95/)
+      expect(screen.getByRole('button', { name: /Go to step 1 of 5/ }).className).toMatch(
+        /active:scale-95/,
+      )
+    })
+
     it('renders a progress dot per step, marking only the active one', () => {
       const { container } = render(<HowWeWork />)
       for (let i = 0; i < 5; i++) {
@@ -167,7 +178,7 @@ describe('HowWeWork', () => {
     })
   })
 
-  describe('under reduced motion or on mobile (compact fallback)', () => {
+  describe('under reduced motion (compact fallback)', () => {
     it('gives Site measurement, step two, the heaviest visual treatment permanently', () => {
       setPrefersReducedMotion(true)
       const { container } = render(<HowWeWork />)
@@ -184,12 +195,29 @@ describe('HowWeWork', () => {
       expect(container.querySelector('[data-testid="how-book"]')).toBeNull()
       expect(screen.getAllByRole('listitem')).toHaveLength(5)
     })
+  })
 
-    it('renders the compact fallback on mobile widths', () => {
+  // Mobile used to fall back to the static compact grid, losing the swipeable
+  // page-turn interaction entirely. It should get the same book as desktop —
+  // drag/tap already works with touch input, it was only gated to level 'full'.
+  describe('on mobile (swipeable book)', () => {
+    it('renders the same page-turning book as desktop, not the static fallback', () => {
       window.innerWidth = 600
       const { container } = render(<HowWeWork />)
-      expect(container.querySelector('[data-testid="how-book"]')).toBeNull()
-      expect(screen.getAllByRole('listitem')).toHaveLength(5)
+      const book = container.querySelector('[data-testid="how-book"]') as HTMLElement
+      expect(book).not.toBeNull()
+      expect(book.dataset.activeIndex).toBe('0')
+      // The book mounts all 5 pages but exposes only the active one to the
+      // accessibility tree — one visible listitem, not the compact grid's five.
+      expect(screen.queryAllByRole('listitem')).toHaveLength(1)
+    })
+
+    it('turns to the next page by dragging or tapping, same as desktop', () => {
+      window.innerWidth = 600
+      const { container } = render(<HowWeWork />)
+      fireEvent.click(screen.getByRole('button', { name: 'Next step' }))
+      const book = container.querySelector('[data-testid="how-book"]') as HTMLElement
+      expect(book.dataset.activeIndex).toBe('1')
     })
   })
 })

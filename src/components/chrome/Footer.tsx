@@ -32,7 +32,7 @@ export function Footer() {
           <div className="flex flex-wrap gap-4">
             <a
               href="#enquiry"
-              className="border border-yellow px-6 py-3 font-display text-yellow transition-colors duration-200 hover:bg-yellow hover:text-navy"
+              className="border border-yellow px-6 py-3 font-display text-yellow transition duration-200 hover:bg-yellow hover:text-navy active:scale-95"
             >
               Request a quotation
             </a>
@@ -41,7 +41,7 @@ export function Footer() {
                 href={whatsapp}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="border border-yellow px-6 py-3 font-display text-yellow transition-colors duration-200 hover:bg-yellow hover:text-navy"
+                className="border border-yellow px-6 py-3 font-display text-yellow transition duration-200 hover:bg-yellow hover:text-navy active:scale-95"
               >
                 Chat on WhatsApp
               </a>
@@ -59,12 +59,18 @@ export function Footer() {
                 </h3>
                 <div className="space-y-2">
                   {!isTBC(SITE.phone) && (
-                    <a href={`tel:${SITE.phone}`} className="block text-sky hover:text-yellow">
+                    <a
+                      href={`tel:${SITE.phone}`}
+                      className="block text-sky transition-opacity duration-150 hover:text-yellow active:opacity-60"
+                    >
                       {SITE.phone}
                     </a>
                   )}
                   {!isTBC(SITE.email) && (
-                    <a href={`mailto:${SITE.email}`} className="block text-sky hover:text-yellow">
+                    <a
+                      href={`mailto:${SITE.email}`}
+                      className="block text-sky transition-opacity duration-150 hover:text-yellow active:opacity-60"
+                    >
                       {SITE.email}
                     </a>
                   )}
@@ -117,7 +123,7 @@ export function Footer() {
                         key={s.label}
                         href={s.href}
                         aria-label={s.label}
-                        className="group inline-flex h-10 w-10 items-center justify-center rounded-full border border-teal/40 text-sky transition-colors duration-200 hover:border-teal hover:text-teal"
+                        className="group inline-flex h-10 w-10 items-center justify-center rounded-full border border-teal/40 text-sky transition duration-200 hover:border-teal hover:text-teal active:scale-95"
                       >
                         <Icon className="h-4 w-4" />
                       </a>

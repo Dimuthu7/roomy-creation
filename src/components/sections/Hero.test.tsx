@@ -70,6 +70,32 @@ describe('Hero', () => {
     expect(cta).toHaveAttribute('href', '#work')
   })
 
+  // The two CTAs have different text/icon content, so left to their intrinsic
+  // width they render as mismatched-width pills once stacked on a narrow phone
+  // screen. Both go full-width below sm so they match; from sm up they revert to
+  // today's auto-sized inline-flex row.
+  it('matches the two hero CTA widths on mobile by stacking them full-width, reverting to auto width from sm up', () => {
+    render(<Hero />)
+    const primary = screen.getByRole('link', { name: 'Request a quotation' })
+    const secondary = screen.getByRole('link', { name: 'See our work' })
+    for (const cta of [primary, secondary]) {
+      expect(cta.className).toMatch(/\bw-full\b/)
+      expect(cta.className).toMatch(/sm:w-auto\b/)
+      expect(cta.className).toMatch(/justify-center\b/)
+    }
+  })
+
+  // Both CTAs only ever had :hover styling, which doesn't fire meaningfully on a
+  // touch device — a tap should still visibly compress the button.
+  it('gives both hero CTAs a pressed-down state on tap', () => {
+    render(<Hero />)
+    const primary = screen.getByRole('link', { name: 'Request a quotation' })
+    const secondary = screen.getByRole('link', { name: 'See our work' })
+    for (const cta of [primary, secondary]) {
+      expect(cta.className).toMatch(/active:scale-95/)
+    }
+  })
+
   // D1: /media/hero-master.jpg does not exist. The probe confirmed next/image renders
   // a broken <img> and never throws, so without this the LCP element — the first
   // thing any visitor sees — would be blank. Reuses Film.tsx's onError stand-in

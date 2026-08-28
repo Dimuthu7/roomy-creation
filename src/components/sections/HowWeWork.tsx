@@ -66,7 +66,7 @@ export function HowWeWork() {
         <h2 id="how-heading" className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">
           How we work
         </h2>
-        {level === 'full' ? <BookSteps /> : <CompactSteps />}
+        {level === 'reduced' ? <CompactSteps /> : <BookSteps />}
       </div>
     </section>
   )
@@ -204,7 +204,7 @@ function BookSteps() {
           onClick={() => goTo(index - 1)}
           disabled={index === 0}
           aria-label="Previous step"
-          className="flex h-10 w-10 items-center justify-center rounded-full border border-navy text-navy transition-colors hover:bg-navy hover:text-paper disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-navy"
+          className="flex h-10 w-10 items-center justify-center rounded-full border border-navy text-navy transition hover:bg-navy hover:text-paper active:scale-95 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-navy"
         >
           <ChevronLeftIcon className="h-4 w-4" />
         </button>
@@ -220,8 +220,8 @@ function BookSteps() {
               data-testid={`how-dot-${i}`}
               className={
                 index === i
-                  ? 'h-1.5 w-6 rounded-full bg-yellow'
-                  : 'h-1.5 w-6 rounded-full bg-navy/20 transition-colors hover:bg-navy/40'
+                  ? 'h-1.5 w-6 rounded-full bg-yellow transition-transform duration-150 active:scale-95'
+                  : 'h-1.5 w-6 rounded-full bg-navy/20 transition hover:bg-navy/40 active:scale-95'
               }
             />
           ))}
@@ -232,7 +232,7 @@ function BookSteps() {
           onClick={() => goTo(index + 1)}
           disabled={index === STEPS.length - 1}
           aria-label="Next step"
-          className="flex h-10 w-10 items-center justify-center rounded-full border border-navy text-navy transition-colors hover:bg-navy hover:text-paper disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-navy"
+          className="flex h-10 w-10 items-center justify-center rounded-full border border-navy text-navy transition hover:bg-navy hover:text-paper active:scale-95 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-navy"
         >
           <ChevronRightIcon className="h-4 w-4" />
         </button>

@@ -37,8 +37,8 @@ export function GalleryCard({
       onClick={() => onOpen(index)}
       data-cursor-label="View"
       className="group absolute inset-0 block overflow-hidden text-left
-                 transition-opacity duration-300
-                 group-data-[hovered=true]/grid:opacity-40 hover:!opacity-100"
+                 transition duration-300
+                 group-data-[hovered=true]/grid:opacity-40 hover:!opacity-100 active:scale-[0.97]"
     >
       <Image
         src={work.image}

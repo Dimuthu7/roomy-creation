@@ -76,6 +76,13 @@ describe('QuoteForm', () => {
     expect(screen.getByRole('button', { name: 'Send enquiry' })).toBeInTheDocument()
   })
 
+  it('compresses the submit button on tap', () => {
+    renderForm()
+    expect(screen.getByRole('button', { name: 'Send enquiry' }).className).toMatch(
+      /active:scale-95/,
+    )
+  })
+
   it('labels every field and the needs fieldset with exact copy', () => {
     renderForm()
     expect(screen.getByText('Name')).toBeInTheDocument()
