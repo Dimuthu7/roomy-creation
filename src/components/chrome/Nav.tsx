@@ -79,6 +79,7 @@ export function Nav() {
         >
           <a
             href="#top"
+            onClick={(e) => scrollToSection(e, '#top')}
             className={`shrink-0 origin-left ${SHRINK_TRANSITION} ${scrolled ? 'scale-90' : 'scale-100'}`}
           >
             <Logo variant="yellow" />

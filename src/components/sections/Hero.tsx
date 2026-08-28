@@ -43,6 +43,13 @@ export function Hero() {
     })
   }
 
+  function scrollToEnquiry(e: React.MouseEvent) {
+    e.preventDefault()
+    document.getElementById('enquiry')?.scrollIntoView({
+      behavior: level === 'reduced' ? 'auto' : 'smooth',
+    })
+  }
+
   return (
     <section
       id="top"
@@ -92,6 +99,7 @@ export function Hero() {
         <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:flex-wrap">
           <a
             href="#enquiry"
+            onClick={scrollToEnquiry}
             className="group inline-flex w-full items-center justify-center gap-2 bg-yellow px-7 py-4 font-display text-navy transition duration-300 ease-out hover:-translate-y-0.5 hover:shadow-lg hover:shadow-yellow/30 focus-visible:-translate-y-0.5 active:scale-95 sm:w-auto"
           >
             Request a quotation
