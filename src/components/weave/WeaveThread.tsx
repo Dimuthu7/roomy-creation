@@ -29,10 +29,14 @@ export function WeaveThreadNode({
     <div className="relative flex justify-center" aria-hidden="true">
       <motion.span
         className="absolute top-1 h-2 w-2 rounded-full bg-yellow"
-        initial={reduced ? undefined : { scale: 0 }}
-        whileInView={reduced ? undefined : { scale: 1 }}
+        initial={reduced ? undefined : { scale: 0.5, opacity: 0 }}
+        // A pop-in bounce (overshoot past full size, then settle) rather than a
+        // single eased scale-up — matches the reference the client pointed to
+        // (react-vertical-timeline-component's cd-bounce-1 keyframes: 0.5 -> 1.2 ->
+        // 1) for a punchier "arrival" than this project's usual gentle overshoot.
+        whileInView={reduced ? undefined : { scale: [0.5, 1.2, 1], opacity: 1 }}
         viewport={{ once: true, amount: 0.8 }}
-        transition={{ duration: 0.35, delay, ease: [0.22, 1.2, 0.36, 1] }}
+        transition={{ duration: 0.6, delay, times: [0, 0.6, 1], ease: 'easeOut' }}
       />
       {hasNext && (
         <motion.span

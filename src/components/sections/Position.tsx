@@ -1,7 +1,6 @@
 'use client'
 import { Fragment, useEffect, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
-import { WeaveReveal } from '@/components/weave/WeaveReveal'
 import { WeaveThreadNode } from '@/components/weave/WeaveThread'
 import { activeScrollStep } from '@/lib/scrollProgress'
 import { useMotionLevel } from '@/hooks/useMotionLevel'
@@ -88,6 +87,7 @@ function CompactPosition() {
   // pin-and-reveal on mobile while staying static and un-animated under reduced
   // motion, same contract PinnedPosition itself follows.
   const level = useMotionLevel()
+  const reduced = level === 'reduced'
   const rows = POINTS.flatMap((point, i) => {
     const entries = [{ key: `${i}-main`, text: point.main, className: mainStyle(i) }]
     if (point.sub) entries.push({ key: `${i}-sub`, text: point.sub, className: STYLE_SUB })
@@ -103,9 +103,9 @@ function CompactPosition() {
     // mobile stat pin's position: sticky below, and since this section never scrolls
     // on its own (the page scrolls around it), the sticky element would never
     // actually engage — it'd just sit at its static top-of-flow position instead of
-    // centering. WeaveReveal's horizontal offset is already forced to 0 at the
-    // 'mobile' motion level (and it's a no-op under 'reduced'), the only two levels
-    // this component ever renders at, so there was never anything left to clip here.
+    // centering. That's also why the line-reveal bounce below moves vertically
+    // rather than horizontally — a big horizontal overshoot would risk pushing
+    // content past a narrow viewport's edge with nothing here to clip it.
     <section id="position" aria-label="Position" className="relative bg-navy py-28">
       <div
         data-testid="position-points"
@@ -116,9 +116,17 @@ function CompactPosition() {
           return (
             <Fragment key={row.key}>
               <WeaveThreadNode delay={delay} hasNext={i < rows.length - 1} gap="var(--pos-gap)" />
-              <WeaveReveal from={i % 2 === 0 ? 'left' : 'right'} delay={delay}>
+              {/* A vertical pop-in bounce (overshoot past rest, then settle) instead
+                  of a plain fade — same cd-bounce-2 character as the dot above,
+                  adapted from horizontal to vertical travel per the overflow note. */}
+              <motion.div
+                initial={reduced ? undefined : { opacity: 0, y: 40 }}
+                whileInView={reduced ? undefined : { opacity: 1, y: [40, -8, 0] }}
+                viewport={{ once: true, amount: 0.25 }}
+                transition={{ duration: 0.6, delay, times: [0, 0.6, 1], ease: 'easeOut' }}
+              >
                 <p className={row.className}>{row.text}</p>
-              </WeaveReveal>
+              </motion.div>
             </Fragment>
           )
         })}

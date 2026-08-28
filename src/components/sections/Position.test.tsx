@@ -145,6 +145,43 @@ describe('Position', () => {
       expect(points.querySelectorAll('p')).toHaveLength(6)
     })
 
+    // Matches the reference the client pointed to (a vertical-timeline portfolio
+    // section built on react-vertical-timeline-component): each line pops in with
+    // an overshoot bounce rather than a plain fade, and the dot does the same. The
+    // line bounces vertically rather than horizontally like the reference's cards —
+    // see the overflow note in CompactPosition — so only y (not x) carries the
+    // overshoot here.
+    it('starts each line offset for a vertical overshoot bounce, on mobile widths', () => {
+      window.innerWidth = 600
+      const { container } = render(<Position />)
+      const p = container.querySelector('[data-testid="position-points"] p') as HTMLElement
+      const wrapper = p.parentElement as HTMLElement
+      expect(wrapper.style.opacity).toBe('0')
+      expect(wrapper.style.transform).toBe('translateY(40px)')
+    })
+
+    it('starts each dot scaled down for its own bounce, on mobile widths', () => {
+      window.innerWidth = 600
+      const { container } = render(<Position />)
+      const dot = container.querySelector('[data-testid="position-points"] span.bg-yellow') as HTMLElement
+      expect(dot.style.opacity).toBe('0')
+      expect(dot.style.transform).toBe('scale(0.5)')
+    })
+
+    it('settles every line and dot fully visible, so nothing is left hidden after the bounce', async () => {
+      window.innerWidth = 600
+      const { container } = render(<Position />)
+      const points = container.querySelector('[data-testid="position-points"]') as HTMLElement
+      await waitFor(() => {
+        for (const p of points.querySelectorAll('p')) {
+          expect((p.parentElement as HTMLElement).style.opacity).toBe('1')
+        }
+        for (const dot of points.querySelectorAll('span.bg-yellow')) {
+          expect((dot as HTMLElement).style.opacity).toBe('1')
+        }
+      })
+    })
+
     // The grid's gap-y and the thread connector's calc(100% + gap) height used to be
     // two hand-matched literals ('3rem' vs gap-y-12) that could silently drift apart.
     // Both now read from the same --pos-gap CSS variable — this locks that coupling
