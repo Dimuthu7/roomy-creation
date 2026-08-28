@@ -30,7 +30,8 @@
       "Bash(npm install *)",
       "Bash(node scroll-check.mjs)",
       "Bash(node console-check.mjs)",
-      "Bash(node network-check.mjs)"
+      "Bash(node network-check.mjs)",
+      "Bash(awk '/font-family: .Outfit./{p=1} p{print} /^}/{if\\(p\\)print \"---\"; p=0}' fonts.css)"
     ],
     "additionalDirectories": [
       "/Users/dimuthuabeysinghe/.npm/_npx/e41f203b7505f1fb",
