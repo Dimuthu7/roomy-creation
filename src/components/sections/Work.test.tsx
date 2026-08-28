@@ -46,9 +46,9 @@ describe('Work', () => {
     expect(heading.className).toContain('mb-5')
   })
 
-  it('renders the gallery grid with all 24 works', () => {
+  it('renders the gallery grid with every delivered work', () => {
     setup()
-    expect(screen.getAllByRole('img')).toHaveLength(24)
+    expect(screen.getAllByRole('img')).toHaveLength(WORKS.length)
   })
 
   it('does not mount the lightbox until a card is opened', () => {

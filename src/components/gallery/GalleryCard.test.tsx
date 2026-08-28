@@ -22,23 +22,15 @@ describe('GalleryCard', () => {
     expect(onOpen).toHaveBeenCalledWith(1)
   })
 
-  // F3: public/work/ does not exist, so every one of the 24 gallery images renders
-  // as a broken <img> in a real browser. The established pattern (Hero, Film) is
-  // onError -> a solid navy block naming the exact slot, never an AI image.
-  it('falls back to a named navy stand-in when the image fails to load', () => {
-    render(<GalleryCard work={work} index={1} eager onOpen={vi.fn()} />)
+  // data/works.ts now only lists slots with a real photo in public/work/, so a
+  // load failure here means a real photo went missing at runtime — there is no
+  // slot number worth showing a visitor, so the card just disappears instead of
+  // naming the file.
+  it('disappears without naming the file when the image fails to load', () => {
+    const { container } = render(<GalleryCard work={work} index={1} eager onOpen={vi.fn()} />)
     fireEvent.error(screen.getByRole('img', { name: workAlt(work) }))
     expect(screen.queryByRole('img', { name: workAlt(work) })).not.toBeInTheDocument()
-    const fallback = screen.getByTestId('card-fallback')
-    expect(fallback).toHaveTextContent(`Image slot: ${work.image}`)
-  })
-
-  it('still opens the lightbox at the given index after the image has failed', async () => {
-    const user = userEvent.setup()
-    const onOpen = vi.fn()
-    render(<GalleryCard work={work} index={1} eager onOpen={onOpen} />)
-    fireEvent.error(screen.getByRole('img', { name: workAlt(work) }))
-    await user.click(screen.getByRole('button'))
-    expect(onOpen).toHaveBeenCalledWith(1)
+    expect(screen.queryByText(/image slot/i)).not.toBeInTheDocument()
+    expect(container).toBeEmptyDOMElement()
   })
 })

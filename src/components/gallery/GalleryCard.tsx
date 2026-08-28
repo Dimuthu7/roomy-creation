@@ -19,14 +19,17 @@ export function GalleryCard({
   eager: boolean
   onOpen: (index: number) => void
 }) {
-  // F3: public/work/ does not exist yet, so every one of the 24 gallery images
-  // renders as a broken <img> in a real browser. Reuses Hero and Film's onError
-  // stand-in pattern: a solid navy block naming the exact slot, never an AI image.
+  // data/works.ts only lists slots that actually have a photo in public/work/,
+  // so a load failure here means a real photo went missing at runtime, not an
+  // unfilled slot. There is nothing useful to show a visitor in that case — no
+  // internal filename, no stand-in box — so the card just disappears.
   const [failed, setFailed] = useState(false)
 
   const caption = [work.title, work.materials, work.district]
     .filter((p) => p !== undefined && !isTBC(p))
     .join(' · ')
+
+  if (failed) return null
 
   return (
     <button
@@ -37,24 +40,15 @@ export function GalleryCard({
                  transition-opacity duration-300
                  group-data-[hovered=true]/grid:opacity-40 hover:!opacity-100"
     >
-      {failed ? (
-        <div
-          data-testid="card-fallback"
-          className="absolute inset-0 flex items-center justify-center bg-navy"
-        >
-          <span className="u-mono px-4 text-center text-sky">Image slot: {work.image}</span>
-        </div>
-      ) : (
-        <Image
-          src={work.image}
-          alt={workAlt(work)}
-          fill
-          sizes="(max-width: 767px) 100vw, (max-width: 1279px) 50vw, 33vw"
-          loading={eager ? 'eager' : 'lazy'}
-          className="object-cover transition-transform duration-300 motion-safe:group-hover:scale-105"
-          onError={() => setFailed(true)}
-        />
-      )}
+      <Image
+        src={work.image}
+        alt={workAlt(work)}
+        fill
+        sizes="(max-width: 767px) 100vw, (max-width: 1279px) 50vw, 33vw"
+        loading={eager ? 'eager' : 'lazy'}
+        className="object-cover transition-transform duration-300 motion-safe:group-hover:scale-105"
+        onError={() => setFailed(true)}
+      />
       <span
         // Both translate classes are motion-safe: under reduced motion the caption gets
         // no translate at all and sits permanently visible at the bottom of the card,

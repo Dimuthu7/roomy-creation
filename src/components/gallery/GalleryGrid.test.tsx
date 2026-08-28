@@ -5,6 +5,18 @@ import { WORKS } from '@/data/works'
 import { setPrefersReducedMotion } from '@/test/browserStubs'
 import { GalleryGrid } from './GalleryGrid'
 
+// These tests exercise GalleryGrid's own behavior — eager/lazy cutoff, category
+// filtering, the screen-position vs WORKS-index distinction — which holds at
+// any catalog size. Point WORKS at the full 24-slot planned catalog rather than
+// the real (delivered-only) export, which is too small right now to exercise
+// the eager-past-8 or three-deep-filter cases below. Catalog-size-specific
+// behavior (hiding empty categories, showing only delivered photos) is covered
+// separately in GalleryGrid.deliveredCatalog.test.tsx against the real export.
+vi.mock('@/data/works', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/data/works')>()
+  return { ...actual, WORKS: actual.ALL_WORKS }
+})
+
 function items(): HTMLElement[] {
   return Array.from(
     screen.getByTestId('gallery-grid').querySelectorAll<HTMLElement>('[data-work-id]'),

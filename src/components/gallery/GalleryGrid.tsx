@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { WORKS } from '@/data/works'
 import type { CategoryId } from '@/data/categories'
-import { filterWorks, isEager } from '@/lib/galleryLayout'
+import { filterWorks, isEager, visibleCategories } from '@/lib/galleryLayout'
 import { useMotionLevel } from '@/hooks/useMotionLevel'
 import { FilterRow } from './FilterRow'
 import { GalleryCard } from './GalleryCard'
@@ -22,6 +22,7 @@ export function GalleryGrid({ onOpen }: { onOpen: (index: number) => void }) {
   const level = useMotionLevel()
 
   const visible = filterWorks(WORKS, active)
+  const categories = visibleCategories(WORKS)
   const stagger = level === 'reduced' ? 0 : 0.025
 
   return (
@@ -34,7 +35,7 @@ export function GalleryGrid({ onOpen }: { onOpen: (index: number) => void }) {
           clearance that leaves a gap here. bg-navy stops the grid's images showing
           through while pinned. */}
       <div className="sticky top-[65px] z-40 bg-navy py-3">
-        <FilterRow active={active} onChange={setActive} />
+        <FilterRow categories={categories} active={active} onChange={setActive} />
       </div>
 
       <motion.div

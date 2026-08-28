@@ -1,16 +1,18 @@
 'use client'
-import { CATEGORIES, type CategoryId } from '@/data/categories'
+import type { CategoryId } from '@/data/categories'
 
 export function FilterRow({
+  categories,
   active,
   onChange,
 }: {
+  categories: ReadonlyArray<{ id: CategoryId; label: string }>
   active: CategoryId
   onChange: (id: CategoryId) => void
 }) {
   return (
     <div role="group" aria-label="Filter work by category" className="flex flex-wrap gap-2">
-      {CATEGORIES.map((c) => {
+      {categories.map((c) => {
         const isActive = c.id === active
         return (
           <button

@@ -55,7 +55,9 @@ const PLAN: Array<[WorkCategoryId, Ratio, string]> = [
   ['living', '3:2', 'Storage wall'],
 ]
 
-export const WORKS: Work[] = PLAN.map(([category, ratio, title], i) => {
+// The full planned catalog — every slot the client is expected to eventually
+// supply a photo for, regardless of whether that photo has arrived yet.
+export const ALL_WORKS: Work[] = PLAN.map(([category, ratio, title], i) => {
   const n = String(i + 1).padStart(2, '0')
   return {
     id: `work-${n}`,
@@ -73,3 +75,13 @@ export const WORKS: Work[] = PLAN.map(([category, ratio, title], i) => {
     year: TBC,
   }
 })
+
+// How many of ALL_WORKS' slots actually have a photo in public/work/ right now.
+// Photos arrive from the client in numbered batches, so this is always a
+// prefix of ALL_WORKS — bump it (and drop the new work-NN.jpg file) as each
+// batch lands. Keeps the live site showing only real photos, never a named
+// placeholder for a slot nobody has been given a picture for yet.
+const DELIVERED_COUNT = 5
+
+// What the site actually displays: only the slots with a real photo on disk.
+export const WORKS: Work[] = ALL_WORKS.slice(0, DELIVERED_COUNT)
