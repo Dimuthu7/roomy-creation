@@ -1,22 +1,23 @@
 import { Logo } from './Logo'
-import { SITE } from '@/data/site'
+import { getSiteConfig } from '@/data/site'
 import { isTBC } from '@/lib/tbc'
 import { whatsappUrl } from '@/lib/whatsapp'
 import { getActiveSocials } from '@/lib/socials'
 import { DistrictsIcon, MapPinIcon, PhoneIcon, SOCIAL_ICONS } from './FooterIcons'
 
 // Every block below is [TBC]-gated exactly like Enquiry.tsx: a heading only renders
-// once it has content beneath it. With today's all-[TBC] site.ts the footer
-// legitimately renders almost nothing — that is correct behaviour, not something to
-// paper over with placeholder copy.
-export function Footer() {
-  const hasContact = !isTBC(SITE.phone) || !isTBC(SITE.email)
-  const hasVisit = !isTBC(SITE.addressLines) || !isTBC(SITE.city) || !isTBC(SITE.openingHours)
-  const hasDistricts = !isTBC(SITE.districts)
-  const socials = getActiveSocials(SITE.social)
-  // Same "Chat on WhatsApp" pattern as WhatsAppFloat.tsx: null while SITE.whatsappNumber
+// once it has content beneath it. A site_config row with every field unset would
+// legitimately render almost nothing here — that is correct behaviour, not
+// something to paper over with placeholder copy.
+export async function Footer() {
+  const site = await getSiteConfig()
+  const hasContact = !isTBC(site.phone) || !isTBC(site.email)
+  const hasVisit = !isTBC(site.addressLines) || !isTBC(site.city) || !isTBC(site.openingHours)
+  const hasDistricts = !isTBC(site.districts)
+  const socials = getActiveSocials(site.social)
+  // Same "Chat on WhatsApp" pattern as WhatsAppFloat.tsx: null while site.whatsappNumber
   // is [TBC], so the button simply doesn't render rather than linking nowhere.
-  const whatsapp = whatsappUrl(SITE.whatsappNumber, 'Hello Roomy Creations, I have a question.')
+  const whatsapp = whatsappUrl(site.whatsappNumber, 'Hello Roomy Creations, I have a question.')
 
   return (
     <footer className="bg-navy py-16 text-sky">
@@ -58,20 +59,20 @@ export function Footer() {
                   Contact
                 </h3>
                 <div className="space-y-2">
-                  {!isTBC(SITE.phone) && (
+                  {!isTBC(site.phone) && (
                     <a
-                      href={`tel:${SITE.phone}`}
+                      href={`tel:${site.phone}`}
                       className="block text-sky transition-opacity duration-150 hover:text-yellow active:opacity-60"
                     >
-                      {SITE.phone}
+                      {site.phone}
                     </a>
                   )}
-                  {!isTBC(SITE.email) && (
+                  {!isTBC(site.email) && (
                     <a
-                      href={`mailto:${SITE.email}`}
+                      href={`mailto:${site.email}`}
                       className="block text-sky transition-opacity duration-150 hover:text-yellow active:opacity-60"
                     >
-                      {SITE.email}
+                      {site.email}
                     </a>
                   )}
                 </div>
@@ -85,15 +86,15 @@ export function Footer() {
                   Visit
                 </h3>
                 <div className="space-y-2">
-                  {!isTBC(SITE.addressLines) &&
-                    SITE.addressLines.map((line) => (
+                  {!isTBC(site.addressLines) &&
+                    site.addressLines.map((line) => (
                       <p key={line} className="text-sky">
                         {line}
                       </p>
                     ))}
-                  {!isTBC(SITE.city) && <p className="text-sky">{SITE.city}</p>}
-                  {!isTBC(SITE.openingHours) &&
-                    SITE.openingHours.map((hours) => (
+                  {!isTBC(site.city) && <p className="text-sky">{site.city}</p>}
+                  {!isTBC(site.openingHours) &&
+                    site.openingHours.map((hours) => (
                       <p key={hours} className="text-sky">
                         {hours}
                       </p>
@@ -108,7 +109,7 @@ export function Footer() {
                   <DistrictsIcon className="h-4 w-4 text-teal" />
                   Districts we cover
                 </h3>
-                <p className="text-sky">{(SITE.districts as string[]).join(', ')}</p>
+                <p className="text-sky">{(site.districts as string[]).join(', ')}</p>
               </div>
             )}
 

@@ -2,16 +2,21 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { buildLocalBusinessSchema } from '@/lib/schema'
-import { SITE } from '@/data/site'
+import { useSiteData } from '@/context/SiteData'
+import { SITE_FIXTURE, WORKS_FIXTURE } from '@/test/fixtures'
+
+vi.mock('@/context/SiteData', () => ({ useSiteData: vi.fn() }))
 
 async function renderPage() {
   const { default: Home } = await import('./page')
-  return render(<Home />)
+  return render(await Home())
 }
 
 beforeEach(() => {
   vi.resetModules()
   vi.doUnmock('@/data/site')
+  vi.doMock('@/data/site', () => ({ getSiteConfig: async () => SITE_FIXTURE }))
+  vi.mocked(useSiteData).mockReturnValue({ site: SITE_FIXTURE, works: WORKS_FIXTURE })
 })
 
 describe('Home page assembly', () => {
@@ -76,7 +81,7 @@ describe('Home page assembly', () => {
     const { container } = await renderPage()
     const script = container.querySelector('script[type="application/ld+json"]')
     expect(script).not.toBeNull()
-    const expected = JSON.stringify(buildLocalBusinessSchema(SITE)).replace(/</g, '\\u003c')
+    const expected = JSON.stringify(buildLocalBusinessSchema(SITE_FIXTURE)).replace(/</g, '\\u003c')
     expect(script!.innerHTML).toBe(expected)
   })
 
@@ -85,14 +90,13 @@ describe('Home page assembly', () => {
     expect(container.querySelectorAll('script[type="application/ld+json"]')).toHaveLength(1)
   })
 
-  // SITE carries no '<' today, so the escape assertion above would pass even with
+  // The fixture carries no '<', so the escape assertion above would pass even with
   // the .replace() call deleted — proven by mutation testing. This test forces a
-  // '<' through a real SITE field so the escape has something to actually do.
-  it('escapes a literal "<" reaching the JSON-LD payload through SITE data', async () => {
-    vi.doMock('@/data/site', async () => {
-      const actual = await vi.importActual<typeof import('@/data/site')>('@/data/site')
-      return { SITE: { ...actual.SITE, city: '</script><script>alert(1)</script>' } }
-    })
+  // '<' through a real site field so the escape has something to actually do.
+  it('escapes a literal "<" reaching the JSON-LD payload through site data', async () => {
+    vi.doMock('@/data/site', () => ({
+      getSiteConfig: async () => ({ ...SITE_FIXTURE, city: '</script><script>alert(1)</script>' }),
+    }))
     const { container } = await renderPage()
     const script = container.querySelector('script[type="application/ld+json"]')!
     expect(script.innerHTML).not.toContain('<script>')

@@ -1,15 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { TBC } from '@/lib/tbc'
+import { SITE_FIXTURE } from '@/test/fixtures'
 
 async function renderFooter() {
   const { Footer } = await import('./Footer')
-  return render(<Footer />)
+  return render(await Footer())
 }
 
 beforeEach(() => {
   vi.resetModules()
   vi.doUnmock('@/data/site')
+  vi.doMock('@/data/site', () => ({ getSiteConfig: async () => SITE_FIXTURE }))
 })
 
 describe('Footer', () => {
@@ -29,22 +31,19 @@ describe('Footer', () => {
   // it has content beneath it. Forced explicitly to [TBC] here rather than relying on
   // site.ts's ambient state, which stopped being all-TBC once real contact details
   // were entered — this test proves the gating logic, not today's data.
-  it('renders no contact, visit, districts or follow block while SITE is all [TBC]', async () => {
-    vi.doMock('@/data/site', async () => {
-      const actual = await vi.importActual<typeof import('@/data/site')>('@/data/site')
-      return {
-        SITE: {
-          ...actual.SITE,
-          phone: TBC,
-          email: TBC,
-          addressLines: TBC,
-          city: TBC,
-          openingHours: TBC,
-          districts: TBC,
-          social: { facebook: TBC, instagram: TBC, tiktok: TBC },
-        },
-      }
-    })
+  it('renders no contact, visit, districts or follow block while site data is all [TBC]', async () => {
+    vi.doMock('@/data/site', () => ({
+      getSiteConfig: async () => ({
+        ...SITE_FIXTURE,
+        phone: TBC,
+        email: TBC,
+        addressLines: TBC,
+        city: TBC,
+        openingHours: TBC,
+        districts: TBC,
+        social: { facebook: TBC, instagram: TBC, tiktok: TBC },
+      }),
+    }))
     const { container } = await renderFooter()
     expect(screen.queryByRole('heading', { name: 'Contact' })).not.toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: 'Visit' })).not.toBeInTheDocument()
@@ -61,12 +60,9 @@ describe('Footer', () => {
   })
 
   it('shows the contact block, as tel: and mailto: links, once phone and email are known', async () => {
-    vi.doMock('@/data/site', async () => {
-      const actual = await vi.importActual<typeof import('@/data/site')>('@/data/site')
-      return {
-        SITE: { ...actual.SITE, phone: '+94112345678', email: 'hello@example.lk' },
-      }
-    })
+    vi.doMock('@/data/site', () => ({
+      getSiteConfig: async () => ({ ...SITE_FIXTURE, phone: '+94112345678', email: 'hello@example.lk' }),
+    }))
     await renderFooter()
     expect(screen.getByRole('heading', { name: 'Contact' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: '+94112345678' })).toHaveAttribute(
@@ -80,12 +76,9 @@ describe('Footer', () => {
   })
 
   it('dims contact links on tap, since :hover alone does not fire on touch', async () => {
-    vi.doMock('@/data/site', async () => {
-      const actual = await vi.importActual<typeof import('@/data/site')>('@/data/site')
-      return {
-        SITE: { ...actual.SITE, phone: '+94112345678', email: 'hello@example.lk' },
-      }
-    })
+    vi.doMock('@/data/site', () => ({
+      getSiteConfig: async () => ({ ...SITE_FIXTURE, phone: '+94112345678', email: 'hello@example.lk' }),
+    }))
     await renderFooter()
     expect(screen.getByRole('link', { name: '+94112345678' }).className).toMatch(
       /active:opacity-60/,
@@ -100,17 +93,14 @@ describe('Footer', () => {
   })
 
   it('shows the visit block once address, city or opening hours is known', async () => {
-    vi.doMock('@/data/site', async () => {
-      const actual = await vi.importActual<typeof import('@/data/site')>('@/data/site')
-      return {
-        SITE: {
-          ...actual.SITE,
-          addressLines: ['12 Galle Road'],
-          city: 'Colombo',
-          openingHours: ['Mo-Sa 09:00-18:00'],
-        },
-      }
-    })
+    vi.doMock('@/data/site', () => ({
+      getSiteConfig: async () => ({
+        ...SITE_FIXTURE,
+        addressLines: ['12 Galle Road'],
+        city: 'Colombo',
+        openingHours: ['Mo-Sa 09:00-18:00'],
+      }),
+    }))
     const { container } = await renderFooter()
     expect(screen.getByRole('heading', { name: 'Visit' })).toBeInTheDocument()
     expect(screen.getByText('12 Galle Road')).toBeInTheDocument()
@@ -119,28 +109,24 @@ describe('Footer', () => {
     expect(container.textContent).not.toContain('[TBC]')
   })
 
-  it('shows the districts block once SITE.districts is known', async () => {
-    vi.doMock('@/data/site', async () => {
-      const actual = await vi.importActual<typeof import('@/data/site')>('@/data/site')
-      return { SITE: { ...actual.SITE, districts: ['Colombo', 'Gampaha'] } }
-    })
+  it('shows the districts block once site.districts is known', async () => {
+    vi.doMock('@/data/site', () => ({
+      getSiteConfig: async () => ({ ...SITE_FIXTURE, districts: ['Colombo', 'Gampaha'] }),
+    }))
     await renderFooter()
     expect(screen.getByRole('heading', { name: 'Districts we cover' })).toBeInTheDocument()
     expect(screen.getByText('Colombo, Gampaha')).toBeInTheDocument()
   })
 
   it('shows the follow block with working links once a social handle is known', async () => {
-    vi.doMock('@/data/site', async () => {
-      const actual = await vi.importActual<typeof import('@/data/site')>('@/data/site')
-      return {
-        // facebook and tiktok forced to TBC so this proves isolation between social
-        // fields, rather than happening to pass because site.ts has all three filled.
-        SITE: {
-          ...actual.SITE,
-          social: { facebook: TBC, instagram: 'https://instagram.com/roomycreations', tiktok: TBC },
-        },
-      }
-    })
+    // facebook and tiktok forced to TBC so this proves isolation between social
+    // fields, rather than happening to pass because the fixture has all three filled.
+    vi.doMock('@/data/site', () => ({
+      getSiteConfig: async () => ({
+        ...SITE_FIXTURE,
+        social: { facebook: TBC, instagram: 'https://instagram.com/roomycreations', tiktok: TBC },
+      }),
+    }))
     await renderFooter()
     expect(screen.getByRole('heading', { name: 'Follow' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Instagram' })).toHaveAttribute(
@@ -151,15 +137,12 @@ describe('Footer', () => {
   })
 
   it('compresses a social icon on tap', async () => {
-    vi.doMock('@/data/site', async () => {
-      const actual = await vi.importActual<typeof import('@/data/site')>('@/data/site')
-      return {
-        SITE: {
-          ...actual.SITE,
-          social: { facebook: TBC, instagram: 'https://instagram.com/roomycreations', tiktok: TBC },
-        },
-      }
-    })
+    vi.doMock('@/data/site', () => ({
+      getSiteConfig: async () => ({
+        ...SITE_FIXTURE,
+        social: { facebook: TBC, instagram: 'https://instagram.com/roomycreations', tiktok: TBC },
+      }),
+    }))
     await renderFooter()
     expect(screen.getByRole('link', { name: 'Instagram' }).className).toMatch(/active:scale-95/)
   })

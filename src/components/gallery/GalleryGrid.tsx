@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { WORKS } from '@/data/works'
+import { useSiteData } from '@/context/SiteData'
 import type { CategoryId } from '@/data/categories'
 import { filterWorks, isEager, visibleCategories } from '@/lib/galleryLayout'
 import { useMotionLevel } from '@/hooks/useMotionLevel'
@@ -20,9 +20,10 @@ export function GalleryGrid({ onOpen }: { onOpen: (index: number) => void }) {
   const [active, setActive] = useState<CategoryId>('all')
   const [hovered, setHovered] = useState(false)
   const level = useMotionLevel()
+  const { works } = useSiteData()
 
-  const visible = filterWorks(WORKS, active)
-  const categories = visibleCategories(WORKS)
+  const visible = filterWorks(works, active)
+  const categories = visibleCategories(works)
   const stagger = level === 'reduced' ? 0 : 0.025
 
   return (
@@ -73,7 +74,7 @@ export function GalleryGrid({ onOpen }: { onOpen: (index: number) => void }) {
             >
               <GalleryCard
                 work={work}
-                index={WORKS.indexOf(work)}
+                index={works.indexOf(work)}
                 eager={isEager(i)}
                 onOpen={onOpen}
               />

@@ -1,4 +1,4 @@
-import type { Ratio } from '@/data/works'
+import type { Ratio } from '@/data/workTypes'
 
 /**
  * Tailwind scans source for complete class strings, so an interpolated

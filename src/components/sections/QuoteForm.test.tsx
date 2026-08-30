@@ -3,7 +3,15 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QuoteForm } from './QuoteForm'
 import { EnquiryPrefillProvider, useEnquiryPrefill } from '@/context/EnquiryPrefill'
+import { useSiteData } from '@/context/SiteData'
+import { SITE_FIXTURE, WORKS_FIXTURE } from '@/test/fixtures'
 import { enquirySchema } from '@/lib/enquirySchema'
+
+vi.mock('@/context/SiteData', () => ({ useSiteData: vi.fn() }))
+
+beforeEach(() => {
+  vi.mocked(useSiteData).mockReturnValue({ site: SITE_FIXTURE, works: WORKS_FIXTURE })
+})
 
 function renderForm() {
   return render(

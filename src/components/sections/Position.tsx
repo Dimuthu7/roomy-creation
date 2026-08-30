@@ -5,7 +5,7 @@ import { WeaveThreadNode } from '@/components/weave/WeaveThread'
 import { activeScrollStep } from '@/lib/scrollProgress'
 import { useMotionLevel } from '@/hooks/useMotionLevel'
 import { useCountUp } from '@/hooks/useCountUp'
-import { SITE } from '@/data/site'
+import { useSiteData } from '@/context/SiteData'
 import { isTBC } from '@/lib/tbc'
 
 interface Point {
@@ -88,6 +88,7 @@ function CompactPosition() {
   // motion, same contract PinnedPosition itself follows.
   const level = useMotionLevel()
   const reduced = level === 'reduced'
+  const { site } = useSiteData()
   const rows = POINTS.flatMap((point, i) => {
     const entries = [{ key: `${i}-main`, text: point.main, className: mainStyle(i) }]
     if (point.sub) entries.push({ key: `${i}-sub`, text: point.sub, className: STYLE_SUB })
@@ -96,7 +97,7 @@ function CompactPosition() {
 
   // F4: the client's rule is "if a figure is unknown, cut that row and run three
   // cuts" — cut to known figures first, and render no stat strip once none survive.
-  const knownStats = STAT_ROWS.filter(([key]) => !isTBC(SITE.figures[key]))
+  const knownStats = STAT_ROWS.filter(([key]) => !isTBC(site.figures[key]))
 
   return (
     // No overflow-hidden here: it would become the nearest scroll container for the
@@ -136,7 +137,7 @@ function CompactPosition() {
         (level === 'reduced' ? (
           <div className="relative z-10 mx-auto mt-4 grid max-w-4xl grid-cols-2 gap-x-8 gap-y-6 px-6 sm:grid-cols-4 sm:gap-x-10 lg:mt-8">
             {knownStats.map(([key, label]) => (
-              <PositionStat key={key} value={SITE.figures[key] as number} label={label} active />
+              <PositionStat key={key} value={site.figures[key] as number} label={label} active />
             ))}
           </div>
         ) : (
@@ -157,6 +158,7 @@ const STAT_STEP_VH = 45
 function PinnedStats({ knownStats }: { knownStats: ReadonlyArray<(typeof STAT_ROWS)[number]> }) {
   const trackRef = useRef<HTMLDivElement>(null)
   const [active, setActive] = useState(0)
+  const { site } = useSiteData()
 
   useEffect(() => {
     function onScroll() {
@@ -192,7 +194,7 @@ function PinnedStats({ knownStats }: { knownStats: ReadonlyArray<(typeof STAT_RO
                 animate={{ opacity: revealed ? 1 : 0, y: revealed ? 0 : 16 }}
                 transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
               >
-                <PositionStat value={SITE.figures[key] as number} label={label} active={revealed} />
+                <PositionStat value={site.figures[key] as number} label={label} active={revealed} />
               </motion.div>
             )
           })}
@@ -210,6 +212,7 @@ const STEP_VH = 55
 function PinnedPosition() {
   const trackRef = useRef<HTMLElement>(null)
   const [active, setActive] = useState(0)
+  const { site } = useSiteData()
 
   useEffect(() => {
     function onScroll() {
@@ -225,7 +228,7 @@ function PinnedPosition() {
 
   // F4: cut to known figures first, and render no stat strip once none survive —
   // same ruling the old standalone Figures section applied.
-  const knownStats = STAT_ROWS.filter(([key]) => !isTBC(SITE.figures[key]))
+  const knownStats = STAT_ROWS.filter(([key]) => !isTBC(site.figures[key]))
 
   return (
     <section
@@ -277,7 +280,7 @@ function PinnedPosition() {
                     animate={{ opacity: revealed ? 1 : 0, y: revealed ? 0 : 16 }}
                     transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
                   >
-                    <PositionStat value={SITE.figures[key] as number} label={label} active={revealed} />
+                    <PositionStat value={site.figures[key] as number} label={label} active={revealed} />
                   </motion.div>
                 )
               })}

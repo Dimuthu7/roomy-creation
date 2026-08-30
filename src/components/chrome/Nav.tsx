@@ -1,8 +1,11 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { usePathname } from 'next/navigation'
+import Link from 'next/link'
 import { Logo } from './Logo'
 import { useMotionLevel } from '@/hooks/useMotionLevel'
+import { logout } from '@/app/admin/actions'
 
 // Not client-approved — flagged for sign-off, brief §8. "Process" names the #how
 // section, whose own heading reads "How we work"; the nav keeps the shorter word a
@@ -12,6 +15,11 @@ const LINKS = [
   { href: '#how', label: 'Process' },
   { href: '#materials', label: 'Materials' },
 ] as const
+
+// Shared by every non-CTA nav item, marketing or admin, so the two variants
+// look identical apart from their labels/targets.
+const LINK_CLASS =
+  'u-mono shrink-0 whitespace-nowrap text-sky transition-opacity duration-150 hover:text-yellow active:opacity-60'
 
 // Past this many pixels the bar has visibly left the hero, so it's fair to shrink it;
 // scrolling back below it restores the resting size.
@@ -26,6 +34,11 @@ export function Nav() {
   const reduced = level === 'reduced'
   const [scrolled, setScrolled] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
+  const pathname = usePathname()
+  // The login screen has no session yet, so "Home"/"Sign out" would either bounce
+  // straight back to it (proxy.ts) or destroy nothing — SiteChrome hides this whole
+  // bar there instead, so this component only ever sees the two other cases.
+  const isAdmin = pathname.startsWith('/admin')
 
   useEffect(() => {
     // Reduced motion keeps the bar at its resting, full size always — the same "safe
@@ -77,13 +90,31 @@ export function Nav() {
             scrolled ? 'py-2.5' : 'py-4'
           }`}
         >
-          <a
-            href="#top"
-            onClick={(e) => scrollToSection(e, '#top')}
-            className={`shrink-0 origin-left ${SHRINK_TRANSITION} ${scrolled ? 'scale-90' : 'scale-100'}`}
-          >
-            <Logo variant="yellow" />
-          </a>
+          <div className="flex shrink-0 items-center gap-2">
+            {isAdmin ? (
+              <Link
+                href="/admin"
+                className={`origin-left ${SHRINK_TRANSITION} ${scrolled ? 'scale-90' : 'scale-100'}`}
+              >
+                <Logo variant="yellow" />
+              </Link>
+            ) : (
+              <a
+                href="#top"
+                onClick={(e) => scrollToSection(e, '#top')}
+                className={`origin-left ${SHRINK_TRANSITION} ${scrolled ? 'scale-90' : 'scale-100'}`}
+              >
+                <Logo variant="yellow" />
+              </a>
+            )}
+            {/* Stands in for the removed "Roomy Creations — Admin" page header — the
+                one place that told an admin which mode they were in. */}
+            {isAdmin && (
+              <span className="u-mono rounded-full border border-yellow/50 px-2 py-0.5 text-yellow">
+                Admin
+              </span>
+            )}
+          </div>
 
           {/* Below `sm:` this is the only other thing in the bar's first row, so it
               lands top-right against the logo for free via `justify-between` — no CTA
@@ -114,25 +145,43 @@ export function Nav() {
               reduced ? '' : 'transition-[max-height,opacity] duration-300 ease-out'
             } ${menuOpen ? 'max-h-96 pt-4 opacity-100' : 'max-h-0 pt-0 opacity-0'}`}
           >
-            {LINKS.map((link) => (
-              <a
-                key={link.href}
-                href={link.href}
-                onClick={(e) => scrollToSection(e, link.href)}
-                className="u-mono shrink-0 whitespace-nowrap text-sky transition-opacity duration-150 hover:text-yellow active:opacity-60"
-              >
-                {link.label}
-              </a>
-            ))}
-            {/* The CTA is the one control on this bar — never teal text on navy for a
-                control, teal is 2.7:1 and a line/edge colour only. */}
-            <a
-              href="#enquiry"
-              onClick={(e) => scrollToSection(e, '#enquiry')}
-              className="mt-2 shrink-0 rounded-full bg-yellow px-4 py-2 font-display text-sm text-navy whitespace-nowrap transition-transform duration-150 active:scale-95 sm:mt-0"
-            >
-              Request a quotation
-            </a>
+            {isAdmin ? (
+              <>
+                <Link href="/admin" className={LINK_CLASS}>
+                  Home
+                </Link>
+                <a href="/" target="_blank" rel="noopener noreferrer" className={LINK_CLASS}>
+                  View site
+                </a>
+                <form action={logout}>
+                  <button type="submit" className={LINK_CLASS}>
+                    Sign out
+                  </button>
+                </form>
+              </>
+            ) : (
+              <>
+                {LINKS.map((link) => (
+                  <a
+                    key={link.href}
+                    href={link.href}
+                    onClick={(e) => scrollToSection(e, link.href)}
+                    className={LINK_CLASS}
+                  >
+                    {link.label}
+                  </a>
+                ))}
+                {/* The CTA is the one control on this bar — never teal text on navy for
+                    a control, teal is 2.7:1 and a line/edge colour only. */}
+                <a
+                  href="#enquiry"
+                  onClick={(e) => scrollToSection(e, '#enquiry')}
+                  className="mt-2 shrink-0 rounded-full bg-yellow px-4 py-2 font-display text-sm text-navy whitespace-nowrap transition-transform duration-150 active:scale-95 sm:mt-0"
+                >
+                  Request a quotation
+                </a>
+              </>
+            )}
           </div>
         </nav>
       </header>

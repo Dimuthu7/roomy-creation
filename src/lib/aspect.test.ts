@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { aspectClass } from './aspect'
-import { RATIOS } from '@/data/works'
+import { RATIOS } from '@/data/workTypes'
 
 describe('aspectClass', () => {
   it('maps every ratio to a distinct, non-empty class', () => {

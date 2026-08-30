@@ -1,8 +1,12 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, act } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { usePathname } from 'next/navigation'
 import { setPrefersReducedMotion, getScrollIntoViewCalls } from '@/test/browserStubs'
 import { Nav } from './Nav'
+
+vi.mock('next/navigation', () => ({ usePathname: vi.fn() }))
+vi.mock('@/app/admin/actions', () => ({ logout: vi.fn() }))
 
 function scrollTo(y: number) {
   Object.defineProperty(window, 'scrollY', { value: y, configurable: true })
@@ -10,6 +14,10 @@ function scrollTo(y: number) {
     window.dispatchEvent(new Event('scroll'))
   })
 }
+
+beforeEach(() => {
+  vi.mocked(usePathname).mockReturnValue('/')
+})
 
 describe('Nav', () => {
   // Without this, every keyboard visitor tabs the whole nav before reaching content.
@@ -272,5 +280,55 @@ describe('Nav', () => {
       render(<Nav />)
       expect(panel().className).not.toMatch(/transition-\[max-height,opacity\]/)
     })
+  })
+
+  // Under /admin, the bar keeps its shape but swaps marketing links for admin
+  // controls — verified against a nested protected route, not just "/admin" itself.
+  describe('admin variant', () => {
+    beforeEach(() => {
+      vi.mocked(usePathname).mockReturnValue('/admin/site-details')
+    })
+
+    it('shows Home, View site and Sign out instead of the marketing links and CTA', () => {
+      render(<Nav />)
+      expect(screen.getByRole('link', { name: 'Home' })).toHaveAttribute('href', '/admin')
+      expect(screen.getByRole('link', { name: 'View site' })).toHaveAttribute('href', '/')
+      expect(screen.getByRole('button', { name: 'Sign out' })).toBeInTheDocument()
+      for (const name of ['Work', 'Process', 'Materials', 'Request a quotation']) {
+        expect(screen.queryByRole('link', { name })).not.toBeInTheDocument()
+      }
+    })
+
+    it('opens "View site" in a new tab safely', () => {
+      render(<Nav />)
+      const link = screen.getByRole('link', { name: 'View site' })
+      expect(link).toHaveAttribute('target', '_blank')
+      expect(link).toHaveAttribute('rel', 'noopener noreferrer')
+    })
+
+    it('submits Sign out as a form targeting the logout action, not a plain link', () => {
+      render(<Nav />)
+      const button = screen.getByRole('button', { name: 'Sign out' })
+      expect(button).toHaveAttribute('type', 'submit')
+      expect(button.closest('form')).not.toBeNull()
+    })
+
+    it('links the logo to /admin instead of #top', () => {
+      render(<Nav />)
+      const logoLink = screen.getByRole('link', { name: 'Roomy Creations' })
+      expect(logoLink).toHaveAttribute('href', '/admin')
+    })
+
+    // Stands in for the page-level "Roomy Creations — Admin" header that used to be
+    // the only thing telling an admin which mode they were in.
+    it('shows an "Admin" indicator next to the logo', () => {
+      render(<Nav />)
+      expect(screen.getByText('Admin')).toBeInTheDocument()
+    })
+  })
+
+  it('shows no "Admin" indicator on marketing routes', () => {
+    render(<Nav />)
+    expect(screen.queryByText('Admin')).not.toBeInTheDocument()
   })
 })

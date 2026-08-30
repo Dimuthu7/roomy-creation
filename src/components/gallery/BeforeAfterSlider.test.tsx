@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { BeforeAfterSlider } from './BeforeAfterSlider'
-import { WORKS } from '@/data/works'
+import { WORKS_FIXTURE as WORKS } from '@/test/fixtures'
 
 const withBefore = WORKS.find((w) => w.beforeImage)!
 const withoutBefore = WORKS.find((w) => !w.beforeImage)!

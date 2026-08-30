@@ -2,10 +2,10 @@ import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { GalleryCard } from './GalleryCard'
-import { WORKS } from '@/data/works'
+import { WORKS_FIXTURE } from '@/test/fixtures'
 import { workAlt } from '@/lib/workAlt'
 
-const work = WORKS[1]
+const work = WORKS_FIXTURE[1]
 
 describe('GalleryCard', () => {
   it('renders the work image with its computed alt text before any error', () => {

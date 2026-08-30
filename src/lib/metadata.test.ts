@@ -2,26 +2,26 @@ import { describe, it, expect } from 'vitest'
 import { TBC } from './tbc'
 import { BRAND } from './brand'
 import { buildMetadata, viewport } from './metadata'
-import { SITE } from '@/data/site'
+import { SITE_FIXTURE } from '@/test/fixtures'
 
 // F5: generate-metadata.md:428 — "Using a relative path in a URL-based metadata
 // field without configuring a metadataBase will cause a build error." The production
-// domain is unknown (SITE.url is [TBC] today), so metadataBase must be omitted
+// domain is unknown (SITE_FIXTURE.url is [TBC] today), so metadataBase must be omitted
 // entirely rather than guessing a domain — Task 13 already had an invented domain
 // caught in review.
 describe('buildMetadata', () => {
   it('omits metadataBase while the production domain is unknown', () => {
-    const m = buildMetadata({ ...SITE, url: TBC })
+    const m = buildMetadata({ ...SITE_FIXTURE, url: TBC })
     expect(m.metadataBase).toBeUndefined()
   })
 
-  it('sets metadataBase to the configured origin once SITE.url is known', () => {
-    const m = buildMetadata({ ...SITE, url: 'https://roomycreations.lk' })
+  it('sets metadataBase to the configured origin once SITE_FIXTURE.url is known', () => {
+    const m = buildMetadata({ ...SITE_FIXTURE, url: 'https://roomycreations.lk' })
     expect(m.metadataBase).toEqual(new URL('https://roomycreations.lk'))
   })
 
   it('carries the site name as the title and the approved description', () => {
-    const m = buildMetadata(SITE)
+    const m = buildMetadata(SITE_FIXTURE)
     expect(m.title).toBe('Roomy Creations')
     expect(m.description).toBe('Fitted furniture, measured and installed in Sri Lanka.')
   })
@@ -29,7 +29,7 @@ describe('buildMetadata', () => {
   // No og:image ships in this task — we have no image, and a placeholder one is
   // banned. openGraph still carries title, description, type and locale.
   it('sets openGraph title, description, type and locale, and no images field', () => {
-    const m = buildMetadata(SITE)
+    const m = buildMetadata(SITE_FIXTURE)
     // `Metadata['openGraph']` is a union keyed on `type` (article/book/website/...),
     // and one branch (the bare fallback) carries no `type` field at all, so TS
     // refuses to read `.type` off the union directly without narrowing first.

@@ -1,12 +1,19 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { useState } from 'react'
 import userEvent from '@testing-library/user-event'
 import { Lightbox } from './Lightbox'
 import { EnquiryPrefillProvider, useEnquiryPrefill } from '@/context/EnquiryPrefill'
-import { WORKS } from '@/data/works'
+import { useSiteData } from '@/context/SiteData'
+import { SITE_FIXTURE, WORKS_FIXTURE as WORKS } from '@/test/fixtures'
 import { workAlt } from '@/lib/workAlt'
 import { setPrefersReducedMotion, getScrollIntoViewCalls } from '@/test/browserStubs'
+
+vi.mock('@/context/SiteData', () => ({ useSiteData: vi.fn() }))
+
+beforeEach(() => {
+  vi.mocked(useSiteData).mockReturnValue({ site: SITE_FIXTURE, works: WORKS })
+})
 
 const withoutBeforeIndex = WORKS.findIndex((w) => !w.beforeImage)
 const fourFiveIndex = WORKS.findIndex((w) => !w.beforeImage && w.ratio === '4:5')

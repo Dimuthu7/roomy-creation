@@ -1,20 +1,23 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { WORKS } from '@/data/works'
+import { useSiteData } from '@/context/SiteData'
+import { SITE_FIXTURE, ALL_WORKS_FIXTURE as WORKS } from '@/test/fixtures'
 import { setPrefersReducedMotion } from '@/test/browserStubs'
 import { GalleryGrid } from './GalleryGrid'
 
 // These tests exercise GalleryGrid's own behavior — eager/lazy cutoff, category
-// filtering, the screen-position vs WORKS-index distinction — which holds at
-// any catalog size. Point WORKS at the full 24-slot planned catalog rather than
-// the real (delivered-only) export, which is too small right now to exercise
+// filtering, the screen-position vs works-index distinction — which holds at
+// any catalog size. The context is given the full 24-slot planned catalog rather
+// than the real (delivered-only) fixture, which is too small right now to exercise
 // the eager-past-8 or three-deep-filter cases below. Catalog-size-specific
 // behavior (hiding empty categories, showing only delivered photos) is covered
-// separately in GalleryGrid.deliveredCatalog.test.tsx against the real export.
-vi.mock('@/data/works', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@/data/works')>()
-  return { ...actual, WORKS: actual.ALL_WORKS }
+// separately in GalleryGrid.deliveredCatalog.test.tsx against the delivered-only
+// fixture.
+vi.mock('@/context/SiteData', () => ({ useSiteData: vi.fn() }))
+
+beforeEach(() => {
+  vi.mocked(useSiteData).mockReturnValue({ site: SITE_FIXTURE, works: WORKS })
 })
 
 function items(): HTMLElement[] {

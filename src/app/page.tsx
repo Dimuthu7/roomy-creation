@@ -9,15 +9,16 @@ import { Enquiry } from '@/components/sections/Enquiry'
 import { WeaveDivider } from '@/components/weave/WeaveDivider'
 import { EnquiryPrefillProvider } from '@/context/EnquiryPrefill'
 import { buildLocalBusinessSchema } from '@/lib/schema'
-import { SITE } from '@/data/site'
+import { getSiteConfig } from '@/data/site'
 
-export default function Home() {
+export default async function Home() {
   // json-ld.md:31-36: buildLocalBusinessSchema has existed since Task 3 and had
   // never been rendered until this task. JSON.stringify does not sanitize malicious
   // strings, so replacing every `<` with its unicode escape is not optional — the
   // doc calls out the XSS vector this closes explicitly. A `</script>` arriving
-  // through any SITE field would otherwise close this tag and run what follows.
-  const jsonLd = buildLocalBusinessSchema(SITE)
+  // through any site field would otherwise close this tag and run what follows.
+  const site = await getSiteConfig()
+  const jsonLd = buildLocalBusinessSchema(site)
 
   return (
     <EnquiryPrefillProvider>

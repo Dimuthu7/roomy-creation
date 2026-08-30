@@ -1,11 +1,14 @@
+import 'server-only'
+import { unstable_cache } from 'next/cache'
+import { eq } from 'drizzle-orm'
+import { db } from '@/db/client'
+import { siteConfig } from '@/db/schema'
 import { TBC, type Maybe } from '@/lib/tbc'
 
 export interface SiteConfig {
   name: string
   /** Production origin, no trailing slash, e.g. 'https://example.com'. Required before
-   *  any absolute-URL metadata works. The example is deliberately not a plausible
-   *  Roomy Creations domain: a guess written here is a guess somebody later pastes in
-   *  as fact, which is exactly how an invented address reached the enquiry route. */
+   *  any absolute-URL metadata works. */
   url: Maybe<string>
   /** International format, no spaces. e.g. '+94112345678' */
   phone: Maybe<string>
@@ -38,28 +41,46 @@ export interface SiteConfig {
   }
 }
 
-export const SITE: SiteConfig = {
-  name: 'Roomy Creations',
-  url: TBC,
-  phone: "+94 72 292 0088",
-  whatsappNumber: "+94722920088",
-  email: "roomycreation@gmail.com",
-  addressLines: ["123 Main St", "Kurunegala"],
-  city: "Kurunegala",
-  postalCode: "60024",
-  districts: ["Kurunegala", "Kurunegala"],
-  openingHours: ["Mo-Fr 08:30-18:00"],
-  social: { 
-    facebook: "https://www.facebook.com/share/1EwuWN69aJ/?mibextid=wwXIfr", 
-    instagram: "https://www.instagram.com/roomy_creations?igsh=ODl0ajA3bWhxZGVm", 
-    tiktok: "https://www.tiktok.com/@roomy.creations?_r=1&_t=ZS-98jXoO5wqJe" 
+function orTBC<T>(value: T | null): Maybe<T> {
+  return value === null ? TBC : value
+}
+
+const fetchSiteConfig = unstable_cache(
+  async (): Promise<SiteConfig> => {
+    const [row] = await db.select().from(siteConfig).where(eq(siteConfig.id, 1)).limit(1)
+    if (!row) {
+      throw new Error('site_config row (id=1) is missing — run `npm run db:seed`.')
+    }
+    return {
+      name: row.name,
+      url: orTBC(row.url),
+      phone: orTBC(row.phone),
+      whatsappNumber: orTBC(row.whatsappNumber),
+      email: orTBC(row.email),
+      addressLines: orTBC(row.addressLines),
+      city: orTBC(row.city),
+      postalCode: orTBC(row.postalCode),
+      districts: orTBC(row.districts),
+      openingHours: orTBC(row.openingHours),
+      social: {
+        facebook: orTBC(row.socialFacebook),
+        instagram: orTBC(row.socialInstagram),
+        tiktok: orTBC(row.socialTiktok),
+      },
+      mapEmbedUrl: orTBC(row.mapEmbedUrl),
+      freeMeasurementVisit: orTBC(row.freeMeasurementVisit),
+      figures: {
+        yearsInBusiness: orTBC(row.figuresYearsInBusiness),
+        homesFitted: orTBC(row.figuresHomesFitted),
+        unitsDelivered: orTBC(row.figuresUnitsDelivered),
+        districtsCovered: orTBC(row.figuresDistrictsCovered),
+      },
+    }
   },
-  mapEmbedUrl: "https://maps.app.goo.gl/SZjLYxW7YAM95CX56?g_st=ic",
-  freeMeasurementVisit: true,
-  figures: {
-    yearsInBusiness: 2,
-    homesFitted: 10,
-    unitsDelivered: 20,
-    districtsCovered: 3,
-  },
+  ['site-config']
+)
+
+/** Reads the site's contact/business details and stats from the database. */
+export async function getSiteConfig(): Promise<SiteConfig> {
+  return fetchSiteConfig()
 }

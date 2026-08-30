@@ -1,13 +1,20 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, within } from '@testing-library/react'
-import { WORKS, ALL_WORKS } from '@/data/works'
+import { useSiteData } from '@/context/SiteData'
+import { SITE_FIXTURE, WORKS_FIXTURE as WORKS, ALL_WORKS_FIXTURE as ALL_WORKS } from '@/test/fixtures'
 import { GalleryGrid } from './GalleryGrid'
 
-// Unlike GalleryGrid.test.tsx (which mocks WORKS up to the full 24-slot plan to
-// exercise generic grid behavior), this file uses the real, delivered-only
-// WORKS export, since these tests are specifically about what the live site
-// shows given the photos actually sitting in public/work/ right now.
-describe('GalleryGrid against the real, delivered-only catalog', () => {
+vi.mock('@/context/SiteData', () => ({ useSiteData: vi.fn() }))
+
+beforeEach(() => {
+  vi.mocked(useSiteData).mockReturnValue({ site: SITE_FIXTURE, works: WORKS })
+})
+
+// Unlike GalleryGrid.test.tsx (which points the context at the full 24-slot plan to
+// exercise generic grid behavior), this file uses the delivered-only fixture, since
+// these tests are specifically about what the live site shows given only the photos
+// actually delivered so far.
+describe('GalleryGrid against the delivered-only catalog', () => {
   it('renders only the photos actually delivered, not a placeholder for every planned slot', () => {
     render(<GalleryGrid onOpen={vi.fn()} />)
     expect(screen.getAllByRole('img')).toHaveLength(WORKS.length)

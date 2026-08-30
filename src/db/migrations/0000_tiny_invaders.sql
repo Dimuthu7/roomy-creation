@@ -1,0 +1,40 @@
+CREATE TABLE "site_config" (
+	"id" integer PRIMARY KEY DEFAULT 1 NOT NULL,
+	"name" text DEFAULT 'Roomy Creations' NOT NULL,
+	"url" text,
+	"phone" text,
+	"whatsapp_number" text,
+	"email" text,
+	"address_lines" text[],
+	"city" text,
+	"postal_code" text,
+	"districts" text[],
+	"opening_hours" text[],
+	"social_facebook" text,
+	"social_instagram" text,
+	"social_tiktok" text,
+	"map_embed_url" text,
+	"free_measurement_visit" boolean,
+	"figures_years_in_business" integer,
+	"figures_homes_fitted" integer,
+	"figures_units_delivered" integer,
+	"figures_districts_covered" integer,
+	"updated_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "works" (
+	"id" text PRIMARY KEY NOT NULL,
+	"position" integer NOT NULL,
+	"category" text NOT NULL,
+	"ratio" text NOT NULL,
+	"image" text,
+	"before_image" text,
+	"title" text NOT NULL,
+	"materials" text,
+	"dimensions" text,
+	"hardware" text,
+	"property_type" text,
+	"district" text,
+	"year" integer,
+	"updated_at" timestamp DEFAULT now() NOT NULL
+);

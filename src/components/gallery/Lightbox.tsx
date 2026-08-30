@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { WORKS } from '@/data/works'
+import { useSiteData } from '@/context/SiteData'
 import { CATEGORIES } from '@/data/categories'
 import { nextIndex, prevIndex } from '@/lib/lightboxNav'
 import { isTBC } from '@/lib/tbc'
@@ -40,7 +40,8 @@ export function Lightbox({
   const [mounted, setMounted] = useState(false)
   const dialogRef = useRef<HTMLDivElement>(null)
   const { prefill } = useEnquiryPrefill()
-  const work = WORKS[index]
+  const { works } = useSiteData()
+  const work = works[index]
 
   useEffect(() => {
     setMounted(true)
@@ -95,12 +96,12 @@ export function Lightbox({
     }
     if (e.key === 'ArrowRight') {
       e.preventDefault()
-      onIndexChange(nextIndex(index, WORKS.length))
+      onIndexChange(nextIndex(index, works.length))
       return
     }
     if (e.key === 'ArrowLeft') {
       e.preventDefault()
-      onIndexChange(prevIndex(index, WORKS.length))
+      onIndexChange(prevIndex(index, works.length))
       return
     }
     if (e.key !== 'Tab') return
@@ -182,14 +183,14 @@ export function Lightbox({
           <div className="flex gap-2">
             <button
               type="button"
-              onClick={() => onIndexChange(prevIndex(index, WORKS.length))}
+              onClick={() => onIndexChange(prevIndex(index, works.length))}
               className="u-mono rounded-full border border-teal/40 px-4 py-2 text-sky hover:border-teal"
             >
               Previous
             </button>
             <button
               type="button"
-              onClick={() => onIndexChange(nextIndex(index, WORKS.length))}
+              onClick={() => onIndexChange(nextIndex(index, works.length))}
               className="u-mono rounded-full border border-teal/40 px-4 py-2 text-sky hover:border-teal"
             >
               Next

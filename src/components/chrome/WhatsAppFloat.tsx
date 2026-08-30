@@ -1,14 +1,15 @@
 'use client'
 import { motion } from 'framer-motion'
-import { SITE } from '@/data/site'
+import { useSiteData } from '@/context/SiteData'
 import { whatsappUrl } from '@/lib/whatsapp'
 import { useMotionLevel } from '@/hooks/useMotionLevel'
 
 export function WhatsAppFloat() {
   const level = useMotionLevel()
-  // whatsappUrl returns null while SITE.whatsappNumber is [TBC], as it is today —
-  // rendering nothing is the correct behaviour, not a dead link.
-  const url = whatsappUrl(SITE.whatsappNumber, 'Hello Roomy Creations, I have a question.')
+  const { site } = useSiteData()
+  // whatsappUrl returns null while site.whatsappNumber is [TBC] — rendering
+  // nothing is the correct behaviour, not a dead link.
+  const url = whatsappUrl(site.whatsappNumber, 'Hello Roomy Creations, I have a question.')
   if (!url) return null
 
   const reduced = level === 'reduced'

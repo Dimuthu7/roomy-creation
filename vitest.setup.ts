@@ -1,8 +1,15 @@
 import '@testing-library/jest-dom/vitest'
 import { configure } from '@testing-library/react'
 import { mockAnimationsApi } from 'jsdom-testing-mocks'
-import { beforeEach } from 'vitest'
+import { beforeEach, vi } from 'vitest'
 import { installBrowserStubs, setPrefersReducedMotion, resetBrowserStubs } from './src/test/browserStubs'
+
+// The real 'server-only' package throws unconditionally whenever `window` is
+// defined — true of every bundler's client build, but also true of jsdom, which
+// isn't the distinction that package is checking for. Modules that import it (for
+// legitimate server-side guarding) still need to be importable — directly or
+// transitively — by tests running under jsdom.
+vi.mock('server-only', () => ({}))
 
 installBrowserStubs()
 

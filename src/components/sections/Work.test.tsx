@@ -1,9 +1,16 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { EnquiryPrefillProvider } from '@/context/EnquiryPrefill'
-import { WORKS } from '@/data/works'
+import { useSiteData } from '@/context/SiteData'
+import { SITE_FIXTURE, WORKS_FIXTURE as WORKS } from '@/test/fixtures'
 import { Work } from './Work'
+
+vi.mock('@/context/SiteData', () => ({ useSiteData: vi.fn() }))
+
+beforeEach(() => {
+  vi.mocked(useSiteData).mockReturnValue({ site: SITE_FIXTURE, works: WORKS })
+})
 
 function setup() {
   return render(

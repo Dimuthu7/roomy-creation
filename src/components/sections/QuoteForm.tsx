@@ -4,7 +4,7 @@ import { Listbox, ListboxButton, ListboxOption, ListboxOptions } from '@headless
 import { toast } from 'sonner'
 import { enquirySchema, NEED_OPTIONS, PROPERTY_TYPES, SOURCE_OPTIONS } from '@/lib/enquirySchema'
 import { useEnquiryPrefill } from '@/context/EnquiryPrefill'
-import { SITE } from '@/data/site'
+import { useSiteData } from '@/context/SiteData'
 
 type Errors = Record<string, string>
 
@@ -65,6 +65,7 @@ function focusControl(form: HTMLFormElement, name: string): void {
 
 export function QuoteForm() {
   const { needs: prefilled } = useEnquiryPrefill()
+  const { site } = useSiteData()
   const [needs, setNeeds] = useState<string[]>([])
   const [errors, setErrors] = useState<Errors>({})
   const [state, setState] = useState<'idle' | 'sending' | 'sent' | 'failed'>('idle')
@@ -276,7 +277,7 @@ export function QuoteForm() {
       </button>
 
       <p className="u-mono">We reply within one working day.</p>
-      {SITE.freeMeasurementVisit === true && (
+      {site.freeMeasurementVisit === true && (
         <p className="u-mono">Measurement visits are free and carry no obligation.</p>
       )}
     </form>

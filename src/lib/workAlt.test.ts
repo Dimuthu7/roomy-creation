@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { TBC } from './tbc'
 import { workAlt } from './workAlt'
-import { WORKS } from '@/data/works'
+import { WORKS_FIXTURE as WORKS } from '@/test/fixtures'
 
 const base = WORKS[1]
 

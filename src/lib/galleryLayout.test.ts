@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { filterWorks, isEager } from './galleryLayout'
-import { ALL_WORKS as WORKS } from '@/data/works'
+import { ALL_WORKS_FIXTURE as WORKS } from '@/test/fixtures'
 
 describe('filterWorks', () => {
   it('returns everything for "all"', () => {
