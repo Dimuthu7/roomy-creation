@@ -5,6 +5,10 @@ of past work, the film, the process, the materials argument and the enquiry form
 
 ## Running it
 
+Site content (business details, stats, gallery works) lives in Postgres, not static
+files — `npm run dev` needs a working `DATABASE_URL` in `.env.local` or every page
+fails to render. See "Database" below for first-time setup.
+
 ```
 npm run dev      # local development, http://localhost:3000
 npm test         # automated test suite
@@ -13,6 +17,31 @@ npm run build    # production build
 
 `npm run build` must succeed before anything here is deployed. If it fails, the site
 does not go live — do not skip that step.
+
+## Database
+
+Content is stored in Neon Postgres (`src/db/schema.ts`), accessed through Drizzle
+ORM, and read via cached data-access functions (`src/data/site.ts`,
+`src/data/works.ts`). Gallery photos are uploaded to Vercel Blob.
+
+```
+npm run db:generate   # generate a migration from a schema change
+npm run db:migrate    # apply pending migrations to DATABASE_URL
+npm run db:seed       # one-time: populate an empty database from the original static data
+```
+
+First-time setup against a fresh database: set `DATABASE_URL` and
+`BLOB_READ_WRITE_TOKEN` in `.env.local`, run `npm run db:migrate`, then
+`npm run db:seed`.
+
+## Admin portal
+
+Reachable at `/admin` — not linked from anywhere on the public site, so an admin
+navigates there directly by URL. Logs in with the hardcoded credentials in
+`ADMIN_USERNAME`/`ADMIN_PASSWORD`, then lands on a dashboard of tiles for each
+admin function. Currently one tile: **Site details**, for editing business
+details, stats, and per-slot gallery photos/metadata. Saves go live immediately
+(no publish step).
 
 ## Image and film slots
 
@@ -131,6 +160,16 @@ actually send an email:
 The visitor sees a plain "that did not send" message in every one of these cases —
 nothing about the site looks broken, but no enquiry reaches anyone until all three
 are set in the deployment environment.
+
+The database, image storage, and admin login need these — required everywhere,
+including local dev:
+
+| Variable | What breaks without it |
+|---|---|
+| `DATABASE_URL` | Every page fails to render — all site content reads from here. |
+| `BLOB_READ_WRITE_TOKEN` | Gallery photo uploads in the admin portal fail. |
+| `ADMIN_USERNAME` / `ADMIN_PASSWORD` | Nothing can log in to `/admin` — every attempt is rejected. |
+| `ADMIN_SESSION_SECRET` | Admin sessions can't be signed — logging in fails. Generate with `openssl rand -base64 32`. |
 
 ## Copy awaiting sign-off
 
