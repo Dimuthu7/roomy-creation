@@ -1,7 +1,8 @@
 # Roomy Creations — website
 
 This is the Roomy Creations marketing site: one page covering the hero, the gallery
-of past work, the film, the process, the materials argument and the enquiry form.
+of past work, the film, the process, the materials argument, customer testimonials
+and the enquiry form.
 
 ## Running it
 
@@ -22,7 +23,8 @@ does not go live — do not skip that step.
 
 Content is stored in Neon Postgres (`src/db/schema.ts`), accessed through Drizzle
 ORM, and read via cached data-access functions (`src/data/site.ts`,
-`src/data/works.ts`). Gallery photos are uploaded to Vercel Blob.
+`src/data/works.ts`, `src/data/testimonials.ts`). Gallery photos are uploaded to
+Vercel Blob.
 
 ```
 npm run db:generate   # generate a migration from a schema change
@@ -39,9 +41,15 @@ First-time setup against a fresh database: set `DATABASE_URL` and
 Reachable at `/admin` — not linked from anywhere on the public site, so an admin
 navigates there directly by URL. Logs in with the hardcoded credentials in
 `ADMIN_USERNAME`/`ADMIN_PASSWORD`, then lands on a dashboard of tiles for each
-admin function. Currently one tile: **Site details**, for editing business
-details, stats, and per-slot gallery photos/metadata. Saves go live immediately
-(no publish step).
+admin function. Saves go live immediately (no publish step).
+
+- **Site details** — business details, stats, and per-slot gallery photos/metadata.
+- **Manage testimonials** — a "Sync from Facebook" button pulls the Page's reviews
+  via the Graph API's ratings edge (needs `FACEBOOK_PAGE_ID` and
+  `FACEBOOK_PAGE_ACCESS_TOKEN`; see "Environment variables" below), an admin can
+  also add one manually, and each testimonial has a show/hide toggle and an
+  up/down reorder control. Only testimonials marked visible appear on the public
+  site's testimonials section, in the chosen order.
 
 ## Image and film slots
 
@@ -161,6 +169,19 @@ The visitor sees a plain "that did not send" message in every one of these cases
 nothing about the site looks broken, but no enquiry reaches anyone until all three
 are set in the deployment environment.
 
+The admin portal's "Sync from Facebook" button (Manage testimonials) needs both of
+these to read the Page's reviews:
+
+| Variable | What breaks without it |
+|---|---|
+| `FACEBOOK_PAGE_ID` | The sync button returns a "not configured" error instead of fetching reviews. |
+| `FACEBOOK_PAGE_ACCESS_TOKEN` | Same — sync returns a "not configured" error. |
+
+Neither is required to run the site or the rest of the admin portal — testimonials
+can be added manually in the meantime. See the setup steps in `.env.example` (a
+Facebook App, Page admin access, and a long-lived Page Access Token via Graph API
+Explorer).
+
 The database, image storage, and admin login need these — required everywhere,
 including local dev:
 
@@ -177,8 +198,9 @@ Everything below was written to fill a real gap on the page but has not been
 approved by the client. Each is also flagged in a comment at the line it appears.
 
 - `Position.tsx`'s three lines (carried over from an earlier task)
-- Navigation labels: "Work", "Process", "Materials", "Request a quotation"
-- Section headings: "Our work", "How we work", "What we make"
+- Navigation labels: "Work", "Process", "Materials", "Testimonials", "Request a quotation"
+- Section headings: "Our work", "How we work", "What we make", "What our customers
+  say" (plus its subhead, "Reviews from real customers, on Facebook and in person.")
 - Skip-link text: "Skip to content"
 - The WhatsApp button's label: "Message us on WhatsApp"
 - The footer copyright line's exact wording
