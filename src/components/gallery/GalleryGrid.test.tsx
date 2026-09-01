@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { useSiteData } from '@/context/SiteData'
-import { SITE_FIXTURE, ALL_WORKS_FIXTURE as WORKS } from '@/test/fixtures'
+import { SITE_FIXTURE, ALL_WORKS_FIXTURE as WORKS, TESTIMONIALS_FIXTURE } from '@/test/fixtures'
 import { setPrefersReducedMotion } from '@/test/browserStubs'
 import { GalleryGrid } from './GalleryGrid'
 
@@ -17,7 +17,11 @@ import { GalleryGrid } from './GalleryGrid'
 vi.mock('@/context/SiteData', () => ({ useSiteData: vi.fn() }))
 
 beforeEach(() => {
-  vi.mocked(useSiteData).mockReturnValue({ site: SITE_FIXTURE, works: WORKS })
+  vi.mocked(useSiteData).mockReturnValue({
+    site: SITE_FIXTURE,
+    works: WORKS,
+    testimonials: TESTIMONIALS_FIXTURE,
+  })
 })
 
 function items(): HTMLElement[] {

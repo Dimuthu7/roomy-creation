@@ -6,6 +6,7 @@ import { TBC } from '@/lib/tbc'
 import type { SiteConfig } from '@/data/site'
 import type { Ratio, Work } from '@/data/works'
 import type { WorkCategoryId } from '@/data/categories'
+import type { Testimonial } from '@/data/testimonials'
 
 export const SITE_FIXTURE: SiteConfig = {
   name: 'Roomy Creations',
@@ -82,3 +83,36 @@ export const ALL_WORKS_FIXTURE: Work[] = PLAN.map(([category, ratio, title], i) 
 const DELIVERED_COUNT = 5
 
 export const WORKS_FIXTURE: Work[] = ALL_WORKS_FIXTURE.slice(0, DELIVERED_COUNT)
+
+export const TESTIMONIALS_FIXTURE: Testimonial[] = [
+  {
+    id: 'testimonial-1',
+    authorName: 'Nimal Perera',
+    avatarUrl: 'https://scontent.example/nimal.jpg',
+    reviewText: 'Fantastic work on our wardrobe — measured, built and fitted exactly as promised.',
+    reviewUrl: 'https://www.facebook.com/roomycreations/posts/1',
+    recommended: true,
+    rating: null,
+    source: 'facebook',
+  },
+  {
+    id: 'testimonial-2',
+    authorName: 'Kamala Silva',
+    avatarUrl: null,
+    reviewText: 'Great communication throughout and the kitchen fit is excellent.',
+    reviewUrl: null,
+    recommended: null,
+    rating: 5,
+    source: 'manual',
+  },
+  {
+    id: 'testimonial-3',
+    authorName: 'Ruwan Fernando',
+    avatarUrl: null,
+    reviewText: 'Very happy with the storage wall — good materials, tidy finish.',
+    reviewUrl: 'https://www.facebook.com/roomycreations/posts/3',
+    recommended: true,
+    rating: null,
+    source: 'facebook',
+  },
+]

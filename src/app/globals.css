@@ -153,3 +153,45 @@ body {
   height: 100vh;
   height: 100dvh;
 }
+
+/*
+ * Testimonials' auto-scrolling belt (Testimonials.tsx). A plain translateX loop
+ * rather than a framer-motion animate() — no imperative pause/resume-from-position
+ * jank to manage, and animation-play-state: paused on :hover/:focus-within is a
+ * one-line, zero-JS way to satisfy "stop when a visitor is reading a card." The
+ * belt renders the card set twice and animates exactly to -50%, so the second copy
+ * lands precisely where the first started — a seamless loop with no visible seam
+ * or reset-jump. Caught by the prefers-reduced-motion guard above like any other
+ * animation: at 0.01ms/1 iteration it ends back at its unanimated (0%) position,
+ * showing the same real cards statically rather than a half-scrolled belt.
+ */
+@keyframes testimonial-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-testimonial-marquee {
+  animation-name: testimonial-marquee;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+.animate-testimonial-marquee:hover,
+.animate-testimonial-marquee:focus-within {
+  animation-play-state: paused;
+}
+
+/*
+ * Fades cards to transparent at the belt's left/right edges instead of a hard
+ * overflow-hidden clip, matching the reference the client pointed to. Lives on the
+ * (static) viewport wrapper, not the moving track — masking the track itself would
+ * scroll the fade along with the content instead of anchoring it to the edges.
+ */
+.testimonial-fade-mask {
+  -webkit-mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
+  mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
+}

@@ -1,0 +1,1 @@
+ALTER TABLE "testimonials" ADD COLUMN "avatar_url" text;

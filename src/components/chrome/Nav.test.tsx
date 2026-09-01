@@ -60,11 +60,12 @@ describe('Nav', () => {
   })
 
   // Nav labels are not client-approved yet — flagged for sign-off, brief §8.
-  it('links Work, Process and Materials to their exact section ids', () => {
+  it('links Work, Process, Materials and Testimonials to their exact section ids', () => {
     render(<Nav />)
     expect(screen.getByRole('link', { name: 'Work' })).toHaveAttribute('href', '#work')
     expect(screen.getByRole('link', { name: 'Process' })).toHaveAttribute('href', '#how')
     expect(screen.getByRole('link', { name: 'Materials' })).toHaveAttribute('href', '#materials')
+    expect(screen.getByRole('link', { name: 'Testimonials' })).toHaveAttribute('href', '#testimonials')
   })
 
   it('the CTA links to #enquiry and reads "Request a quotation"', () => {
@@ -81,7 +82,7 @@ describe('Nav', () => {
     const cta = screen.getByRole('link', { name: 'Request a quotation' })
     expect(cta.className).toMatch(/bg-yellow/)
     expect(cta.className).toMatch(/text-navy/)
-    for (const name of ['Work', 'Process', 'Materials']) {
+    for (const name of ['Work', 'Process', 'Materials', 'Testimonials']) {
       const link = screen.getByRole('link', { name })
       expect(link.className).toMatch(/text-sky/)
       expect(link.className).not.toMatch(/text-teal/)
@@ -136,7 +137,7 @@ describe('Nav', () => {
 
     it('dims the section links on tap and compresses the CTA pill, since :hover alone does not fire on touch', () => {
       render(<Nav />)
-      for (const name of ['Work', 'Process', 'Materials']) {
+      for (const name of ['Work', 'Process', 'Materials', 'Testimonials']) {
         expect(screen.getByRole('link', { name }).className).toMatch(/active:opacity-60/)
       }
       expect(screen.getByRole('link', { name: 'Request a quotation' }).className).toMatch(
@@ -294,7 +295,7 @@ describe('Nav', () => {
       expect(screen.getByRole('link', { name: 'Home' })).toHaveAttribute('href', '/admin')
       expect(screen.getByRole('link', { name: 'View site' })).toHaveAttribute('href', '/')
       expect(screen.getByRole('button', { name: 'Sign out' })).toBeInTheDocument()
-      for (const name of ['Work', 'Process', 'Materials', 'Request a quotation']) {
+      for (const name of ['Work', 'Process', 'Materials', 'Testimonials', 'Request a quotation']) {
         expect(screen.queryByRole('link', { name })).not.toBeInTheDocument()
       }
     })

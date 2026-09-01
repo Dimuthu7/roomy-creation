@@ -6,6 +6,7 @@ import { SiteChrome } from '@/components/chrome/SiteChrome'
 import { buildMetadata, viewport as siteViewport } from '@/lib/metadata'
 import { getSiteConfig } from '@/data/site'
 import { getWorks } from '@/data/works'
+import { getTestimonials } from '@/data/testimonials'
 import './globals.css'
 
 const outfit = Outfit({ subsets: ['latin'], variable: '--font-outfit', weight: ['600', '700'] })
@@ -28,7 +29,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export const viewport: Viewport = siteViewport
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const [site, works] = await Promise.all([getSiteConfig(), getWorks()])
+  const [site, works, testimonials] = await Promise.all([getSiteConfig(), getWorks(), getTestimonials()])
 
   return (
     <html
@@ -42,7 +43,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             SiteChrome wraps everything in SiteDataProvider itself, since WhatsAppFloat
             (outside {children}) needs it too, and also decides — client-side, via the
             route — whether the marketing-only Footer/WhatsApp/Nav-variant show at all. */}
-        <SiteChrome site={site} works={works} footer={<Footer />}>
+        <SiteChrome site={site} works={works} testimonials={testimonials} footer={<Footer />}>
           {children}
         </SiteChrome>
         <Toaster position="top-right" richColors closeButton />

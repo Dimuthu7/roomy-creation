@@ -45,3 +45,27 @@ export const works = pgTable('works', {
   year: integer('year'),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 })
+
+// One row per testimonial, from either source. `fbReviewId` is unique so a re-sync
+// upserts an existing Facebook review's content instead of duplicating it, while
+// leaving `visible`/`position` untouched — those are admin-curated and must survive
+// a sync. `recommended` (Facebook's thumbs up/down) and `rating` (manual entries
+// only) are both nullable since only one ever applies to a given row. New rows
+// default `visible` to false: a freshly synced review must be reviewed by an admin
+// before it can appear on the public site.
+export const testimonials = pgTable('testimonials', {
+  id: text('id').primaryKey(),
+  source: text('source').notNull(), // 'facebook' | 'manual'
+  fbReviewId: text('fb_review_id').unique(),
+  authorName: text('author_name').notNull(),
+  avatarUrl: text('avatar_url'),
+  reviewText: text('review_text').notNull(),
+  reviewUrl: text('review_url'),
+  recommended: boolean('recommended'),
+  rating: integer('rating'),
+  reviewedAt: timestamp('reviewed_at').notNull().defaultNow(),
+  visible: boolean('visible').notNull().default(false),
+  position: integer('position'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+})

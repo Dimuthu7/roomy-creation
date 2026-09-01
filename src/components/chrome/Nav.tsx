@@ -14,6 +14,7 @@ const LINKS = [
   { href: '#work', label: 'Work' },
   { href: '#how', label: 'Process' },
   { href: '#materials', label: 'Materials' },
+  { href: '#testimonials', label: 'Testimonials' },
 ] as const
 
 // Shared by every non-CTA nav item, marketing or admin, so the two variants

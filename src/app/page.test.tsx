@@ -3,7 +3,7 @@ import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { buildLocalBusinessSchema } from '@/lib/schema'
 import { useSiteData } from '@/context/SiteData'
-import { SITE_FIXTURE, WORKS_FIXTURE } from '@/test/fixtures'
+import { SITE_FIXTURE, WORKS_FIXTURE, TESTIMONIALS_FIXTURE } from '@/test/fixtures'
 
 vi.mock('@/context/SiteData', () => ({ useSiteData: vi.fn() }))
 
@@ -16,7 +16,11 @@ beforeEach(() => {
   vi.resetModules()
   vi.doUnmock('@/data/site')
   vi.doMock('@/data/site', () => ({ getSiteConfig: async () => SITE_FIXTURE }))
-  vi.mocked(useSiteData).mockReturnValue({ site: SITE_FIXTURE, works: WORKS_FIXTURE })
+  vi.mocked(useSiteData).mockReturnValue({
+    site: SITE_FIXTURE,
+    works: WORKS_FIXTURE,
+    testimonials: TESTIMONIALS_FIXTURE,
+  })
 })
 
 describe('Home page assembly', () => {
@@ -32,16 +36,16 @@ describe('Home page assembly', () => {
     expect(main).toHaveAttribute('id', 'main')
   })
 
-  it('carries every load-bearing anchor id: top, work, how, materials, enquiry', async () => {
+  it('carries every load-bearing anchor id: top, work, how, materials, testimonials, enquiry', async () => {
     await renderPage()
-    for (const id of ['top', 'work', 'how', 'materials', 'enquiry']) {
+    for (const id of ['top', 'work', 'how', 'materials', 'testimonials', 'enquiry']) {
       expect(document.getElementById(id)).not.toBeNull()
     }
   })
 
   // Section order: Hero · Position (carries the stats now) · WhatWeMake · Work ·
-  // Film · HowWeWork · Materials · Enquiry.
-  it('lays out the eight sections in the approved order', async () => {
+  // Film · HowWeWork · Materials · Testimonials · Enquiry.
+  it('lays out the nine sections in the approved order', async () => {
     await renderPage()
     const top = document.getElementById('top')!
     const position = screen.getByRole('region', { name: 'Position' })
@@ -50,9 +54,10 @@ describe('Home page assembly', () => {
     const film = screen.getByRole('region', { name: 'Measured on site.' })
     const how = document.getElementById('how')!
     const materials = document.getElementById('materials')!
+    const testimonials = document.getElementById('testimonials')!
     const enquiry = document.getElementById('enquiry')!
 
-    const order = [top, position, whatWeMake, work, film, how, materials, enquiry]
+    const order = [top, position, whatWeMake, work, film, how, materials, testimonials, enquiry]
     for (let i = 1; i < order.length; i++) {
       expect(
         order[i - 1].compareDocumentPosition(order[i]) & Node.DOCUMENT_POSITION_FOLLOWING,

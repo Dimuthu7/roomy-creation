@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { usePathname } from 'next/navigation'
-import { SITE_FIXTURE, WORKS_FIXTURE } from '@/test/fixtures'
+import { SITE_FIXTURE, WORKS_FIXTURE, TESTIMONIALS_FIXTURE } from '@/test/fixtures'
 import { SiteChrome } from './SiteChrome'
 
 vi.mock('next/navigation', () => ({ usePathname: vi.fn() }))
@@ -14,7 +14,12 @@ vi.mock('./ScrollToTop', () => ({ ScrollToTop: () => <div data-testid="scroll-to
 function renderChrome(pathname: string) {
   vi.mocked(usePathname).mockReturnValue(pathname)
   return render(
-    <SiteChrome site={SITE_FIXTURE} works={WORKS_FIXTURE} footer={<div data-testid="footer" />}>
+    <SiteChrome
+      site={SITE_FIXTURE}
+      works={WORKS_FIXTURE}
+      testimonials={TESTIMONIALS_FIXTURE}
+      footer={<div data-testid="footer" />}
+    >
       <div data-testid="page-content" />
     </SiteChrome>,
   )

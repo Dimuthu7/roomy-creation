@@ -8,6 +8,20 @@
       "when": 1788065606205,
       "tag": "0000_tiny_invaders",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1788195044802,
+      "tag": "0001_jazzy_inhumans",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1788198206771,
+      "tag": "0002_lazy_amphibian",
+      "breakpoints": true
     }
   ]
 }

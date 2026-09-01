@@ -3,13 +3,17 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { EnquiryPrefillProvider } from '@/context/EnquiryPrefill'
 import { useSiteData } from '@/context/SiteData'
-import { SITE_FIXTURE, WORKS_FIXTURE as WORKS } from '@/test/fixtures'
+import { SITE_FIXTURE, WORKS_FIXTURE as WORKS, TESTIMONIALS_FIXTURE } from '@/test/fixtures'
 import { Work } from './Work'
 
 vi.mock('@/context/SiteData', () => ({ useSiteData: vi.fn() }))
 
 beforeEach(() => {
-  vi.mocked(useSiteData).mockReturnValue({ site: SITE_FIXTURE, works: WORKS })
+  vi.mocked(useSiteData).mockReturnValue({
+    site: SITE_FIXTURE,
+    works: WORKS,
+    testimonials: TESTIMONIALS_FIXTURE,
+  })
 })
 
 function setup() {

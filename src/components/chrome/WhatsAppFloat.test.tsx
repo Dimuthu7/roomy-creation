@@ -3,7 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react'
 import { setPrefersReducedMotion } from '@/test/browserStubs'
 import { TBC } from '@/lib/tbc'
 import { useSiteData } from '@/context/SiteData'
-import { SITE_FIXTURE, WORKS_FIXTURE } from '@/test/fixtures'
+import { SITE_FIXTURE, WORKS_FIXTURE, TESTIMONIALS_FIXTURE } from '@/test/fixtures'
 import { WhatsAppFloat } from './WhatsAppFloat'
 
 vi.mock('@/context/SiteData', () => ({ useSiteData: vi.fn() }))
@@ -12,6 +12,7 @@ function withWhatsapp(whatsappNumber: string | typeof TBC) {
   vi.mocked(useSiteData).mockReturnValue({
     site: { ...SITE_FIXTURE, whatsappNumber },
     works: WORKS_FIXTURE,
+    testimonials: TESTIMONIALS_FIXTURE,
   })
 }
 

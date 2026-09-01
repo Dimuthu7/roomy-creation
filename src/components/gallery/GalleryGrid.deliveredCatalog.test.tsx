@@ -1,13 +1,22 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, within } from '@testing-library/react'
 import { useSiteData } from '@/context/SiteData'
-import { SITE_FIXTURE, WORKS_FIXTURE as WORKS, ALL_WORKS_FIXTURE as ALL_WORKS } from '@/test/fixtures'
+import {
+  SITE_FIXTURE,
+  WORKS_FIXTURE as WORKS,
+  ALL_WORKS_FIXTURE as ALL_WORKS,
+  TESTIMONIALS_FIXTURE,
+} from '@/test/fixtures'
 import { GalleryGrid } from './GalleryGrid'
 
 vi.mock('@/context/SiteData', () => ({ useSiteData: vi.fn() }))
 
 beforeEach(() => {
-  vi.mocked(useSiteData).mockReturnValue({ site: SITE_FIXTURE, works: WORKS })
+  vi.mocked(useSiteData).mockReturnValue({
+    site: SITE_FIXTURE,
+    works: WORKS,
+    testimonials: TESTIMONIALS_FIXTURE,
+  })
 })
 
 // Unlike GalleryGrid.test.tsx (which points the context at the full 24-slot plan to

@@ -9,6 +9,7 @@ import { ScrollToTop } from './ScrollToTop'
 import { SiteDataProvider } from '@/context/SiteData'
 import type { SiteConfig } from '@/data/site'
 import type { Work } from '@/data/works'
+import type { Testimonial } from '@/data/testimonials'
 
 // Footer is a server component (it fetches its own data), so it can't check the
 // route itself — the root layout renders it and hands it in here, where the
@@ -16,11 +17,13 @@ import type { Work } from '@/data/works'
 export function SiteChrome({
   site,
   works,
+  testimonials,
   footer,
   children,
 }: {
   site: SiteConfig
   works: Work[]
+  testimonials: Testimonial[]
   footer: ReactNode
   children: ReactNode
 }) {
@@ -32,7 +35,7 @@ export function SiteChrome({
   const isAdmin = pathname.startsWith('/admin')
 
   return (
-    <SiteDataProvider site={site} works={works}>
+    <SiteDataProvider site={site} works={works} testimonials={testimonials}>
       <SmoothScroll />
       <CustomCursor />
       {!isAdminLogin && <Nav />}

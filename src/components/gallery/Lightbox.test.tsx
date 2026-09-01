@@ -5,14 +5,18 @@ import userEvent from '@testing-library/user-event'
 import { Lightbox } from './Lightbox'
 import { EnquiryPrefillProvider, useEnquiryPrefill } from '@/context/EnquiryPrefill'
 import { useSiteData } from '@/context/SiteData'
-import { SITE_FIXTURE, WORKS_FIXTURE as WORKS } from '@/test/fixtures'
+import { SITE_FIXTURE, WORKS_FIXTURE as WORKS, TESTIMONIALS_FIXTURE } from '@/test/fixtures'
 import { workAlt } from '@/lib/workAlt'
 import { setPrefersReducedMotion, getScrollIntoViewCalls } from '@/test/browserStubs'
 
 vi.mock('@/context/SiteData', () => ({ useSiteData: vi.fn() }))
 
 beforeEach(() => {
-  vi.mocked(useSiteData).mockReturnValue({ site: SITE_FIXTURE, works: WORKS })
+  vi.mocked(useSiteData).mockReturnValue({
+    site: SITE_FIXTURE,
+    works: WORKS,
+    testimonials: TESTIMONIALS_FIXTURE,
+  })
 })
 
 const withoutBeforeIndex = WORKS.findIndex((w) => !w.beforeImage)

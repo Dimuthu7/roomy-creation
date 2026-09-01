@@ -8,6 +8,11 @@ const TILES = [
     description: 'Contact info, stats and gallery photos',
     href: '/admin/site-details',
   },
+  {
+    label: 'Manage testimonials',
+    description: 'Sync Facebook reviews and choose what shows on the site',
+    href: '/admin/testimonials',
+  },
 ] as const
 
 export default function AdminDashboardPage() {

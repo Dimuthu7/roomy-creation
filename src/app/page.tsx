@@ -5,6 +5,7 @@ import { Work } from '@/components/sections/Work'
 import { Film } from '@/components/sections/Film'
 import { HowWeWork } from '@/components/sections/HowWeWork'
 import { Materials } from '@/components/sections/Materials'
+import { Testimonials } from '@/components/sections/Testimonials'
 import { Enquiry } from '@/components/sections/Enquiry'
 import { WeaveDivider } from '@/components/weave/WeaveDivider'
 import { EnquiryPrefillProvider } from '@/context/EnquiryPrefill'
@@ -34,6 +35,7 @@ export default async function Home() {
         <Materials />
         {/* navy -> paper transition */}
         <WeaveDivider className="bg-navy" />
+        <Testimonials />
         <Enquiry />
       </main>
       <script

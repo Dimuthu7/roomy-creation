@@ -3,7 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { setPrefersReducedMotion } from '@/test/browserStubs'
 import { TBC } from '@/lib/tbc'
 import { useSiteData } from '@/context/SiteData'
-import { SITE_FIXTURE, WORKS_FIXTURE } from '@/test/fixtures'
+import { SITE_FIXTURE, WORKS_FIXTURE, TESTIMONIALS_FIXTURE } from '@/test/fixtures'
 import { Position } from './Position'
 
 vi.mock('@/context/SiteData', () => ({ useSiteData: vi.fn() }))
@@ -17,12 +17,17 @@ function renderPositionWithFigures(figures: {
   vi.mocked(useSiteData).mockReturnValue({
     site: { ...SITE_FIXTURE, figures: { ...SITE_FIXTURE.figures, ...figures } },
     works: WORKS_FIXTURE,
+    testimonials: TESTIMONIALS_FIXTURE,
   })
   return render(<Position />)
 }
 
 beforeEach(() => {
-  vi.mocked(useSiteData).mockReturnValue({ site: SITE_FIXTURE, works: WORKS_FIXTURE })
+  vi.mocked(useSiteData).mockReturnValue({
+    site: SITE_FIXTURE,
+    works: WORKS_FIXTURE,
+    testimonials: TESTIMONIALS_FIXTURE,
+  })
 })
 
 // D8: the plan gave no copy for this section at all. These six lines (the three
