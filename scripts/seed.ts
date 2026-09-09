@@ -6,9 +6,12 @@
 //
 // Run with `npm run db:seed` (loads .env.local via tsx's --env-file). Safe to
 // re-run: it upserts.
+import { randomUUID } from 'crypto'
+import { sql } from 'drizzle-orm'
 import { db } from '../src/db/client'
-import { siteConfig, works } from '../src/db/schema'
+import { clauseLibrary, counters, siteConfig, works } from '../src/db/schema'
 import type { WorkCategoryId } from '../src/data/categories'
+import { JOB_REF_SEED } from '../src/lib/jobs/reference'
 
 async function seedSiteConfig() {
   const row = {
@@ -98,9 +101,61 @@ async function seedWorks() {
   console.log(`Seeded ${PLAN.length} works (${DELIVERED_COUNT} delivered)`)
 }
 
+// The counter the RC reference numbering picks up from — see JOB_REF_SEED's doc
+// comment. Invoice and warranty card series start from zero since nothing on paper
+// numbered them.
+async function seedCounters() {
+  await db
+    .insert(counters)
+    .values([
+      { key: 'job_ref', value: JOB_REF_SEED },
+      { key: 'invoice', value: 0 },
+      { key: 'warranty_card', value: 0 },
+    ])
+    .onConflictDoNothing()
+  console.log('Seeded counters')
+}
+
+// The six standard terms, transcribed from the real RC188/RC194 paper quotations.
+// Clause 6 is bold on both documents. A new job pre-selects every active clause, so
+// the common case of "use our standard terms" is zero clicks.
+const STANDARD_TERMS = [
+  'Manufacturing time - 15 to 30 days after the advance payment paid.',
+  'This quotation is valid only for the design provided.',
+  'Prices are valid for 20 days from the date stipulated on the estimate, due to the prevailing market conditions.',
+  'Please confirm your acceptance of this quote by signing this document.',
+  'Payment terms - Project start after 60% of advance payment. The remaining amount must be paid during installing the product.',
+  '3 Years Warranty for Product. (only responsible for manufacturing defects)',
+]
+
+// Guarded by an existence check rather than onConflictDoNothing: id is a fresh
+// randomUUID() per row, so there is no natural conflict target to dedupe on — an
+// unconditional insert would duplicate these six rows on every re-run.
+async function seedClauseLibrary() {
+  const [{ count }] = await db.select({ count: sql<number>`count(*)` }).from(clauseLibrary)
+  if (Number(count) > 0) {
+    console.log('Skipped clause_library seed (rows already exist)')
+    return
+  }
+
+  await db.insert(clauseLibrary).values(
+    STANDARD_TERMS.map((body, i) => ({
+      id: randomUUID(),
+      kind: 'terms' as const,
+      body,
+      emphasis: i === STANDARD_TERMS.length - 1,
+      position: i,
+      active: true,
+    })),
+  )
+  console.log(`Seeded ${STANDARD_TERMS.length} terms clauses`)
+}
+
 async function main() {
   await seedSiteConfig()
   await seedWorks()
+  await seedCounters()
+  await seedClauseLibrary()
 }
 
 main()
