@@ -1,11 +1,157 @@
 'use client'
-import { useEffect, useReducer } from 'react'
+import { useEffect, useReducer, useRef, useState } from 'react'
+import type { Dispatch } from 'react'
 import { emptyUnit, unitEditorReducer } from '@/lib/jobs/unitEditor'
-import type { DraftUnit } from '@/lib/jobs/unitEditor'
+import type { DraftSpec, EditorAction, DraftUnit } from '@/lib/jobs/unitEditor'
+import type { Snippet } from '@/lib/jobs/snippetRank'
 
 const FIELD = 'w-full border border-navy bg-transparent p-2 text-sm text-navy'
 const SMALL_BTN =
   'rounded-full border border-navy px-3 py-1 font-display text-xs text-navy transition duration-200 hover:bg-navy hover:text-paper active:scale-95 disabled:opacity-30'
+const SUGGESTION_DEBOUNCE_MS = 200
+
+function SpecSuggestions({ suggestions, onSelect }: { suggestions: Snippet[]; onSelect: (snippet: Snippet) => void }) {
+  if (suggestions.length === 0) return null
+  return (
+    <ul className="absolute z-10 mt-1 max-h-48 w-full overflow-auto border border-navy bg-paper text-sm shadow-lg">
+      {suggestions.map((snippet) => (
+        <li key={snippet.id}>
+          <button
+            type="button"
+            data-testid="spec-suggestion"
+            // onMouseDown fires before the input's onBlur, so the click registers
+            // before the dropdown would otherwise close and swallow it.
+            onMouseDown={(e) => {
+              e.preventDefault()
+              onSelect(snippet)
+            }}
+            className="block w-full px-2 py-1 text-left hover:bg-navy hover:text-paper"
+          >
+            {snippet.label ? <span className="font-semibold">{snippet.label}: </span> : null}
+            {snippet.value}
+          </button>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+/** One specification line's label/value inputs plus their autocomplete. Suggestion
+ *  state (which field is open, what came back) is local to the row — every row can
+ *  have its own dropdown open independently. Picking a suggestion fills both the
+ *  label and value in one action, since the pair is what repeats across quotations. */
+function SpecLineRow({
+  spec,
+  unitKey,
+  optionKey,
+  specIndex,
+  isFirst,
+  isLast,
+  dispatch,
+}: {
+  spec: DraftSpec
+  unitKey: string
+  optionKey: string
+  specIndex: number
+  isFirst: boolean
+  isLast: boolean
+  dispatch: Dispatch<EditorAction>
+}) {
+  const [activeField, setActiveField] = useState<'label' | 'value' | null>(null)
+  const [suggestions, setSuggestions] = useState<Snippet[]>([])
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  function requestSuggestions(field: 'label' | 'value', text: string) {
+    setActiveField(field)
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => {
+      fetch(`/api/admin/spec-snippets?${new URLSearchParams({ q: text })}`)
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data: { snippets: Snippet[] } | null) => {
+          if (data) setSuggestions(data.snippets)
+        })
+        .catch(() => {})
+    }, SUGGESTION_DEBOUNCE_MS)
+  }
+
+  function selectSuggestion(snippet: Snippet) {
+    dispatch({ type: 'setSpec', unitKey, optionKey, specIndex, field: 'label', text: snippet.label ?? '' })
+    dispatch({ type: 'setSpec', unitKey, optionKey, specIndex, field: 'value', text: snippet.value })
+    setActiveField(null)
+    setSuggestions([])
+  }
+
+  function closeField(field: 'label' | 'value') {
+    // Delayed so a suggestion's onMouseDown still lands while this field still
+    // counts as focused; onMouseDown's preventDefault means no real blur race here,
+    // but the delay is cheap insurance against a future change removing that.
+    setTimeout(() => setActiveField((current) => (current === field ? null : current)), 150)
+  }
+
+  return (
+    <div data-testid="spec-row" className="flex flex-wrap items-center gap-2">
+      <div className="relative w-40">
+        <input
+          data-testid="spec-label"
+          value={spec.label}
+          onChange={(e) => {
+            dispatch({ type: 'setSpec', unitKey, optionKey, specIndex, field: 'label', text: e.target.value })
+            requestSuggestions('label', e.target.value)
+          }}
+          onFocus={() => requestSuggestions('label', spec.label)}
+          onBlur={() => closeField('label')}
+          placeholder="Label (optional), e.g. Carcase"
+          className={FIELD}
+          autoComplete="off"
+        />
+        {activeField === 'label' && <SpecSuggestions suggestions={suggestions} onSelect={selectSuggestion} />}
+      </div>
+      <div className="relative flex-1">
+        <input
+          data-testid="spec-value"
+          value={spec.value}
+          onChange={(e) => {
+            dispatch({ type: 'setSpec', unitKey, optionKey, specIndex, field: 'value', text: e.target.value })
+            requestSuggestions('value', e.target.value)
+          }}
+          onFocus={() => requestSuggestions('value', spec.value)}
+          onBlur={() => closeField('value')}
+          placeholder="Fabrication of cupboards carcase made out with 18mm..."
+          className={FIELD}
+          autoComplete="off"
+        />
+        {activeField === 'value' && <SpecSuggestions suggestions={suggestions} onSelect={selectSuggestion} />}
+      </div>
+      <div className="flex shrink-0 gap-1">
+        <button
+          type="button"
+          disabled={isFirst}
+          onClick={() => dispatch({ type: 'moveSpec', unitKey, optionKey, specIndex, direction: 'up' })}
+          className={SMALL_BTN}
+          aria-label="Move spec line up"
+        >
+          ↑
+        </button>
+        <button
+          type="button"
+          disabled={isLast}
+          onClick={() => dispatch({ type: 'moveSpec', unitKey, optionKey, specIndex, direction: 'down' })}
+          className={SMALL_BTN}
+          aria-label="Move spec line down"
+        >
+          ↓
+        </button>
+        <button
+          type="button"
+          onClick={() => dispatch({ type: 'removeSpec', unitKey, optionKey, specIndex })}
+          className={SMALL_BTN}
+        >
+          Remove
+        </button>
+      </div>
+    </div>
+  )
+}
 
 /** Owns the unit/option/spec-line draft via unitEditorReducer and renders it, so the
  *  full add/remove/duplicate/reorder behaviour lives in one tested place
@@ -168,85 +314,16 @@ export function UnitFields({
 
                 <div className="space-y-2 pl-4">
                   {option.specs.map((spec, specIndex) => (
-                    <div key={specIndex} data-testid="spec-row" className="flex flex-wrap items-center gap-2">
-                      <input
-                        data-testid="spec-label"
-                        value={spec.label}
-                        onChange={(e) =>
-                          dispatch({
-                            type: 'setSpec',
-                            unitKey: unit.key,
-                            optionKey: option.key,
-                            specIndex,
-                            field: 'label',
-                            text: e.target.value,
-                          })
-                        }
-                        placeholder="Label (optional), e.g. Carcase"
-                        className={`${FIELD} w-40`}
-                      />
-                      <input
-                        data-testid="spec-value"
-                        value={spec.value}
-                        onChange={(e) =>
-                          dispatch({
-                            type: 'setSpec',
-                            unitKey: unit.key,
-                            optionKey: option.key,
-                            specIndex,
-                            field: 'value',
-                            text: e.target.value,
-                          })
-                        }
-                        placeholder="Fabrication of cupboards carcase made out with 18mm..."
-                        className={`${FIELD} flex-1`}
-                      />
-                      <div className="flex shrink-0 gap-1">
-                        <button
-                          type="button"
-                          disabled={specIndex === 0}
-                          onClick={() =>
-                            dispatch({
-                              type: 'moveSpec',
-                              unitKey: unit.key,
-                              optionKey: option.key,
-                              specIndex,
-                              direction: 'up',
-                            })
-                          }
-                          className={SMALL_BTN}
-                          aria-label="Move spec line up"
-                        >
-                          ↑
-                        </button>
-                        <button
-                          type="button"
-                          disabled={specIndex === option.specs.length - 1}
-                          onClick={() =>
-                            dispatch({
-                              type: 'moveSpec',
-                              unitKey: unit.key,
-                              optionKey: option.key,
-                              specIndex,
-                              direction: 'down',
-                            })
-                          }
-                          className={SMALL_BTN}
-                          aria-label="Move spec line down"
-                        >
-                          ↓
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            dispatch({ type: 'removeSpec', unitKey: unit.key, optionKey: option.key, specIndex })
-                          }
-                          className={SMALL_BTN}
-                        >
-                          Remove
-                        </button>
-                      </div>
-                    </div>
+                    <SpecLineRow
+                      key={specIndex}
+                      spec={spec}
+                      unitKey={unit.key}
+                      optionKey={option.key}
+                      specIndex={specIndex}
+                      isFirst={specIndex === 0}
+                      isLast={specIndex === option.specs.length - 1}
+                      dispatch={dispatch}
+                    />
                   ))}
                   <button
                     type="button"
