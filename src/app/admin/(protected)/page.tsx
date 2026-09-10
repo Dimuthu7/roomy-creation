@@ -18,6 +18,11 @@ const TILES = [
     description: 'Reusable clauses offered on every quotation',
     href: '/admin/clauses',
   },
+  {
+    label: 'Quotations',
+    description: 'Create, edit and send customer quotations',
+    href: '/admin/jobs',
+  },
 ] as const
 
 export default function AdminDashboardPage() {
