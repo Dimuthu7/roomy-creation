@@ -13,6 +13,11 @@ const TILES = [
     description: 'Sync Facebook reviews and choose what shows on the site',
     href: '/admin/testimonials',
   },
+  {
+    label: 'Terms & warranty',
+    description: 'Reusable clauses offered on every quotation',
+    href: '/admin/clauses',
+  },
 ] as const
 
 export default function AdminDashboardPage() {

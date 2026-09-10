@@ -57,10 +57,18 @@ function optionalMoney(message: string) {
     })
 }
 
-// An HTML checkbox submits 'on' when ticked and is absent entirely when not, so the
-// field has to accept undefined rather than expecting a boolean.
+// An HTML checkbox submits 'on' when ticked and is ABSENT ENTIRELY from FormData when
+// not — there is no key at all, not a key with an undefined value. Those two are
+// different things to Zod v4's object parsing: z.undefined() as a union member only
+// matches a key that exists and holds undefined, not a key that was never set. The
+// field must be marked .optional() itself for the enclosing z.object() to tolerate a
+// genuinely missing key. Getting this wrong fails validation on every real unchecked
+// checkbox in production while still passing a unit test that hands the schema
+// `{ field: undefined }` directly (an explicit key), which is why this needs its own
+// "field entirely absent from the object" test case, not just an explicit-undefined one.
 const checkbox = z
-  .union([z.literal('on'), z.literal('true'), z.undefined(), z.literal('')])
+  .union([z.literal('on'), z.literal('true'), z.literal('')])
+  .optional()
   .transform((v) => v === 'on' || v === 'true')
 
 export const customerFormSchema = z.object({

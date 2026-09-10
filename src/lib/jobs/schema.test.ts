@@ -60,6 +60,18 @@ describe('jobDetailsFormSchema', () => {
     expect(jobDetailsFormSchema.parse({ ...DETAILS, freeDelivery: undefined }).freeDelivery).toBe(false)
   })
 
+  it('reads a free-delivery checkbox FormData omits entirely (not just undefined) as false', () => {
+    // A real unchecked <input type="checkbox"> is never submitted at all — the key is
+    // absent from FormData, not present with value undefined. Object.fromEntries on a
+    // real FormData produces exactly this shape, which is what this test builds via
+    // destructuring rather than `freeDelivery: undefined`.
+    const withoutFreeDelivery = Object.fromEntries(
+      Object.entries(DETAILS).filter(([key]) => key !== 'freeDelivery'),
+    )
+    expect(jobDetailsFormSchema.safeParse(withoutFreeDelivery).success).toBe(true)
+    expect(jobDetailsFormSchema.parse(withoutFreeDelivery).freeDelivery).toBe(false)
+  })
+
   it('nulls the delivery charge when free delivery is ticked, whatever the field holds', () => {
     const parsed = jobDetailsFormSchema.parse({ ...DETAILS, freeDelivery: 'on', deliveryCharge: '5000' })
     expect(parsed.deliveryChargeCents).toBeNull()
@@ -102,6 +114,20 @@ describe('clauseFormSchema', () => {
 
   it('reads the emphasis checkbox', () => {
     expect(clauseFormSchema.parse({ kind: 'terms', body: 'x', emphasis: 'on' }).emphasis).toBe(true)
+  })
+
+  it('accepts a real unchecked-checkbox payload where the emphasis key is absent entirely', () => {
+    // Object.fromEntries(new FormData()) never includes a key for an unticked
+    // checkbox — this is the exact shape addClause() receives in production, distinct
+    // from `{ emphasis: undefined }` above. A prior version of the checkbox() helper
+    // passed every test in this file yet failed on every real form submission because
+    // it only tolerated an explicit undefined, not a missing key.
+    const fd = new FormData()
+    fd.set('kind', 'warranty')
+    fd.set('body', 'E2E test warranty clause')
+    const result = clauseFormSchema.safeParse(Object.fromEntries(fd))
+    expect(result.success).toBe(true)
+    expect(result.success && result.data.emphasis).toBe(false)
   })
 })
 
