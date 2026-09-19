@@ -117,9 +117,15 @@ export function unitEditorReducer(state: DraftUnit[], action: EditorAction): Dra
 
     case 'selectOption':
       // Mirrors the database's partial unique index: selecting one clears the rest.
+      // Clicking the already-selected option toggles it off instead of re-selecting
+      // it — otherwise a unit could never return to "no choice yet" (RC194's still-open
+      // Study Cupboards) once any option had ever been picked.
       return mapUnit(state, action.unitKey, (u) => ({
         ...u,
-        options: u.options.map((o) => ({ ...o, selected: o.key === action.optionKey })),
+        options: u.options.map((o) => ({
+          ...o,
+          selected: o.key === action.optionKey ? !o.selected : false,
+        })),
       }))
 
     case 'setOptionField':

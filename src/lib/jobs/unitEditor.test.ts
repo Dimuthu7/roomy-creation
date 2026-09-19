@@ -79,6 +79,15 @@ describe('unitEditorReducer', () => {
     expect(state[0].options[1].selected).toBe(true)
   })
 
+  it('selecting the already-selected option clears it, returning the unit to "no choice yet"', () => {
+    let state = unitEditorReducer(seed(), { type: 'addOption', unitKey: 'u1' })
+    const optionKey = state[0].options[0].key
+    state = unitEditorReducer(state, { type: 'selectOption', unitKey: 'u1', optionKey })
+    expect(state[0].options[0].selected).toBe(true)
+    state = unitEditorReducer(state, { type: 'selectOption', unitKey: 'u1', optionKey })
+    expect(state[0].options.some((o) => o.selected)).toBe(false)
+  })
+
   it('adds and removes specification lines', () => {
     let state = seed()
     const optionKey = state[0].options[0].key

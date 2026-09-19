@@ -236,9 +236,15 @@ export function UnitFields({
                         data-testid="option-selected"
                         name={`selected-${unit.key}`}
                         checked={option.selected}
-                        onChange={() =>
+                        // onClick rather than onChange: a browser only fires "change" when
+                        // a radio's checked state flips, so clicking an already-selected
+                        // radio (the deselect gesture) would never reach the reducer via
+                        // onChange. readOnly silences React's controlled-input warning
+                        // without affecting radios, which ignore readOnly natively.
+                        onClick={() =>
                           dispatch({ type: 'selectOption', unitKey: unit.key, optionKey: option.key })
                         }
+                        readOnly
                         className="size-4 accent-navy"
                       />
                       <span className="u-mono text-xs">Selected</span>
