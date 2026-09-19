@@ -34,7 +34,9 @@ npm run db:seed       # one-time: populate an empty database from the original s
 
 First-time setup against a fresh database: set `DATABASE_URL` and
 `BLOB_READ_WRITE_TOKEN` in `.env.local`, run `npm run db:migrate`, then
-`npm run db:seed`.
+`npm run db:seed`. Seeding also sets the quotation reference counter to 194 (so
+the first quotation created is `RC00195`) and populates the clause library with
+the six standard terms transcribed from the original paper quotations.
 
 ## Admin portal
 
@@ -50,6 +52,23 @@ admin function. Saves go live immediately (no publish step).
   also add one manually, and each testimonial has a show/hide toggle and an
   up/down reorder control. Only testimonials marked visible appear on the public
   site's testimonials section, in the chosen order.
+- **Terms & warranty** (`/admin/clauses`) — a library of reusable terms-and-conditions
+  and warranty clauses, each with an active flag and an up/down reorder control.
+  Every active clause is copied onto a new quotation automatically; from there it
+  can be edited per-quotation without touching the shared library.
+- **Quotations** (`/admin/jobs`) — "+ New quotation" starts one from just the
+  customer's details, then the edit screen adds units, each with one or more
+  priced options and specification lines (label/value pairs, with autocomplete
+  suggestions drawn from previously used lines), delivery, discount, and the
+  Terms & warranty clauses to attach. A unit with more than one option prints all
+  of them on the PDF — with no grand total — until one option is marked
+  "Selected" (clicking it again clears the selection), at which point the total
+  appears. Status can be set to Pending, In progress, Finished or Cancelled.
+  The **Documents** screen (linked from the edit screen) generates a quotation
+  PDF, stores it in Vercel Blob as an immutable snapshot, and can email it to the
+  customer via Resend — see `DOCS_FROM_EMAIL` below. Regenerating after an edit
+  creates a new document rather than replacing the old one; the Documents screen
+  flags any document generated before the quotation's last edit.
 
 ## Image and film slots
 
@@ -182,13 +201,20 @@ can be added manually in the meantime. See the setup steps in `.env.example` (a
 Facebook App, Page admin access, and a long-lived Page Access Token via Graph API
 Explorer).
 
+The Quotations admin section's Documents screen needs `RESEND_API_KEY` (shared
+with the enquiry form above) plus this to email a generated PDF to the customer:
+
+| Variable | What breaks without it |
+|---|---|
+| `DOCS_FROM_EMAIL` | "Send by email" returns a visible "not configured" error and does not send. The PDF is still generated and can still be downloaded. |
+
 The database, image storage, and admin login need these — required everywhere,
 including local dev:
 
 | Variable | What breaks without it |
 |---|---|
 | `DATABASE_URL` | Every page fails to render — all site content reads from here. |
-| `BLOB_READ_WRITE_TOKEN` | Gallery photo uploads in the admin portal fail. |
+| `BLOB_READ_WRITE_TOKEN` | Gallery photo uploads and quotation PDF generation in the admin portal fail. |
 | `ADMIN_USERNAME` / `ADMIN_PASSWORD` | Nothing can log in to `/admin` — every attempt is rejected. |
 | `ADMIN_SESSION_SECRET` | Admin sessions can't be signed — logging in fails. Generate with `openssl rand -base64 32`. |
 
