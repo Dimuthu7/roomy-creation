@@ -26,3 +26,7 @@ export function formatInvoiceNumber(seq: number): string {
 export function formatWarrantyNumber(seq: number): string {
   return `WC${pad(seq)}`
 }
+
+export function formatReceiptNumber(seq: number): string {
+  return `RCP${pad(seq)}`
+}

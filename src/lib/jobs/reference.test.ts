@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { formatInvoiceNumber, formatJobRef, formatWarrantyNumber, JOB_REF_SEED } from './reference'
+import { formatInvoiceNumber, formatJobRef, formatReceiptNumber, formatWarrantyNumber, JOB_REF_SEED } from './reference'
 
 describe('formatJobRef', () => {
   it('pads to five digits behind the RC prefix', () => {
@@ -39,5 +39,9 @@ describe('other document series', () => {
 
   it('formats warranty card numbers on their own series', () => {
     expect(formatWarrantyNumber(1)).toBe('WC00001')
+  })
+
+  it('formats receipt numbers on their own series', () => {
+    expect(formatReceiptNumber(1)).toBe('RCP00001')
   })
 })
