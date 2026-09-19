@@ -1,14 +1,21 @@
 import Link from 'next/link'
 import { listJobs } from '@/lib/jobs/queries'
 import { STATUS_LABELS } from '@/lib/jobs/schema'
+import { JobFilters } from './JobFilters'
 
 const STAGE_LABELS: Record<string, string> = {
   quotation: 'Quotation',
   order: 'Order',
 }
 
-export default async function JobsPage() {
-  const rows = await listJobs()
+export default async function JobsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string; status?: string; from?: string; to?: string }>
+}) {
+  const filters = await searchParams
+  const rows = await listJobs(filters)
+  const isFiltered = Boolean(filters.q || filters.status || filters.from || filters.to)
 
   return (
     <div className="space-y-8">
@@ -25,8 +32,14 @@ export default async function JobsPage() {
         </Link>
       </div>
 
+      <JobFilters />
+
       <div className="space-y-3">
-        {rows.length === 0 && <p className="u-mono text-sm text-navy/70">No quotations yet.</p>}
+        {rows.length === 0 && (
+          <p className="u-mono text-sm text-navy/70">
+            {isFiltered ? 'No quotations match these filters.' : 'No quotations yet.'}
+          </p>
+        )}
         {rows.map((row) => (
           <Link
             key={row.id}

@@ -1,7 +1,8 @@
 import 'server-only'
-import { asc, desc, eq, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, gte, ilike, lte, or, sql } from 'drizzle-orm'
 import { db } from '@/db/client'
 import { customers, jobClauses, jobUnits, jobs, optionSpecs, unitOptions } from '@/db/schema'
+import { JOB_STATUSES } from './schema'
 import { formatJobRef } from './reference'
 import type { JobUnit } from './totals'
 
@@ -18,7 +19,30 @@ export async function allocateRef(): Promise<{ seq: number; ref: string }> {
   return { seq, ref: formatJobRef(seq) }
 }
 
-export async function listJobs() {
+export interface JobListFilters {
+  /** Matched against ref, customer name and customer phone — whichever hits. */
+  q?: string
+  status?: string
+  /** Inclusive bounds on quotation_date, as 'YYYY-MM-DD' — lexicographic order
+   *  matches date order for that format, so these compare as plain strings. */
+  from?: string
+  to?: string
+}
+
+export async function listJobs(filters: JobListFilters = {}) {
+  const conditions = []
+
+  const q = filters.q?.trim()
+  if (q) {
+    const pattern = `%${q}%`
+    conditions.push(or(ilike(jobs.ref, pattern), ilike(customers.name, pattern), ilike(customers.phone, pattern)))
+  }
+  if (filters.status && JOB_STATUSES.includes(filters.status as (typeof JOB_STATUSES)[number])) {
+    conditions.push(eq(jobs.status, filters.status))
+  }
+  if (filters.from) conditions.push(gte(jobs.quotationDate, filters.from))
+  if (filters.to) conditions.push(lte(jobs.quotationDate, filters.to))
+
   return db
     .select({
       id: jobs.id,
@@ -32,6 +56,7 @@ export async function listJobs() {
     })
     .from(jobs)
     .innerJoin(customers, eq(jobs.customerId, customers.id))
+    .where(conditions.length > 0 ? and(...conditions) : undefined)
     .orderBy(desc(jobs.refSeq))
 }
 
