@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { loadJob } from '@/lib/jobs/queries'
 import { listClauses } from '../../clauses/actions'
+import { CancelQuotationButton } from './CancelQuotationButton'
 import { JobEditor } from './JobEditor'
 
 export default async function JobEditPage({ params }: { params: Promise<{ id: string }> }) {
@@ -21,12 +22,15 @@ export default async function JobEditPage({ params }: { params: Promise<{ id: st
           <h1 className="mt-2 font-display text-2xl text-navy">{loaded.job.ref}</h1>
           <p className="u-mono mt-1 text-navy/70">{loaded.customer.name}</p>
         </div>
-        <Link
-          href={`/admin/jobs/${id}/documents`}
-          className="rounded-full border border-navy px-4 py-2 font-display text-sm text-navy transition duration-200 hover:bg-navy hover:text-paper active:scale-95"
-        >
-          Documents
-        </Link>
+        <div className="flex flex-wrap items-center gap-3">
+          {loaded.job.status !== 'cancelled' && <CancelQuotationButton jobId={id} />}
+          <Link
+            href={`/admin/jobs/${id}/documents`}
+            className="rounded-full border border-navy px-4 py-2 font-display text-sm text-navy transition duration-200 hover:bg-navy hover:text-paper active:scale-95"
+          >
+            Documents
+          </Link>
+        </div>
       </div>
       <JobEditor
         job={loaded.job}

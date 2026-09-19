@@ -174,7 +174,11 @@ export function JobEditor({
             <label htmlFor="status" className={LABEL}>
               Status
             </label>
-            <select id="status" name="status" defaultValue={job.status} className={FIELD}>
+            {/* keyed on job.status: it's an uncontrolled select (defaultValue only
+                applies at mount), and the Cancel quotation button changes job.status
+                on the server while this component stays mounted — without the key,
+                the field would keep showing the pre-cancel value until a hard reload. */}
+            <select key={job.status} id="status" name="status" defaultValue={job.status} className={FIELD}>
               {JOB_STATUSES.map((status) => (
                 <option key={status} value={status}>
                   {STATUS_LABELS[status]}
