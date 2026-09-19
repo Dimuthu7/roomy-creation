@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { loadJob } from '@/lib/jobs/queries'
 import { listClauses } from '../../clauses/actions'
@@ -12,9 +13,20 @@ export default async function JobEditPage({ params }: { params: Promise<{ id: st
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="font-display text-2xl text-navy">{loaded.job.ref}</h1>
-        <p className="u-mono mt-1 text-navy/70">{loaded.customer.name}</p>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <Link href="/admin/jobs" className="u-mono text-xs text-navy/60 underline">
+            ← Back to Quotations
+          </Link>
+          <h1 className="mt-2 font-display text-2xl text-navy">{loaded.job.ref}</h1>
+          <p className="u-mono mt-1 text-navy/70">{loaded.customer.name}</p>
+        </div>
+        <Link
+          href={`/admin/jobs/${id}/documents`}
+          className="rounded-full border border-navy px-4 py-2 font-display text-sm text-navy transition duration-200 hover:bg-navy hover:text-paper active:scale-95"
+        >
+          Documents
+        </Link>
       </div>
       <JobEditor
         job={loaded.job}
