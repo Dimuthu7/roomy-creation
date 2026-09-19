@@ -2,13 +2,14 @@ import { z } from 'zod'
 import { parseMoneyToCents } from '@/lib/money'
 
 export const JOB_STAGES = ['quotation', 'order'] as const
-export const JOB_STATUSES = ['pending', 'in_progress', 'finished'] as const
+export const JOB_STATUSES = ['pending', 'in_progress', 'finished', 'cancelled'] as const
 export const CLAUSE_KINDS = ['terms', 'warranty'] as const
 
 export const STATUS_LABELS: Record<(typeof JOB_STATUSES)[number], string> = {
   pending: 'Pending',
   in_progress: 'In progress',
   finished: 'Finished',
+  cancelled: 'Cancelled',
 }
 
 const blankToNull = z
