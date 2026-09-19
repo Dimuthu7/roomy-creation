@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { clauseFormSchema, customerFormSchema, jobDetailsFormSchema, jobUnitsSchema } from './schema'
+import { clauseFormSchema, customerFormSchema, jobDetailsFormSchema, jobUnitsSchema, paymentFormSchema } from './schema'
 
 const CUSTOMER = { name: 'Williams', phone: '+94 772383430', email: '', addressLines: 'Galapitamulla\nKurunegala.', city: '', district: '', notes: '' }
 
@@ -41,6 +41,7 @@ const DETAILS = {
   advance: '',
   status: 'pending',
   notes: '',
+  paymentTerms: '',
 }
 
 describe('jobDetailsFormSchema', () => {
@@ -97,6 +98,15 @@ describe('jobDetailsFormSchema', () => {
   it('rejects an unknown status', () => {
     expect(jobDetailsFormSchema.safeParse({ ...DETAILS, status: 'shipped' }).success).toBe(false)
   })
+
+  it('turns a blank payment terms field into null, for the render-time default to apply', () => {
+    expect(jobDetailsFormSchema.parse(DETAILS).paymentTerms).toBeNull()
+  })
+
+  it('keeps a custom payment terms sentence', () => {
+    const parsed = jobDetailsFormSchema.parse({ ...DETAILS, paymentTerms: 'Balance due on delivery.' })
+    expect(parsed.paymentTerms).toBe('Balance due on delivery.')
+  })
 })
 
 describe('clauseFormSchema', () => {
@@ -128,6 +138,48 @@ describe('clauseFormSchema', () => {
     const result = clauseFormSchema.safeParse(Object.fromEntries(fd))
     expect(result.success).toBe(true)
     expect(result.success && result.data.emphasis).toBe(false)
+  })
+})
+
+describe('paymentFormSchema', () => {
+  const PAYMENT = { kind: 'advance', amount: '150,000.00', paidAt: '2026-09-19', method: 'Bank transfer', note: '' }
+
+  it('accepts a well-formed advance payment', () => {
+    expect(paymentFormSchema.safeParse(PAYMENT).success).toBe(true)
+  })
+
+  it('converts the amount to cents', () => {
+    expect(paymentFormSchema.parse(PAYMENT).amountCents).toBe(150_000_00)
+  })
+
+  it('rejects a missing amount', () => {
+    expect(paymentFormSchema.safeParse({ ...PAYMENT, amount: '' }).success).toBe(false)
+  })
+
+  it('rejects a non-numeric amount', () => {
+    expect(paymentFormSchema.safeParse({ ...PAYMENT, amount: 'lots' }).success).toBe(false)
+  })
+
+  it('requires a date paid', () => {
+    expect(paymentFormSchema.safeParse({ ...PAYMENT, paidAt: '' }).success).toBe(false)
+  })
+
+  it('rejects an unknown kind', () => {
+    expect(paymentFormSchema.safeParse({ ...PAYMENT, kind: 'refund' }).success).toBe(false)
+  })
+
+  it('turns a blank method into null', () => {
+    expect(paymentFormSchema.parse({ ...PAYMENT, method: '' }).method).toBeNull()
+  })
+
+  it('turns a blank note into null', () => {
+    expect(paymentFormSchema.parse(PAYMENT).note).toBeNull()
+  })
+
+  it('accepts the other kind with a note', () => {
+    const parsed = paymentFormSchema.parse({ ...PAYMENT, kind: 'other', note: 'Deposit refund adjustment' })
+    expect(parsed.kind).toBe('other')
+    expect(parsed.note).toBe('Deposit refund adjustment')
   })
 })
 

@@ -4,6 +4,7 @@ import { parseMoneyToCents } from '@/lib/money'
 export const JOB_STAGES = ['quotation', 'order'] as const
 export const JOB_STATUSES = ['pending', 'in_progress', 'finished', 'cancelled'] as const
 export const CLAUSE_KINDS = ['terms', 'warranty'] as const
+export const PAYMENT_KINDS = ['advance', 'final', 'other'] as const
 
 export const STATUS_LABELS: Record<(typeof JOB_STATUSES)[number], string> = {
   pending: 'Pending',
@@ -108,6 +109,7 @@ export const jobDetailsFormSchema = z
     advance: z.string().default(''),
     status: z.enum(JOB_STATUSES),
     notes: blankToNull,
+    paymentTerms: blankToNull,
   })
   .transform((data, ctx) => {
     // Free delivery wins: whatever is left in the amount field is discarded, so
@@ -143,6 +145,7 @@ export const jobDetailsFormSchema = z
       advanceCents,
       status: data.status,
       notes: data.notes,
+      paymentTerms: data.paymentTerms,
     }
   })
 
@@ -223,3 +226,21 @@ export const jobUnitsSchema = z.array(unitSchema).transform((units, ctx) =>
 )
 
 export type JobUnitsInput = z.infer<typeof jobUnitsSchema>
+
+export const paymentFormSchema = z
+  .object({
+    kind: z.enum(PAYMENT_KINDS),
+    amount: requiredMoney('Enter an amount like 150,000.00'),
+    paidAt: z.string().trim().min(1, 'Date paid is required'),
+    method: blankToNull,
+    note: blankToNull,
+  })
+  .transform((data) => ({
+    kind: data.kind,
+    amountCents: data.amount,
+    paidAt: data.paidAt,
+    method: data.method,
+    note: data.note,
+  }))
+
+export type PaymentFormInput = z.infer<typeof paymentFormSchema>

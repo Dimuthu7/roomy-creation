@@ -212,6 +212,7 @@ export async function saveJob(_prevState: ActionState, formData: FormData): Prom
       advanceCents: detailsParsed.data.advanceCents,
       status: detailsParsed.data.status,
       notes: detailsParsed.data.notes,
+      paymentTerms: detailsParsed.data.paymentTerms,
       updatedAt: new Date(),
     })
     .where(eq(jobs.id, id))

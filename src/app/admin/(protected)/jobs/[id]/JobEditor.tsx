@@ -6,6 +6,7 @@ import type { customers as customersTable, jobClauses as jobClausesTable, jobs a
 import { AdminSubmitButton } from '@/components/admin/AdminSubmitButton'
 import { formatCents, parseMoneyToCents } from '@/lib/money'
 import { JOB_STATUSES, STATUS_LABELS } from '@/lib/jobs/schema'
+import { DEFAULT_PAYMENT_TERMS } from '@/lib/jobs/payments'
 import { jobTotals } from '@/lib/jobs/totals'
 import type { JobUnit as JobUnitTotals } from '@/lib/jobs/totals'
 import type { DraftUnit } from '@/lib/jobs/unitEditor'
@@ -252,6 +253,19 @@ export function JobEditor({
             Internal notes
           </label>
           <textarea id="notes" name="notes" rows={2} defaultValue={job.notes ?? ''} className={FIELD} />
+        </div>
+        <div>
+          <label htmlFor="paymentTerms" className={LABEL}>
+            Payment terms (shown on the order document)
+          </label>
+          <textarea
+            id="paymentTerms"
+            name="paymentTerms"
+            rows={2}
+            defaultValue={job.paymentTerms ?? ''}
+            placeholder={DEFAULT_PAYMENT_TERMS}
+            className={FIELD}
+          />
         </div>
         <DeliveryFields
           freeDelivery={job.freeDelivery}
