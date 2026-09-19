@@ -11,6 +11,10 @@ export function useCountUp(target: number, active: boolean, duration = 900): num
     if (!active || settled.current) return
     if (level === 'reduced') {
       settled.current = true
+      // Must land synchronously, not via a callback: reduced motion promises the
+      // real figure immediately, never a partial one for even a single frame
+      // (see the test of the same name), so deferring through rAF is not an option.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setValue(target)
       return
     }
