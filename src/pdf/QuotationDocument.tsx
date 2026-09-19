@@ -175,6 +175,10 @@ function signatureBlock() {
       </View>
       <View style={styles.signatureColumn}>
         <Text style={styles.signatureLine}>Approved by Client</Text>
+        {/* Matches the left column's two-line lead-in ("Thanking you," / "Roomy
+            Creations") so both signature lines sit at the same height — signatureSpace's
+            margin is measured from the preceding text, not the row top. */}
+        <Text style={styles.signatureLine}> </Text>
         <Text style={styles.signatureSpace}>{"Client's Signature"}</Text>
       </View>
     </View>
