@@ -228,7 +228,11 @@ export async function saveJob(_prevState: ActionState, formData: FormData): Prom
   // incrementing use_count. Coalescing to '' here (snippets only — option_specs keeps
   // the real null) sidesteps that without a schema change. Task 11's autocomplete
   // must treat '' the same as "no label" for this table.
-  const snippetLabels: { label: string; value: string }[] = []
+  // Keyed by "label value" rather than pushed as a list: two spec lines in the
+  // same save can share a label/value (e.g. the same snippet reused across options),
+  // and a single ON CONFLICT DO UPDATE statement errors if it would touch the same
+  // target row twice, so each pair may only appear once per insert.
+  const snippetLabels = new Map<string, { label: string; value: string }>()
 
   unitsParsed.data.forEach((unit, unitIndex) => {
     const unitId = randomUUID()
@@ -246,7 +250,8 @@ export async function saveJob(_prevState: ActionState, formData: FormData): Prom
       })
       option.specs.forEach((spec, specIndex) => {
         specRows.push({ id: randomUUID(), optionId, position: specIndex, label: spec.label, value: spec.value })
-        snippetLabels.push({ label: spec.label ?? '', value: spec.value })
+        const label = spec.label ?? ''
+        snippetLabels.set(`${label} ${spec.value}`, { label, value: spec.value })
       })
     })
   })
@@ -255,10 +260,17 @@ export async function saveJob(_prevState: ActionState, formData: FormData): Prom
   if (unitRows.length > 0) await db.insert(jobUnits).values(unitRows)
   if (optionRows.length > 0) await db.insert(unitOptions).values(optionRows)
   if (specRows.length > 0) await db.insert(optionSpecs).values(specRows)
-  if (snippetLabels.length > 0) {
+  if (snippetLabels.size > 0) {
     await db
       .insert(specSnippets)
-      .values(snippetLabels.map((s) => ({ id: randomUUID(), label: s.label, value: s.value, useCount: 1 })))
+      .values(
+        Array.from(snippetLabels.values()).map((s) => ({
+          id: randomUUID(),
+          label: s.label,
+          value: s.value,
+          useCount: 1,
+        })),
+      )
       .onConflictDoUpdate({
         target: [specSnippets.label, specSnippets.value],
         set: { useCount: sql`${specSnippets.useCount} + 1`, lastUsedAt: new Date() },
