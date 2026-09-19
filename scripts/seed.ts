@@ -111,6 +111,7 @@ async function seedCounters() {
       { key: 'job_ref', value: JOB_REF_SEED },
       { key: 'invoice', value: 0 },
       { key: 'warranty_card', value: 0 },
+      { key: 'receipt', value: 0 },
     ])
     .onConflictDoNothing()
   console.log('Seeded counters')

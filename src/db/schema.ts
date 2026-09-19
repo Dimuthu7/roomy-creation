@@ -114,6 +114,13 @@ export const jobs = pgTable(
     discountLabel: text('discount_label').notNull().default('Cash Discount'),
     discountCents: bigint('discount_cents', { mode: 'number' }).notNull().default(0),
     advanceCents: bigint('advance_cents', { mode: 'number' }),
+    // The order document's editable terms sentence (e.g. "Balance payable on
+    // completion of installation."). Null falls back to DEFAULT_PAYMENT_TERMS at
+    // render time, so no backfill is needed for jobs created before this column existed.
+    paymentTerms: text('payment_terms'),
+    // Set once, by the Confirm order action — separate from quotationDate because the
+    // order document needs its own date, not the quotation's.
+    confirmedAt: timestamp('confirmed_at'),
     portalToken: text('portal_token').notNull().unique(),
     notes: text('notes'),
     createdAt: timestamp('created_at').notNull().defaultNow(),
@@ -217,6 +224,27 @@ export const specSnippets = pgTable(
   (t) => [uniqueIndex('spec_snippets_text').on(t.label, t.value)],
 )
 
+// One row per payment against a job. `kind` is free enough to record an ad-hoc
+// payment ('other') without forcing it into 'advance' or 'final'. `method` is free
+// text with UI suggestions rather than an enum, matching how jobs.salesPerson already
+// works — there is no fixed vocabulary worth enforcing in the database.
+export const payments = pgTable(
+  'payments',
+  {
+    id: text('id').primaryKey(),
+    jobId: text('job_id')
+      .notNull()
+      .references(() => jobs.id, { onDelete: 'cascade' }),
+    kind: text('kind').notNull(), // 'advance' | 'final' | 'other'
+    amountCents: bigint('amount_cents', { mode: 'number' }).notNull(),
+    paidAt: date('paid_at').notNull(),
+    method: text('method'),
+    note: text('note'),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+  },
+  (t) => [index('payments_job_idx').on(t.jobId)],
+)
+
 // An issued document is immutable: `snapshot` holds the exact self-contained data it
 // was rendered from, so it can be re-rendered years later even after the job and the
 // customer record have moved on. Regenerating writes a new row rather than updating.
@@ -227,10 +255,14 @@ export const jobDocuments = pgTable(
     jobId: text('job_id')
       .notNull()
       .references(() => jobs.id, { onDelete: 'cascade' }),
-    kind: text('kind').notNull(), // 'quotation' | 'advance_invoice' | 'final_invoice' | 'warranty_card'
+    kind: text('kind').notNull(), // 'quotation' | 'order' | 'receipt' | 'advance_invoice' | 'final_invoice' | 'warranty_card'
     number: text('number').notNull(),
     blobUrl: text('blob_url').notNull(),
     snapshot: jsonb('snapshot').notNull(),
+    // Which payment a 'receipt' document was issued for. Nullable and ON DELETE SET
+    // NULL, not CASCADE: deleting the payment must never delete the receipt already
+    // handed to the customer — the receipt's snapshot is self-contained regardless.
+    paymentId: text('payment_id').references(() => payments.id, { onDelete: 'set null' }),
     sentTo: text('sent_to'),
     sentAt: timestamp('sent_at'),
     createdAt: timestamp('created_at').notNull().defaultNow(),
