@@ -1223,8 +1223,8 @@ export function deliveryRow(delivery: QuotationSnapshot['delivery']) {
   )
 }
 
-/** `extraRows` prints after the discount row and before the final TOTAL row — used by
- *  OrderDocument to add Advance Paid / Balance Due without a second totals block. */
+/** `extraRows` prints after the final TOTAL row — used by OrderDocument to add
+ *  Advance Paid / Balance Due without a second totals block. */
 export function totalsBlock(totals: QuotationSnapshot['totals'], extraRows: { label: string; value: string }[] = []) {
   if (!totals) return null
   return (
