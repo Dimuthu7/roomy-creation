@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { buildQuotationSnapshot } from './snapshot'
-import type { SnapshotInput } from './snapshot'
+import { buildQuotationSnapshot, buildOrderSnapshot } from './snapshot'
+import type { SnapshotInput, OrderSnapshotInput } from './snapshot'
 
 const BASE: SnapshotInput = {
   ref: 'RC00188',
@@ -113,5 +113,60 @@ describe('buildQuotationSnapshot', () => {
   it('survives a JSON round trip unchanged, since it is stored as jsonb', () => {
     const snap = buildQuotationSnapshot(BASE)
     expect(JSON.parse(JSON.stringify(snap))).toEqual(snap)
+  })
+})
+
+const RESOLVED_UNIT = {
+  id: 'u1',
+  title: 'Wardrobe with Dressing Unite',
+  options: [{ id: 'o1', label: null, priceCents: 368_500_00, qty: 1, selected: false, specs: [] }],
+}
+
+const ORDER_BASE: OrderSnapshotInput = {
+  ...BASE,
+  units: [RESOLVED_UNIT],
+  discountCents: 0,
+  confirmedDate: '2026-09-19',
+  paymentTerms: null,
+  payments: [{ amountCents: 150_000_00 }],
+}
+
+describe('buildOrderSnapshot', () => {
+  it('carries the quotation fields through unchanged', () => {
+    const snap = buildOrderSnapshot(ORDER_BASE)
+    expect(snap.ref).toBe('RC00188')
+    expect(snap.customer.name).toBe('williams')
+  })
+
+  it('uses the confirmed date, not the quotation date', () => {
+    expect(buildOrderSnapshot(ORDER_BASE).confirmedDate).toBe('2026-09-19')
+  })
+
+  it('computes the payment position against the resolved total', () => {
+    const snap = buildOrderSnapshot(ORDER_BASE)
+    expect(snap.paymentPosition).toEqual({ paidLabel: '150,000.00', balanceLabel: '218,500.00' })
+  })
+
+  it('falls back to the default payment terms sentence when none is set', () => {
+    expect(buildOrderSnapshot(ORDER_BASE).paymentTerms).toBe('Balance payable on completion of installation.')
+  })
+
+  it('uses a custom payment terms sentence when one is set', () => {
+    const snap = buildOrderSnapshot({ ...ORDER_BASE, paymentTerms: 'Balance due on delivery.' })
+    expect(snap.paymentTerms).toBe('Balance due on delivery.')
+  })
+
+  it('has no payment position when the job is not actually resolved', () => {
+    const unresolvedUnit = {
+      id: 'u2',
+      title: 'Study Cupboards',
+      options: [
+        { id: 'a', label: 'Option 01', priceCents: 182_500_00, qty: 1, selected: false, specs: [] },
+        { id: 'b', label: 'Option 02', priceCents: 257_000_00, qty: 1, selected: false, specs: [] },
+      ],
+    }
+    const snap = buildOrderSnapshot({ ...ORDER_BASE, units: [unresolvedUnit] })
+    expect(snap.totals).toBeNull()
+    expect(snap.paymentPosition).toBeNull()
   })
 })

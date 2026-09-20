@@ -1,6 +1,8 @@
 import { formatCents } from '@/lib/money'
 import { deliveryRow, jobTotals, resolvedOption } from './totals'
 import type { JobUnit } from './totals'
+import { DEFAULT_PAYMENT_TERMS, paymentPosition } from './payments'
+import type { Payment } from './payments'
 
 // A snapshot is what a document was rendered from, frozen at the moment it was issued.
 // It holds no ids and no foreign keys: everything the PDF needs is inlined, so a
@@ -129,5 +131,47 @@ export function buildQuotationSnapshot(input: SnapshotInput): QuotationSnapshot 
       : null,
     terms: input.terms,
     warranty: input.warranty,
+  }
+}
+
+export interface SnapshotPaymentPosition {
+  paidLabel: string
+  balanceLabel: string
+}
+
+export interface OrderSnapshot extends QuotationSnapshot {
+  confirmedDate: string
+  paymentPosition: SnapshotPaymentPosition | null
+  paymentTerms: string
+}
+
+export interface OrderSnapshotInput extends SnapshotInput {
+  confirmedDate: string
+  paymentTerms: string | null
+  payments: Payment[]
+}
+
+/** Wraps buildQuotationSnapshot rather than duplicating it — the order document's body
+ *  is the quotation's body with a different title (handled in OrderDocument.tsx, not
+ *  here) plus a payment position and a terms sentence. Deliberately does NOT allocate
+ *  a new reference number: the order keeps the job's own ref, per the spec's rule that
+ *  the customer knows the job by one number for its whole life. */
+export function buildOrderSnapshot(input: OrderSnapshotInput): OrderSnapshot {
+  const quotation = buildQuotationSnapshot(input)
+  const totals = jobTotals({
+    units: input.units,
+    discountCents: input.discountCents,
+    freeDelivery: input.freeDelivery,
+    deliveryChargeCents: input.deliveryChargeCents,
+  })
+  const position = paymentPosition(totals?.totalCents ?? null, input.payments)
+
+  return {
+    ...quotation,
+    confirmedDate: input.confirmedDate,
+    paymentPosition: position
+      ? { paidLabel: formatCents(position.paidCents), balanceLabel: formatCents(position.balanceCents) }
+      : null,
+    paymentTerms: input.paymentTerms ?? DEFAULT_PAYMENT_TERMS,
   }
 }
