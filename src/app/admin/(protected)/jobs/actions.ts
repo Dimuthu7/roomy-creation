@@ -16,8 +16,9 @@ import {
   specSnippets,
   unitOptions,
 } from '@/db/schema'
-import { customerFormSchema, JOB_STATUSES, jobDetailsFormSchema, jobUnitsSchema } from '@/lib/jobs/schema'
-import { allocateRef } from '@/lib/jobs/queries'
+import { customerFormSchema, JOB_STAGES, JOB_STATUSES, jobDetailsFormSchema, jobUnitsSchema } from '@/lib/jobs/schema'
+import { allocateRef, loadJob } from '@/lib/jobs/queries'
+import { jobTotals } from '@/lib/jobs/totals'
 
 export interface ActionState {
   error?: string
@@ -117,6 +118,37 @@ export async function setJobStatus(formData: FormData): Promise<void> {
     .update(jobs)
     .set({ status, updatedAt: new Date() })
     .where(eq(jobs.id, id))
+
+  revalidatePath('/admin/jobs')
+  revalidatePath(`/admin/jobs/${id}`)
+}
+
+/** Confirms a job as an order, or reverts it back to a quotation. Reverting is
+ *  always allowed (a mis-click undo); confirming is refused server-side — not just
+ *  hidden client-side — when any unit is still unresolved, since an order with an
+ *  open choice has no total and no meaning. Recording a payment never calls this: a
+ *  stage change is always an explicit admin action, never implied by money arriving. */
+export async function setJobStage(formData: FormData): Promise<void> {
+  await verifyAdminSession()
+
+  const id = String(formData.get('id') ?? '')
+  const stage = String(formData.get('stage') ?? '')
+  if (!id || !JOB_STAGES.includes(stage as (typeof JOB_STAGES)[number])) return
+
+  if (stage === 'order') {
+    const loaded = await loadJob(id)
+    if (!loaded || jobTotals({
+      units: loaded.units,
+      discountCents: loaded.job.discountCents,
+      freeDelivery: loaded.job.freeDelivery,
+      deliveryChargeCents: loaded.job.deliveryChargeCents,
+    }) === null) {
+      return
+    }
+    await db.update(jobs).set({ stage, confirmedAt: new Date(), updatedAt: new Date() }).where(eq(jobs.id, id))
+  } else {
+    await db.update(jobs).set({ stage, updatedAt: new Date() }).where(eq(jobs.id, id))
+  }
 
   revalidatePath('/admin/jobs')
   revalidatePath(`/admin/jobs/${id}`)

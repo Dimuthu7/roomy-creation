@@ -1,9 +1,11 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { loadJob } from '@/lib/jobs/queries'
+import { jobTotals } from '@/lib/jobs/totals'
 import { listClauses } from '../../clauses/actions'
 import { CancelQuotationButton } from './CancelQuotationButton'
 import { JobEditor } from './JobEditor'
+import { StageButtons } from './StageButtons'
 
 export default async function JobEditPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -11,6 +13,13 @@ export default async function JobEditPage({ params }: { params: Promise<{ id: st
   if (!loaded) notFound()
 
   const [terms, warranty] = await Promise.all([listClauses('terms'), listClauses('warranty')])
+
+  const resolved = jobTotals({
+    units: loaded.units,
+    discountCents: loaded.job.discountCents,
+    freeDelivery: loaded.job.freeDelivery,
+    deliveryChargeCents: loaded.job.deliveryChargeCents,
+  }) !== null
 
   return (
     <div className="space-y-8">
@@ -23,6 +32,7 @@ export default async function JobEditPage({ params }: { params: Promise<{ id: st
           <p className="u-mono mt-1 text-navy/70">{loaded.customer.name}</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
+          <StageButtons jobId={id} stage={loaded.job.stage} resolved={resolved} />
           {loaded.job.status !== 'cancelled' && <CancelQuotationButton jobId={id} />}
           <Link
             href={`/admin/jobs/${id}/documents`}
