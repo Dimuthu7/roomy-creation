@@ -1,9 +1,11 @@
 import 'server-only'
 import { and, asc, desc, eq, gte, ilike, lte, or, sql } from 'drizzle-orm'
 import { db } from '@/db/client'
-import { customers, jobClauses, jobUnits, jobs, optionSpecs, unitOptions } from '@/db/schema'
+import { customers, jobClauses, jobUnits, jobs, optionSpecs, payments, unitOptions } from '@/db/schema'
 import { JOB_STATUSES } from './schema'
 import { formatJobRef } from './reference'
+import { jobTotals } from './totals'
+import { paymentPosition } from './payments'
 import type { JobUnit } from './totals'
 
 /** Allocates the next job reference. A single atomic UPDATE ... RETURNING, so two
@@ -117,5 +119,30 @@ export async function loadJob(id: string) {
     units,
     terms: clauses.filter((c) => c.kind === 'terms'),
     warranty: clauses.filter((c) => c.kind === 'warranty'),
+  }
+}
+
+export async function listPayments(jobId: string) {
+  return db.select().from(payments).where(eq(payments.jobId, jobId)).orderBy(desc(payments.paidAt), desc(payments.createdAt))
+}
+
+/** The one place stage/payments/totals compose for display — used by both the
+ *  payments page (to show the running balance) and the order-document generator
+ *  (Task 11, which refuses to generate without a resolved job). */
+export async function getJobBalance(jobId: string) {
+  const loaded = await loadJob(jobId)
+  if (!loaded) return null
+
+  const totals = jobTotals({
+    units: loaded.units,
+    discountCents: loaded.job.discountCents,
+    freeDelivery: loaded.job.freeDelivery,
+    deliveryChargeCents: loaded.job.deliveryChargeCents,
+  })
+  const paymentRows = await listPayments(jobId)
+  return {
+    totals,
+    payments: paymentRows,
+    position: paymentPosition(totals?.totalCents ?? null, paymentRows),
   }
 }

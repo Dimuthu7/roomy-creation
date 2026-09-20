@@ -35,6 +35,12 @@ export default async function JobEditPage({ params }: { params: Promise<{ id: st
           <StageButtons jobId={id} stage={loaded.job.stage} resolved={resolved} />
           {loaded.job.status !== 'cancelled' && <CancelQuotationButton jobId={id} />}
           <Link
+            href={`/admin/jobs/${id}/payments`}
+            className="rounded-full border border-navy px-4 py-2 font-display text-sm text-navy transition duration-200 hover:bg-navy hover:text-paper active:scale-95"
+          >
+            Payments
+          </Link>
+          <Link
             href={`/admin/jobs/${id}/documents`}
             className="rounded-full border border-navy px-4 py-2 font-display text-sm text-navy transition duration-200 hover:bg-navy hover:text-paper active:scale-95"
           >
