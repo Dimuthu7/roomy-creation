@@ -198,6 +198,15 @@ export const styles = StyleSheet.create({
     fontFamily: 'Helvetica-Bold',
     fontSize: 10.5,
   },
+  paymentTerms: {
+    alignSelf: 'flex-end',
+    width: 220,
+    marginTop: 4,
+    marginBottom: 12,
+    fontSize: 8.5,
+    fontStyle: 'italic',
+    textAlign: 'right',
+  },
 
   // Tagline, terms, warranty
   tagline: {
