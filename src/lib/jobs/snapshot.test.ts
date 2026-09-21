@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { buildQuotationSnapshot, buildOrderSnapshot } from './snapshot'
-import type { SnapshotInput, OrderSnapshotInput } from './snapshot'
+import { buildQuotationSnapshot, buildOrderSnapshot, buildReceiptSnapshot } from './snapshot'
+import type { SnapshotInput, OrderSnapshotInput, ReceiptSnapshotInput } from './snapshot'
 
 const BASE: SnapshotInput = {
   ref: 'RC00188',
@@ -168,5 +168,63 @@ describe('buildOrderSnapshot', () => {
     const snap = buildOrderSnapshot({ ...ORDER_BASE, units: [unresolvedUnit] })
     expect(snap.totals).toBeNull()
     expect(snap.paymentPosition).toBeNull()
+  })
+})
+
+const RECEIPT_BASE: ReceiptSnapshotInput = {
+  number: 'RCP00001',
+  ref: 'RC00188',
+  customerName: 'williams',
+  amountCents: 150_000_00,
+  kind: 'advance',
+  paidAt: '2026-09-19',
+  method: 'Bank transfer',
+  totalCents: 368_500_00,
+  paymentsIncludingThis: [{ amountCents: 150_000_00 }],
+}
+
+describe('buildReceiptSnapshot', () => {
+  it('carries the number, job reference and customer name through', () => {
+    const snap = buildReceiptSnapshot(RECEIPT_BASE)
+    expect(snap.number).toBe('RCP00001')
+    expect(snap.ref).toBe('RC00188')
+    expect(snap.customerName).toBe('williams')
+  })
+
+  it('formats the amount', () => {
+    expect(buildReceiptSnapshot(RECEIPT_BASE).amountLabel).toBe('150,000.00')
+  })
+
+  it('labels an advance payment', () => {
+    expect(buildReceiptSnapshot(RECEIPT_BASE).kindLabel).toBe('advance payment')
+  })
+
+  it('labels a final payment', () => {
+    expect(buildReceiptSnapshot({ ...RECEIPT_BASE, kind: 'final' }).kindLabel).toBe('final payment')
+  })
+
+  it('uses the note verbatim for an other-kind payment', () => {
+    const snap = buildReceiptSnapshot({ ...RECEIPT_BASE, kind: 'other', note: 'Deposit refund adjustment' })
+    expect(snap.kindLabel).toBe('Deposit refund adjustment')
+  })
+
+  it('falls back to a generic label for an other-kind payment with no note', () => {
+    expect(buildReceiptSnapshot({ ...RECEIPT_BASE, kind: 'other', note: null }).kindLabel).toBe('payment')
+  })
+
+  it('computes the balance remaining as of this receipt, including the payment it is for', () => {
+    expect(buildReceiptSnapshot(RECEIPT_BASE).balanceRemainingLabel).toBe('218,500.00')
+  })
+
+  it('has no balance remaining when the job has no total yet', () => {
+    expect(buildReceiptSnapshot({ ...RECEIPT_BASE, totalCents: null }).balanceRemainingLabel).toBeNull()
+  })
+
+  it('carries the payment method through', () => {
+    expect(buildReceiptSnapshot(RECEIPT_BASE).method).toBe('Bank transfer')
+  })
+
+  it('is null when no method was recorded', () => {
+    expect(buildReceiptSnapshot({ ...RECEIPT_BASE, method: null }).method).toBeNull()
   })
 })

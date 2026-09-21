@@ -175,3 +175,53 @@ export function buildOrderSnapshot(input: OrderSnapshotInput): OrderSnapshot {
     paymentTerms: input.paymentTerms ?? DEFAULT_PAYMENT_TERMS,
   }
 }
+
+export interface ReceiptSnapshot {
+  number: string
+  ref: string
+  customerName: string
+  amountLabel: string
+  kindLabel: string
+  paidAtLabel: string
+  method: string | null
+  balanceRemainingLabel: string | null
+}
+
+export interface ReceiptSnapshotInput {
+  number: string
+  ref: string
+  customerName: string
+  amountCents: number
+  kind: 'advance' | 'final' | 'other'
+  note?: string | null
+  paidAt: string
+  method: string | null
+  /** The job's total as of receipt time, or null while unresolved — see paymentPosition. */
+  totalCents: number | null
+  /** Every payment on the job as of receipt time, including the one this receipt is
+   *  for, so "balance remaining" reflects the state right after this payment landed. */
+  paymentsIncludingThis: Payment[]
+}
+
+function receiptKindLabel(kind: ReceiptSnapshotInput['kind'], note: string | null | undefined): string {
+  if (kind === 'advance') return 'advance payment'
+  if (kind === 'final') return 'final payment'
+  return note && note.trim() !== '' ? note : 'payment'
+}
+
+/** Deliberately minimal — a single acknowledgement line, not an itemised invoice.
+ *  See the Slice 2 spec's "receipt document" section: this is not the advance/final
+ *  invoice reserved for Slice 4. */
+export function buildReceiptSnapshot(input: ReceiptSnapshotInput): ReceiptSnapshot {
+  const position = paymentPosition(input.totalCents, input.paymentsIncludingThis)
+  return {
+    number: input.number,
+    ref: input.ref,
+    customerName: input.customerName,
+    amountLabel: formatCents(input.amountCents),
+    kindLabel: receiptKindLabel(input.kind, input.note),
+    paidAtLabel: input.paidAt,
+    method: input.method,
+    balanceRemainingLabel: position ? formatCents(position.balanceCents) : null,
+  }
+}
