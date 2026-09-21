@@ -1902,7 +1902,10 @@ describe('ReceiptDocument', () => {
   })
 
   it('omits the method line when none was recorded', () => {
-    expect(textOf(ReceiptDocument({ snapshot: { ...SNAPSHOT, method: null } }))).not.toContain('by ')
+    // Checks for the two-space-before-"by" pattern the method suffix uses
+    // (`${paidAtLabel}  by ${method}`), not a bare 'by ' — the signature block's
+    // "Approved by Client" always renders and would false-positive on that substring.
+    expect(textOf(ReceiptDocument({ snapshot: { ...SNAPSHOT, method: null } }))).not.toContain('  by ')
   })
 
   it('prints the balance remaining when known', () => {
