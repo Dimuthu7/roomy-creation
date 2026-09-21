@@ -260,6 +260,33 @@ export const styles = StyleSheet.create({
     fontSize: 8.5,
   },
 
+  // Receipt body
+  receiptNumberRow: {
+    alignItems: 'flex-end',
+    marginBottom: 16,
+  },
+  receiptNumber: {
+    fontFamily: 'Helvetica-Bold',
+    fontSize: 11,
+  },
+  ackBlock: {
+    marginTop: 20,
+    gap: 10,
+  },
+  ackRow: {
+    flexDirection: 'row',
+  },
+  ackLabel: {
+    width: 160,
+    fontSize: 10,
+    color: '#333333',
+  },
+  ackValue: {
+    flex: 1,
+    fontSize: 10.5,
+    fontFamily: 'Helvetica-Bold',
+  },
+
   footerThanks: {
     textAlign: 'center',
     marginTop: 24,
