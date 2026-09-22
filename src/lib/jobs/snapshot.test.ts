@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { buildQuotationSnapshot, buildOrderSnapshot, buildReceiptSnapshot } from './snapshot'
-import type { SnapshotInput, OrderSnapshotInput, ReceiptSnapshotInput } from './snapshot'
+import { buildQuotationSnapshot, buildOrderSnapshot, buildReceiptSnapshot, buildCompletionSnapshot } from './snapshot'
+import type { SnapshotInput, OrderSnapshotInput, ReceiptSnapshotInput, CompletionSnapshotInput } from './snapshot'
 
 const BASE: SnapshotInput = {
   ref: 'RC00188',
@@ -226,5 +226,120 @@ describe('buildReceiptSnapshot', () => {
 
   it('is null when no method was recorded', () => {
     expect(buildReceiptSnapshot({ ...RECEIPT_BASE, method: null }).method).toBeNull()
+  })
+})
+
+describe('buildCompletionSnapshot', () => {
+  const BASE: CompletionSnapshotInput = {
+    ref: 'RC00188',
+    number: 'WC00001',
+    quotationDate: '2026-03-21',
+    confirmedDate: '2026-04-02',
+    completedDate: '2026-09-22',
+    salesPerson: 'ISHAN',
+    customer: { name: 'williams', phone: '+94 772383430', email: null, addressLines: [], city: null, district: null },
+    units: [
+      {
+        id: 'u1',
+        title: 'Unit 01',
+        options: [{ id: 'o1', label: null, priceCents: 300_000_00, qty: 1, selected: true, specs: [] }],
+      },
+    ],
+    discountLabel: 'Cash Discount',
+    discountCents: 0,
+    freeDelivery: false,
+    deliveryChargeCents: null,
+    terms: [{ body: 'A term.', emphasis: false }],
+    warranty: [{ body: 'A warranty clause.', emphasis: true }],
+    payments: [
+      // Deliberately newest-first, as listPayments returns them.
+      { amountCents: 200_000_00, paidAt: '2026-02-01', kind: 'final', method: 'Cash', note: null, createdAt: new Date('2026-02-01T00:00:00Z') },
+      { amountCents: 100_000_00, paidAt: '2026-01-01', kind: 'advance', method: 'Bank transfer', note: null, createdAt: new Date('2026-01-01T00:00:00Z') },
+    ],
+  }
+
+  it('carries its own WC number alongside the job ref, not instead of it', () => {
+    const snapshot = buildCompletionSnapshot(BASE)
+    expect(snapshot.number).toBe('WC00001')
+    expect(snapshot.ref).toBe('RC00188')
+  })
+
+  it('keeps the quotation body — units, totals, terms and warranty', () => {
+    const snapshot = buildCompletionSnapshot(BASE)
+    expect(snapshot.units[0].title).toBe('Unit 01')
+    expect(snapshot.totals?.totalLabel).toBe('300,000.00')
+    expect(snapshot.terms).toEqual([{ body: 'A term.', emphasis: false }])
+    expect(snapshot.warranty).toEqual([{ body: 'A warranty clause.', emphasis: true }])
+  })
+
+  it('prints the payment ledger oldest-first, however the input was ordered', () => {
+    const snapshot = buildCompletionSnapshot(BASE)
+    expect(snapshot.payments.map((p) => p.paidAtLabel)).toEqual(['2026-01-01', '2026-02-01'])
+  })
+
+  it('labels each payment with the same wording the receipt uses, capitalised for a table', () => {
+    const snapshot = buildCompletionSnapshot(BASE)
+    expect(snapshot.payments[0].kindLabel).toBe('Advance payment')
+    expect(snapshot.payments[1].kindLabel).toBe('Final payment')
+  })
+
+  it("uses an 'other' payment's note as its label, falling back to a generic word", () => {
+    const withOther = buildCompletionSnapshot({
+      ...BASE,
+      payments: [
+        { amountCents: 1_000_00, paidAt: '2026-01-05', kind: 'other', method: null, note: 'Site visit fee', createdAt: new Date('2026-01-05T00:00:00Z') },
+        { amountCents: 2_000_00, paidAt: '2026-01-06', kind: 'other', method: null, note: null, createdAt: new Date('2026-01-06T00:00:00Z') },
+      ],
+    })
+    expect(withOther.payments[0].kindLabel).toBe('Site visit fee')
+    expect(withOther.payments[1].kindLabel).toBe('Payment')
+  })
+
+  it('formats amounts and carries the method through', () => {
+    const snapshot = buildCompletionSnapshot(BASE)
+    expect(snapshot.payments[0].amountLabel).toBe('100,000.00')
+    expect(snapshot.payments[0].method).toBe('Bank transfer')
+  })
+
+  it('reports a settled position when the payments cover the total', () => {
+    const snapshot = buildCompletionSnapshot(BASE)
+    expect(snapshot.paymentPosition).toEqual({ paidLabel: '300,000.00', balanceLabel: '0.00' })
+  })
+
+  it('reports a positive balance rather than hiding it, so a certificate never conceals an unpaid amount', () => {
+    const snapshot = buildCompletionSnapshot({ ...BASE, payments: [BASE.payments[1]] })
+    expect(snapshot.paymentPosition).toEqual({ paidLabel: '100,000.00', balanceLabel: '200,000.00' })
+  })
+
+  it('reports an overpayment as a negative balance rather than clamping it to zero', () => {
+    const overpaid = buildCompletionSnapshot({
+      ...BASE,
+      payments: [{ amountCents: 350_000_00, paidAt: '2026-01-01', kind: 'final', method: null, note: null, createdAt: new Date('2026-01-01T00:00:00Z') }],
+    })
+    expect(overpaid.paymentPosition?.balanceLabel).toBe('-50,000.00')
+  })
+
+  it('has a null position when a unit is still unresolved, since no total exists to settle against', () => {
+    const unresolved = buildCompletionSnapshot({
+      ...BASE,
+      units: [
+        {
+          id: 'u1',
+          title: 'Unit 01',
+          options: [
+            { id: 'o1', label: 'A', priceCents: 100_00, qty: 1, selected: false, specs: [] },
+            { id: 'o2', label: 'B', priceCents: 200_00, qty: 1, selected: false, specs: [] },
+          ],
+        },
+      ],
+    })
+    expect(unresolved.totals).toBeNull()
+    expect(unresolved.paymentPosition).toBeNull()
+  })
+
+  it('carries both dates, so the certificate can state how long the job took', () => {
+    const snapshot = buildCompletionSnapshot(BASE)
+    expect(snapshot.confirmedDate).toBe('2026-04-02')
+    expect(snapshot.completedDate).toBe('2026-09-22')
   })
 })

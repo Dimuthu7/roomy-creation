@@ -204,7 +204,10 @@ export interface ReceiptSnapshotInput {
   paymentsIncludingThis: Payment[]
 }
 
-function receiptKindLabel(kind: ReceiptSnapshotInput['kind'], note: string | null | undefined): string {
+/** Shared by the receipt (inline in a sentence) and the completion certificate's
+ *  ledger (capitalised at the call site). One function so "advance payment" can never
+ *  come to mean two different things on two documents the same customer holds. */
+export function paymentKindLabel(kind: ReceiptSnapshotInput['kind'], note: string | null | undefined): string {
   if (kind === 'advance') return 'advance payment'
   if (kind === 'final') return 'final payment'
   return note && note.trim() !== '' ? note : 'payment'
@@ -220,9 +223,88 @@ export function buildReceiptSnapshot(input: ReceiptSnapshotInput): ReceiptSnapsh
     ref: input.ref,
     customerName: input.customerName,
     amountLabel: formatCents(input.amountCents),
-    kindLabel: receiptKindLabel(input.kind, input.note),
+    kindLabel: paymentKindLabel(input.kind, input.note),
     paidAtLabel: input.paidAt,
     method: input.method,
     balanceRemainingLabel: position ? formatCents(position.balanceCents) : null,
+  }
+}
+
+export interface CompletionSnapshotPayment {
+  paidAtLabel: string
+  kindLabel: string
+  method: string | null
+  amountLabel: string
+}
+
+export interface CompletionSnapshot extends QuotationSnapshot {
+  /** The certificate's own WC number. `ref` still carries the job's RC number. */
+  number: string
+  confirmedDate: string
+  completedDate: string
+  payments: CompletionSnapshotPayment[]
+  paymentPosition: SnapshotPaymentPosition | null
+}
+
+/** `createdAt` is used only to break ties between two payments dated the same day;
+ *  it is deliberately not carried into the snapshot, which must survive JSON. */
+export interface CompletionSnapshotPaymentInput extends Payment {
+  paidAt: string
+  kind: 'advance' | 'final' | 'other'
+  method: string | null
+  note: string | null
+  createdAt: Date
+}
+
+export interface CompletionSnapshotInput extends SnapshotInput {
+  number: string
+  confirmedDate: string
+  completedDate: string
+  payments: CompletionSnapshotPaymentInput[]
+}
+
+/** A table cell reads wrong in lower case, but the wording itself must stay identical
+ *  to the receipt's — so the shared label is capitalised here rather than duplicated. */
+function capitalise(label: string): string {
+  return label.charAt(0).toUpperCase() + label.slice(1)
+}
+
+/** Wraps buildQuotationSnapshot the way buildOrderSnapshot does: the certificate's
+ *  body is the quotation's body (items, totals, terms, warranty) plus a payment
+ *  ledger, a position, and the two dates that bracket the job. Unlike the order
+ *  document it DOES carry a number of its own — a warranty instrument is quoted by
+ *  its own number years later, which is why Slice 1 reserved the WC series. */
+export function buildCompletionSnapshot(input: CompletionSnapshotInput): CompletionSnapshot {
+  const quotation = buildQuotationSnapshot(input)
+  const totals = jobTotals({
+    units: input.units,
+    discountCents: input.discountCents,
+    freeDelivery: input.freeDelivery,
+    deliveryChargeCents: input.deliveryChargeCents,
+  })
+  const position = paymentPosition(totals?.totalCents ?? null, input.payments)
+
+  // listPayments returns newest-first, which is right for a working screen and wrong
+  // for a handover document — a statement reads forwards. Sorted here rather than at
+  // the call site so every caller gets the same order. paidAt is 'YYYY-MM-DD', which
+  // compares correctly as a plain string.
+  const ordered = [...input.payments].sort(
+    (a, b) => a.paidAt.localeCompare(b.paidAt) || a.createdAt.getTime() - b.createdAt.getTime(),
+  )
+
+  return {
+    ...quotation,
+    number: input.number,
+    confirmedDate: input.confirmedDate,
+    completedDate: input.completedDate,
+    payments: ordered.map((payment) => ({
+      paidAtLabel: payment.paidAt,
+      kindLabel: capitalise(paymentKindLabel(payment.kind, payment.note)),
+      method: payment.method,
+      amountLabel: formatCents(payment.amountCents),
+    })),
+    paymentPosition: position
+      ? { paidLabel: formatCents(position.paidCents), balanceLabel: formatCents(position.balanceCents) }
+      : null,
   }
 }
