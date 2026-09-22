@@ -1,4 +1,5 @@
 'use client'
+import { AdminSubmitButton } from '@/components/admin/AdminSubmitButton'
 import { setJobStage } from '../actions'
 
 /** Shows exactly one of the two stage-changing actions, based on the job's current
@@ -17,12 +18,11 @@ export function StageButtons({ jobId, stage, resolved }: { jobId: string; stage:
       >
         <input type="hidden" name="id" value={jobId} />
         <input type="hidden" name="stage" value="quotation" />
-        <button
-          type="submit"
-          className="u-mono text-xs text-navy/60 underline"
-        >
-          Revert to quotation
-        </button>
+        <AdminSubmitButton
+          label="Revert to quotation"
+          pendingLabel="Reverting"
+          className="u-mono text-xs text-navy/60 underline disabled:opacity-60"
+        />
       </form>
     )
   }
@@ -36,14 +36,13 @@ export function StageButtons({ jobId, stage, resolved }: { jobId: string; stage:
     >
       <input type="hidden" name="id" value={jobId} />
       <input type="hidden" name="stage" value="order" />
-      <button
-        type="submit"
+      <AdminSubmitButton
+        label="Confirm order"
+        pendingLabel="Confirming"
         disabled={!resolved}
         title={resolved ? undefined : 'Every unit needs a chosen option before this quotation can become an order'}
         className="rounded-full bg-yellow px-4 py-2 font-display text-sm text-navy transition duration-200 hover:bg-yellow/80 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
-      >
-        Confirm order
-      </button>
+      />
     </form>
   )
 }
