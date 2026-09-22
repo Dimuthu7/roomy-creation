@@ -145,9 +145,9 @@ export async function setJobStage(formData: FormData): Promise<void> {
     }) === null) {
       return
     }
-    await db.update(jobs).set({ stage, confirmedAt: new Date(), updatedAt: new Date() }).where(eq(jobs.id, id))
+    await db.update(jobs).set({ stage, confirmedAt: new Date() }).where(eq(jobs.id, id))
   } else {
-    await db.update(jobs).set({ stage, updatedAt: new Date() }).where(eq(jobs.id, id))
+    await db.update(jobs).set({ stage }).where(eq(jobs.id, id))
   }
 
   revalidatePath('/admin/jobs')

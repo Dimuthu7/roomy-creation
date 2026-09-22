@@ -198,8 +198,9 @@ export interface ReceiptSnapshotInput {
   method: string | null
   /** The job's total as of receipt time, or null while unresolved — see paymentPosition. */
   totalCents: number | null
-  /** Every payment on the job as of receipt time, including the one this receipt is
-   *  for, so "balance remaining" reflects the state right after this payment landed. */
+  /** Every payment currently on the job, as of the moment this receipt is generated —
+   *  not a historical snapshot frozen at the payment's own time. A reprinted receipt
+   *  reflects the job's current position. */
   paymentsIncludingThis: Payment[]
 }
 

@@ -7,13 +7,26 @@ import { setJobStage } from '../actions'
  *  Confirm order client-side (disabled + reason shown) as a UX nicety; the action
  *  itself re-checks server-side regardless, per this slice's invariant that a job
  *  cannot become an order while any unit is unresolved. */
-export function StageButtons({ jobId, stage, resolved }: { jobId: string; stage: string; resolved: boolean }) {
+export function StageButtons({
+  jobId,
+  stage,
+  resolved,
+  hasOrderDocument,
+}: {
+  jobId: string
+  stage: string
+  resolved: boolean
+  hasOrderDocument: boolean
+}) {
   if (stage === 'order') {
+    const revertMessage = hasOrderDocument
+      ? 'This job already has an order document. Reverting to quotation will not update or delete it — the issued document will still show stage "order". Revert anyway?'
+      : 'Revert this order back to a quotation?'
     return (
       <form
         action={setJobStage}
         onSubmit={(e) => {
-          if (!confirm('Revert this order back to a quotation?')) e.preventDefault()
+          if (!confirm(revertMessage)) e.preventDefault()
         }}
       >
         <input type="hidden" name="id" value={jobId} />

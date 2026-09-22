@@ -231,10 +231,11 @@ export const paymentFormSchema = z
   .object({
     kind: z.enum(PAYMENT_KINDS),
     amount: requiredMoney('Enter an amount like 150,000.00'),
-    paidAt: z.string().trim().min(1, 'Date paid is required'),
+    paidAt: z.string().trim().regex(/^\d{4}-\d{2}-\d{2}$/, 'Enter a valid date'),
     method: blankToNull,
     note: blankToNull,
   })
+  .refine((data) => data.amount > 0, { message: 'Amount must be greater than zero', path: ['amount'] })
   .transform((data) => ({
     kind: data.kind,
     amountCents: data.amount,

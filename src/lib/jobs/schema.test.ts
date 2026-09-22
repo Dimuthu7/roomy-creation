@@ -164,6 +164,23 @@ describe('paymentFormSchema', () => {
     expect(paymentFormSchema.safeParse({ ...PAYMENT, paidAt: '' }).success).toBe(false)
   })
 
+  it('rejects a paidAt that is not a real date string, before it can reach the Postgres date column', () => {
+    expect(paymentFormSchema.safeParse({ ...PAYMENT, paidAt: 'not a date' }).success).toBe(false)
+  })
+
+  it('rejects a zero-amount payment', () => {
+    expect(paymentFormSchema.safeParse({ ...PAYMENT, amount: '0.00' }).success).toBe(false)
+  })
+
+  it('rejects a zero-amount payment with a clear message on the amount field', () => {
+    const result = paymentFormSchema.safeParse({ ...PAYMENT, amount: '0' })
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.issues[0].message).toBe('Amount must be greater than zero')
+      expect(result.error.issues[0].path).toEqual(['amount'])
+    }
+  })
+
   it('rejects an unknown kind', () => {
     expect(paymentFormSchema.safeParse({ ...PAYMENT, kind: 'refund' }).success).toBe(false)
   })

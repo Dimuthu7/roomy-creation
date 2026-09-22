@@ -1,6 +1,6 @@
 'use server'
 import { randomUUID } from 'crypto'
-import { desc, eq, sql } from 'drizzle-orm'
+import { and, desc, eq, sql } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
 import { put } from '@vercel/blob'
 import { verifyAdminSession } from '@/lib/adminAuth'
@@ -54,7 +54,7 @@ export async function deletePayment(formData: FormData): Promise<void> {
   const jobId = String(formData.get('jobId') ?? '')
   if (!id || !jobId) return
 
-  await db.delete(payments).where(eq(payments.id, id))
+  await db.delete(payments).where(and(eq(payments.id, id), eq(payments.jobId, jobId)))
 
   revalidatePath(`/admin/jobs/${jobId}/payments`)
 }
@@ -99,7 +99,7 @@ export async function generateReceipt(_prevState: ActionState, formData: FormDat
     paidAt: payment.paidAt,
     method: payment.method,
     totalCents: balance?.totals?.totalCents ?? null,
-    paymentsIncludingThis: allPayments.filter((p) => p.createdAt <= payment.createdAt),
+    paymentsIncludingThis: balance?.payments ?? [],
   })
 
   const pdf = await renderReceiptPdf(snapshot)
