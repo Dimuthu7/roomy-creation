@@ -287,6 +287,48 @@ export const styles = StyleSheet.create({
     fontFamily: 'Helvetica-Bold',
   },
 
+  // Payment ledger (completion certificate)
+  ledgerHeaderRow: {
+    flexDirection: 'row',
+    backgroundColor: '#eeeeee',
+    borderBottomWidth: 1,
+    borderBottomColor: '#111111',
+  },
+  ledgerRow: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: '#cccccc',
+  },
+  ledgerRowLast: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: '#111111',
+  },
+  ledgerCellDate: {
+    width: 80,
+    padding: 5,
+    borderRightWidth: 1,
+    borderRightColor: '#111111',
+  },
+  ledgerCellKind: {
+    flexGrow: 1,
+    flexBasis: 0,
+    padding: 5,
+    borderRightWidth: 1,
+    borderRightColor: '#111111',
+  },
+  ledgerCellMethod: {
+    width: 100,
+    padding: 5,
+    borderRightWidth: 1,
+    borderRightColor: '#111111',
+  },
+  ledgerCellAmount: {
+    width: 90,
+    padding: 5,
+    textAlign: 'right',
+  },
+
   footerThanks: {
     textAlign: 'center',
     marginTop: 24,

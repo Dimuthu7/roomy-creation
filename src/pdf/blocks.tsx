@@ -1,5 +1,5 @@
 import { Text, View } from '@react-pdf/renderer'
-import type { QuotationSnapshot, SnapshotClause, SnapshotCustomer, SnapshotUnit } from '@/lib/jobs/snapshot'
+import type { CompletionSnapshot, QuotationSnapshot, SnapshotClause, SnapshotCustomer, SnapshotUnit } from '@/lib/jobs/snapshot'
 import { styles } from './styles'
 import { SpecMarker, OptionMarker } from './Marker'
 
@@ -181,6 +181,74 @@ export function signatureBlock() {
         <Text style={styles.signatureLine}> </Text>
         <Text style={styles.signatureSpace}>{"Client's Signature"}</Text>
       </View>
+    </View>
+  )
+}
+
+/** The completion certificate's payment history. Returns null for a job with no
+ *  payments at all rather than printing an empty table — a certificate for an unpaid
+ *  job is unusual but not impossible, and an empty bordered box reads like a bug. */
+export function paymentLedger(
+  payments: CompletionSnapshot['payments'],
+  position: CompletionSnapshot['paymentPosition'],
+  totalLabel: string | null,
+) {
+  if (payments.length === 0 && position === null) return null
+  return (
+    <View>
+      <Text style={styles.sectionHeading}>Payment Details</Text>
+      {payments.length > 0 && (
+        <View style={styles.table}>
+          <View style={styles.ledgerHeaderRow}>
+            <View style={styles.ledgerCellDate}>
+              <Text style={styles.headerCellText}>DATE</Text>
+            </View>
+            <View style={styles.ledgerCellKind}>
+              <Text style={styles.headerCellText}>PAYMENT</Text>
+            </View>
+            <View style={styles.ledgerCellMethod}>
+              <Text style={styles.headerCellText}>METHOD</Text>
+            </View>
+            <View style={styles.ledgerCellAmount}>
+              <Text style={styles.headerCellText}>AMOUNT</Text>
+            </View>
+          </View>
+          {payments.map((payment, i) => (
+            <View key={i} style={i === payments.length - 1 ? styles.ledgerRowLast : styles.ledgerRow}>
+              <View style={styles.ledgerCellDate}>
+                <Text>{payment.paidAtLabel}</Text>
+              </View>
+              <View style={styles.ledgerCellKind}>
+                <Text>{payment.kindLabel}</Text>
+              </View>
+              <View style={styles.ledgerCellMethod}>
+                <Text>{payment.method ?? '-'}</Text>
+              </View>
+              <View style={styles.ledgerCellAmount}>
+                <Text>{payment.amountLabel}</Text>
+              </View>
+            </View>
+          ))}
+        </View>
+      )}
+      {position && (
+        <View style={styles.totalsBlock}>
+          {totalLabel !== null && (
+            <View style={styles.totalsRow}>
+              <Text style={styles.totalsLabel}>Order Total</Text>
+              <Text style={styles.totalsValue}>{totalLabel}</Text>
+            </View>
+          )}
+          <View style={styles.totalsRow}>
+            <Text style={styles.totalsLabel}>Total Paid</Text>
+            <Text style={styles.totalsValue}>{position.paidLabel}</Text>
+          </View>
+          <View style={styles.totalsRowFinal}>
+            <Text style={styles.totalsLabelFinal}>Balance</Text>
+            <Text style={styles.totalsValueFinal}>{position.balanceLabel}</Text>
+          </View>
+        </View>
+      )}
     </View>
   )
 }
