@@ -35,8 +35,9 @@ npm run db:seed       # one-time: populate an empty database from the original s
 First-time setup against a fresh database: set `DATABASE_URL` and
 `BLOB_READ_WRITE_TOKEN` in `.env.local`, run `npm run db:migrate`, then
 `npm run db:seed`. Seeding also sets the quotation reference counter to 194 (so
-the first quotation created is `RC00195`) and populates the clause library with
-the six standard terms transcribed from the original paper quotations.
+the first quotation created is `RC00195`), the receipt counter to 0, and
+populates the clause library with the six standard terms transcribed from the
+original paper quotations.
 
 ## Admin portal
 
@@ -68,7 +69,17 @@ admin function. Saves go live immediately (no publish step).
   PDF, stores it in Vercel Blob as an immutable snapshot, and can email it to the
   customer via Resend — see `DOCS_FROM_EMAIL` below. Regenerating after an edit
   creates a new document rather than replacing the old one; the Documents screen
-  flags any document generated before the quotation's last edit.
+  flags any document generated before the quotation's last edit. Once every unit
+  resolves to one option, the **Confirm order** button on the edit screen
+  advances the quotation to an order (recorded separately from its production
+  status); this is manual, never automatic, even once a payment is recorded, and
+  can be undone with **Revert to quotation**. The **Payments** screen (also
+  linked from the edit screen) records advance/final/other payments against the
+  job, shows a running Total/Paid/Balance summary once the job is resolved, and
+  can generate a minimal per-payment receipt PDF (its own `RCP00001`-style
+  numbering) alongside a full **order document** — the same layout as the
+  quotation but titled ORDER, dated from when it was confirmed, and adding
+  Advance Paid / Balance Due rows plus an editable payment-terms sentence.
 
 ## Image and film slots
 

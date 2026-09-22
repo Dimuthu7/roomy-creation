@@ -2,12 +2,14 @@
 import { useActionState, useEffect } from 'react'
 import { toast } from 'sonner'
 import { AdminSubmitButton } from '@/components/admin/AdminSubmitButton'
-import { emailQuotation, type ActionState } from './actions'
+import { emailDocument, type ActionState } from './actions'
 
 const initialState: ActionState = {}
 
 const KIND_LABELS: Record<string, string> = {
   quotation: 'Quotation',
+  order: 'Order',
+  receipt: 'Receipt',
   advance_invoice: 'Advance invoice',
   final_invoice: 'Final invoice',
   warranty_card: 'Warranty card',
@@ -32,7 +34,7 @@ export function DocumentRow({
   sentAt: string | null
   stale: boolean
 }) {
-  const [state, formAction] = useActionState(emailQuotation, initialState)
+  const [state, formAction] = useActionState(emailDocument, initialState)
 
   useEffect(() => {
     if (state.success) toast.success('Emailed to the customer.')

@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import { loadJob } from '@/lib/jobs/queries'
 import { listDocuments } from './actions'
 import { GeneratePdfButton } from './GeneratePdfButton'
+import { GenerateOrderPdfButton } from './GenerateOrderPdfButton'
 import { DocumentRow } from './DocumentRow'
 
 export default async function JobDocumentsPage({ params }: { params: Promise<{ id: string }> }) {
@@ -24,7 +25,10 @@ export default async function JobDocumentsPage({ params }: { params: Promise<{ i
         </p>
       </div>
 
-      <GeneratePdfButton jobId={id} />
+      <div className="flex flex-wrap gap-3">
+        <GeneratePdfButton jobId={id} />
+        {loaded.job.stage === 'order' && <GenerateOrderPdfButton jobId={id} />}
+      </div>
 
       <div className="space-y-4">
         {documents.length === 0 && <p className="u-mono text-sm text-navy/70">No documents generated yet.</p>}
