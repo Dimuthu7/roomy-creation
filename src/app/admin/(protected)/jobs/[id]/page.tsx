@@ -1,10 +1,11 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { loadJob } from '@/lib/jobs/queries'
+import { getJobBalance, loadJob } from '@/lib/jobs/queries'
 import { jobTotals } from '@/lib/jobs/totals'
 import { listClauses } from '../../clauses/actions'
 import { listDocuments } from './documents/actions'
 import { CancelQuotationButton } from './CancelQuotationButton'
+import { CompleteOrderButton } from './CompleteOrderButton'
 import { JobEditor } from './JobEditor'
 import { StageButtons } from './StageButtons'
 
@@ -13,10 +14,11 @@ export default async function JobEditPage({ params }: { params: Promise<{ id: st
   const loaded = await loadJob(id)
   if (!loaded) notFound()
 
-  const [terms, warranty, documents] = await Promise.all([
+  const [terms, warranty, documents, balance] = await Promise.all([
     listClauses('terms'),
     listClauses('warranty'),
     listDocuments(id),
+    getJobBalance(id),
   ])
   const hasOrderDocument = documents.some((doc) => doc.kind === 'order')
 
@@ -39,6 +41,13 @@ export default async function JobEditPage({ params }: { params: Promise<{ id: st
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <StageButtons jobId={id} stage={loaded.job.stage} resolved={resolved} hasOrderDocument={hasOrderDocument} />
+          {loaded.job.stage === 'order' && loaded.job.status !== 'cancelled' && (
+            <CompleteOrderButton
+              jobId={id}
+              balanceCents={balance?.position?.balanceCents ?? null}
+              completedAt={loaded.job.status === 'finished' && loaded.job.completedAt ? loaded.job.completedAt.toISOString() : null}
+            />
+          )}
           {loaded.job.status !== 'cancelled' && <CancelQuotationButton jobId={id} />}
           <Link
             href={`/admin/jobs/${id}/payments`}
