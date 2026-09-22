@@ -154,6 +154,44 @@ export async function setJobStage(formData: FormData): Promise<void> {
   revalidatePath(`/admin/jobs/${id}`)
 }
 
+/** Marks a confirmed order finished. Deliberately reuses `status` rather than adding a
+ *  third `stage` value: `status` already carries exactly this meaning, and two fields
+ *  that must never disagree is a worse problem than one field with four values.
+ *
+ *  Refuses — silently, like setJobStage — a job that is not an order, is cancelled, or
+ *  still has an unresolved unit. It does NOT read the job's balance: an outstanding
+ *  amount warns in the UI (see CompleteOrderButton) but never gates completion, because
+ *  Roomy Creations genuinely completes installations with money still owed.
+ *
+ *  Sets no `updatedAt`. That column drives the documents-staleness marker, and
+ *  completing a job is a state transition, not a content edit — the same reasoning that
+ *  removed it from setJobStage. */
+export async function completeJob(formData: FormData): Promise<void> {
+  await verifyAdminSession()
+
+  const id = String(formData.get('id') ?? '')
+  if (!id) return
+
+  const loaded = await loadJob(id)
+  if (!loaded) return
+  if (loaded.job.stage !== 'order') return
+  if (loaded.job.status === 'cancelled') return
+
+  const totals = jobTotals({
+    units: loaded.units,
+    discountCents: loaded.job.discountCents,
+    freeDelivery: loaded.job.freeDelivery,
+    deliveryChargeCents: loaded.job.deliveryChargeCents,
+  })
+  if (totals === null) return
+
+  await db.update(jobs).set({ status: 'finished', completedAt: new Date() }).where(eq(jobs.id, id))
+
+  revalidatePath('/admin/jobs')
+  revalidatePath(`/admin/jobs/${id}`)
+  revalidatePath(`/admin/jobs/${id}/documents`)
+}
+
 // The clause pickers post their draft as JSON, same reasoning as jobUnitsSchema —
 // nested client state doesn't fit flat FormData keys. A blank body is dropped rather
 // than rejected, matching option_specs' "empty row is not an error" rule.
