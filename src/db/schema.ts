@@ -108,7 +108,7 @@ export const jobs = pgTable(
     quotationDate: date('quotation_date').notNull(),
     estimationDate: date('estimation_date'),
     stage: text('stage').notNull().default('quotation'), // 'quotation' | 'order'
-    status: text('status').notNull().default('pending'), // 'pending' | 'in_progress' | 'finished'
+    status: text('status').notNull().default('pending'), // 'pending' | 'in_progress' | 'finished' | 'cancelled'
     freeDelivery: boolean('free_delivery').notNull().default(false),
     deliveryChargeCents: bigint('delivery_charge_cents', { mode: 'number' }),
     discountLabel: text('discount_label').notNull().default('Cash Discount'),
@@ -121,6 +121,10 @@ export const jobs = pgTable(
     // Set once, by the Confirm order action — separate from quotationDate because the
     // order document needs its own date, not the quotation's.
     confirmedAt: timestamp('confirmed_at'),
+    // Set by the Complete order action, cleared by nothing — a status reversal leaves
+    // it in place and a re-completion re-stamps it, so it always names the current
+    // completion rather than the first one. Mirrors confirmedAt exactly.
+    completedAt: timestamp('completed_at'),
     portalToken: text('portal_token').notNull().unique(),
     notes: text('notes'),
     createdAt: timestamp('created_at').notNull().defaultNow(),
@@ -255,7 +259,7 @@ export const jobDocuments = pgTable(
     jobId: text('job_id')
       .notNull()
       .references(() => jobs.id, { onDelete: 'cascade' }),
-    kind: text('kind').notNull(), // 'quotation' | 'order' | 'receipt' | 'advance_invoice' | 'final_invoice' | 'warranty_card'
+    kind: text('kind').notNull(), // 'quotation' | 'order' | 'receipt' | 'completion' | 'advance_invoice' | 'final_invoice'
     number: text('number').notNull(),
     blobUrl: text('blob_url').notNull(),
     snapshot: jsonb('snapshot').notNull(),
