@@ -10,9 +10,9 @@ const KIND_LABELS: Record<string, string> = {
   quotation: 'Quotation',
   order: 'Order',
   receipt: 'Receipt',
+  completion: 'Completion certificate',
   advance_invoice: 'Advance invoice',
   final_invoice: 'Final invoice',
-  warranty_card: 'Warranty card',
 }
 
 export function DocumentRow({
