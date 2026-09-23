@@ -34,7 +34,7 @@ export function CompleteOrderButton({
 }) {
   if (completedAt !== null) {
     return (
-      <p className="u-mono text-xs text-navy/60">Completed on {new Date(completedAt).toLocaleDateString()}</p>
+      <p className="u-mono text-xs text-navy/60">Completed on {new Date(completedAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
     )
   }
 

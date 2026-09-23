@@ -29,7 +29,9 @@ export default async function JobDocumentsPage({ params }: { params: Promise<{ i
       <div className="flex flex-wrap gap-3">
         <GeneratePdfButton jobId={id} />
         {loaded.job.stage === 'order' && <GenerateOrderPdfButton jobId={id} />}
-        {loaded.job.stage === 'order' && loaded.job.status === 'finished' && <GenerateCompletionPdfButton jobId={id} />}
+        {loaded.job.stage === 'order' && loaded.job.status === 'finished' && loaded.job.completedAt && (
+          <GenerateCompletionPdfButton jobId={id} />
+        )}
       </div>
 
       <div className="space-y-4">

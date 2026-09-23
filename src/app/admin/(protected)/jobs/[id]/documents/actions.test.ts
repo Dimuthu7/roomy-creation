@@ -136,6 +136,19 @@ describe('generateCompletionDocument', () => {
     expect(insertValues).not.toHaveBeenCalled()
   })
 
+  it('refuses a job whose status was set to finished directly (e.g. via the Status dropdown) without ever completing it', async () => {
+    loadJob.mockResolvedValue(finishedJob({ completedAt: null }))
+    getJobBalance.mockResolvedValue(RESOLVED_BALANCE)
+    const { generateCompletionDocument } = await import('./actions')
+
+    const formData = new FormData()
+    formData.set('jobId', 'job-1')
+    const result = await generateCompletionDocument({}, formData)
+
+    expect(result.error).toBeTruthy()
+    expect(insertValues).not.toHaveBeenCalled()
+  })
+
   it('reports a missing counter row as a seedable problem rather than failing obscurely', async () => {
     loadJob.mockResolvedValue(finishedJob())
     getJobBalance.mockResolvedValue(RESOLVED_BALANCE)

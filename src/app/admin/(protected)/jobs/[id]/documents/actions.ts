@@ -150,6 +150,9 @@ export async function generateCompletionDocument(_prevState: ActionState, formDa
   if (!loaded) return { error: 'Quotation not found.' }
   if (loaded.job.stage !== 'order') return { error: 'Confirm this quotation as an order first.' }
   if (loaded.job.status !== 'finished') return { error: 'Complete this order before issuing the completion certificate.' }
+  if (!loaded.job.completedAt) {
+    return { error: 'Press Complete order on the job screen before issuing the certificate.' }
+  }
 
   const balance = await getJobBalance(jobId)
   if (!balance || !balance.totals) {
@@ -169,9 +172,7 @@ export async function generateCompletionDocument(_prevState: ActionState, formDa
     ref: loaded.job.ref,
     quotationDate: loaded.job.quotationDate,
     confirmedDate: loaded.job.confirmedAt ? loaded.job.confirmedAt.toISOString().slice(0, 10) : loaded.job.quotationDate,
-    completedDate: loaded.job.completedAt
-      ? loaded.job.completedAt.toISOString().slice(0, 10)
-      : new Date().toISOString().slice(0, 10),
+    completedDate: loaded.job.completedAt.toISOString().slice(0, 10),
     salesPerson: loaded.job.salesPerson,
     customer: {
       name: loaded.customer.name,
