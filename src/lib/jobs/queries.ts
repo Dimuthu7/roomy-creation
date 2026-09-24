@@ -1,5 +1,5 @@
 import 'server-only'
-import { and, asc, desc, eq, gte, ilike, lte, or, sql } from 'drizzle-orm'
+import { and, asc, count, desc, eq, gte, ilike, lte, or, sql } from 'drizzle-orm'
 import { db } from '@/db/client'
 import { customers, jobClauses, jobUnits, jobs, optionSpecs, payments, unitOptions } from '@/db/schema'
 import { JOB_STATUSES } from './schema'
@@ -21,6 +21,8 @@ export async function allocateRef(): Promise<{ seq: number; ref: string }> {
   return { seq, ref: formatJobRef(seq) }
 }
 
+export const JOBS_PAGE_SIZE = 10
+
 export interface JobListFilters {
   /** Matched against ref, customer name and customer phone — whichever hits. */
   q?: string
@@ -29,6 +31,8 @@ export interface JobListFilters {
    *  matches date order for that format, so these compare as plain strings. */
   from?: string
   to?: string
+  /** 1-based. Defaults to 1. */
+  page?: number
 }
 
 export async function listJobs(filters: JobListFilters = {}) {
@@ -45,21 +49,35 @@ export async function listJobs(filters: JobListFilters = {}) {
   if (filters.from) conditions.push(gte(jobs.quotationDate, filters.from))
   if (filters.to) conditions.push(lte(jobs.quotationDate, filters.to))
 
-  return db
-    .select({
-      id: jobs.id,
-      ref: jobs.ref,
-      refSeq: jobs.refSeq,
-      quotationDate: jobs.quotationDate,
-      stage: jobs.stage,
-      status: jobs.status,
-      customerName: customers.name,
-      customerPhone: customers.phone,
-    })
-    .from(jobs)
-    .innerJoin(customers, eq(jobs.customerId, customers.id))
-    .where(conditions.length > 0 ? and(...conditions) : undefined)
-    .orderBy(desc(jobs.refSeq))
+  const where = conditions.length > 0 ? and(...conditions) : undefined
+  const page = filters.page && filters.page > 0 ? Math.floor(filters.page) : 1
+
+  const [rows, [{ total }]] = await Promise.all([
+    db
+      .select({
+        id: jobs.id,
+        ref: jobs.ref,
+        refSeq: jobs.refSeq,
+        quotationDate: jobs.quotationDate,
+        stage: jobs.stage,
+        status: jobs.status,
+        customerName: customers.name,
+        customerPhone: customers.phone,
+      })
+      .from(jobs)
+      .innerJoin(customers, eq(jobs.customerId, customers.id))
+      .where(where)
+      .orderBy(desc(jobs.refSeq))
+      .limit(JOBS_PAGE_SIZE)
+      .offset((page - 1) * JOBS_PAGE_SIZE),
+    db
+      .select({ total: count() })
+      .from(jobs)
+      .innerJoin(customers, eq(jobs.customerId, customers.id))
+      .where(where),
+  ])
+
+  return { rows, page, totalPages: Math.max(1, Math.ceil(total / JOBS_PAGE_SIZE)) }
 }
 
 /** Loads a job with its whole tree in three queries rather than one per unit. */

@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { listJobs } from '@/lib/jobs/queries'
 import { STATUS_LABELS } from '@/lib/jobs/schema'
 import { JobFilters } from './JobFilters'
+import { JobsPagination } from './JobsPagination'
 
 const STAGE_LABELS: Record<string, string> = {
   quotation: 'Quotation',
@@ -11,10 +12,11 @@ const STAGE_LABELS: Record<string, string> = {
 export default async function JobsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; status?: string; from?: string; to?: string }>
+  searchParams: Promise<{ q?: string; status?: string; from?: string; to?: string; page?: string }>
 }) {
   const filters = await searchParams
-  const rows = await listJobs(filters)
+  const page = filters.page ? Number(filters.page) : 1
+  const { rows, totalPages } = await listJobs({ ...filters, page })
   const isFiltered = Boolean(filters.q || filters.status || filters.from || filters.to)
 
   return (
@@ -60,6 +62,8 @@ export default async function JobsPage({
           </Link>
         ))}
       </div>
+
+      <JobsPagination page={page} totalPages={totalPages} searchParams={filters} />
     </div>
   )
 }
