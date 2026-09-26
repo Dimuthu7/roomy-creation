@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { parseMoneyToCents } from '@/lib/money'
+import { optionalMoney, requiredMoney } from '@/lib/moneyFields'
 
 export const JOB_STAGES = ['quotation', 'order'] as const
 export const JOB_STATUSES = ['pending', 'in_progress', 'finished', 'cancelled'] as const
@@ -30,34 +31,6 @@ const optionalEmail = z
   .transform((v) => (v === '' ? null : v))
   .nullable()
   .default('')
-
-/** A money field that must be present. */
-function requiredMoney(message: string) {
-  return z.string().transform((v, ctx) => {
-    const cents = parseMoneyToCents(v)
-    if (cents === null) {
-      ctx.addIssue({ code: 'custom', message })
-      return z.NEVER
-    }
-    return cents
-  })
-}
-
-/** A money field where blank means zero — discounts and delivery charges usually are. */
-function optionalMoney(message: string) {
-  return z
-    .string()
-    .default('')
-    .transform((v, ctx) => {
-      if (v.trim() === '') return 0
-      const cents = parseMoneyToCents(v)
-      if (cents === null) {
-        ctx.addIssue({ code: 'custom', message })
-        return z.NEVER
-      }
-      return cents
-    })
-}
 
 // An HTML checkbox submits 'on' when ticked and is ABSENT ENTIRELY from FormData when
 // not — there is no key at all, not a key with an undefined value. Those two are
