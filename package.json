@@ -16,6 +16,7 @@
   "dependencies": {
     "@headlessui/react": "^2.2.10",
     "@neondatabase/serverless": "^1.1.0",
+    "@react-pdf/renderer": "^4.9.0",
     "@vercel/blob": "^2.8.0",
     "drizzle-orm": "^0.45.2",
     "framer-motion": "^12.43.0",

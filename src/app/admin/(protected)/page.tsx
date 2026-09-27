@@ -13,6 +13,21 @@ const TILES = [
     description: 'Sync Facebook reviews and choose what shows on the site',
     href: '/admin/testimonials',
   },
+  {
+    label: 'Terms & warranty',
+    description: 'Reusable clauses offered on every quotation',
+    href: '/admin/clauses',
+  },
+  {
+    label: 'Quotations',
+    description: 'Create, edit and send customer quotations',
+    href: '/admin/jobs',
+  },
+  {
+    label: 'Expenses',
+    description: 'Material, salaries, capital and transport costs',
+    href: '/admin/expenses',
+  },
 ] as const
 
 export default function AdminDashboardPage() {

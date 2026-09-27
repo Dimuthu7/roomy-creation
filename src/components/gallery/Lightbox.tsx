@@ -44,6 +44,10 @@ export function Lightbox({
   const work = works[index]
 
   useEffect(() => {
+    // The lint rule wants setState deferred to a callback, but there is no external
+    // system to subscribe to here — this is the standard SSR/hydration mount gate
+    // (see the `mounted` comment above), which has no callback-based equivalent.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true)
   }, [])
 

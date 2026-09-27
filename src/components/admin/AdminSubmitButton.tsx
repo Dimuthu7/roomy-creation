@@ -12,6 +12,7 @@ export function AdminSubmitButton({
   disabled,
   spinnerSize,
   ariaLabel,
+  title,
 }: {
   label: string
   pendingLabel: string
@@ -19,10 +20,11 @@ export function AdminSubmitButton({
   disabled?: boolean
   spinnerSize?: number
   ariaLabel?: string
+  title?: string
 }) {
   const { pending } = useFormStatus()
   return (
-    <button type="submit" disabled={disabled || pending} aria-label={ariaLabel} className={className}>
+    <button type="submit" disabled={disabled || pending} aria-label={ariaLabel} title={title} className={className}>
       <SubmitButtonLabel pending={pending} label={label} pendingLabel={pendingLabel} spinnerSize={spinnerSize} />
     </button>
   )
