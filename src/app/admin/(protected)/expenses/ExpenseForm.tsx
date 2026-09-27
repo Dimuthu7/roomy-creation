@@ -50,8 +50,12 @@ export function ExpenseForm({ shops, today }: { shops: ShopOption[]; today: stri
 
     switch (field.kind) {
       case 'textarea':
+        // Full width, not paired with another field in the same row: a two-line
+        // textarea sharing a grid row with a single-line input stretches that
+        // field's cell to match (CSS Grid's default align-items: stretch), leaving
+        // a large empty gap under the shorter field.
         return (
-          <div key={field.name}>
+          <div key={field.name} className="sm:col-span-2">
             {label}
             {optionalHint}
             <textarea id={id} name={field.name} rows={2} required={field.required} className={FIELD} />
@@ -217,7 +221,10 @@ export function ExpenseForm({ shops, today }: { shops: ShopOption[]; today: stri
       {/* Keyed on the category so switching tears the old inputs down rather than
           reusing them — otherwise React keeps the DOM node for two fields that share
           a position, and a price typed under Material would reappear as a salary. */}
-      <div key={category} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      {/* items-start: without it, CSS Grid stretches every cell in a row to match
+          its tallest neighbour, so a short field sharing a row with a taller one
+          (e.g. a fieldset) shows a large empty gap under its own input. */}
+      <div key={category} className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:items-start">
         {EXPENSE_CATEGORIES[category].fields.map(renderField)}
       </div>
 
