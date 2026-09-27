@@ -5,10 +5,11 @@ import { SubmitButtonLabel } from '@/components/admin/SubmitButtonLabel'
 import {
   EXPENSE_CATEGORIES,
   EXPENSE_CATEGORY_KEYS,
+  NEW_SHOP_VALUE,
   type ExpenseCategory,
   type ExpenseField,
 } from '@/lib/expenses/categories'
-import { addExpense, NEW_SHOP_VALUE, type ActionState } from './actions'
+import { addExpense, type ActionState } from './actions'
 
 const initialState: ActionState = {}
 const FIELD = 'mt-1 w-full border border-navy bg-transparent p-2 text-sm text-navy'

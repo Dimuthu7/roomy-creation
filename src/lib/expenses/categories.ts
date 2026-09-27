@@ -13,6 +13,9 @@ export function isExpenseCategory(value: unknown): value is ExpenseCategory {
   return typeof value === 'string' && (EXPENSE_CATEGORY_KEYS as readonly string[]).includes(value)
 }
 
+// The Shop dropdown's "add a new one" sentinel. A value no real uuid can collide with.
+export const NEW_SHOP_VALUE = '__new__'
+
 export const EMPLOYEE_TYPES = ['part_time', 'permanent'] as const
 export type EmployeeType = (typeof EMPLOYEE_TYPES)[number]
 export const EMPLOYEE_TYPE_LABELS: Record<EmployeeType, string> = {

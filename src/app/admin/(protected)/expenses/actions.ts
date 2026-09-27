@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { verifyAdminSession } from '@/lib/adminAuth'
 import { db } from '@/db/client'
 import { expenses } from '@/db/schema'
+import { NEW_SHOP_VALUE } from '@/lib/expenses/categories'
 import { resolveShopId } from '@/lib/expenses/queries'
 import { parseExpenseForm } from '@/lib/expenses/schema'
 
@@ -12,9 +13,6 @@ export interface ActionState {
   error?: string
   success?: boolean
 }
-
-/** The Shop dropdown's "add a new one" sentinel. A value no real uuid can collide with. */
-export const NEW_SHOP_VALUE = '__new__'
 
 export async function addExpense(_prevState: ActionState, formData: FormData): Promise<ActionState> {
   await verifyAdminSession()
