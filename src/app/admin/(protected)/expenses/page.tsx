@@ -13,9 +13,10 @@ import { ExpenseForm } from './ExpenseForm'
 import { ExpenseRow } from './ExpenseRow'
 import { ExpensesPagination } from './ExpensesPagination'
 
-/** Two years of months in the filter. Long enough to look back over a full year of
- *  trading, short enough that the dropdown stays scannable. */
-const MONTH_WINDOW = 24
+/** One trailing year of months in the filter, newest first. Long enough to look back
+ *  over a full year of trading, short enough that the dropdown doesn't scroll into
+ *  old years the admin never needs to revisit. */
+const MONTH_WINDOW = 12
 
 export default async function ExpensesPage({
   searchParams,
