@@ -89,6 +89,21 @@ describe('addExpense', () => {
     expect(insertValues).not.toHaveBeenCalled()
   })
 
+  it('does not create the new shop when another field fails validation', async () => {
+    const result = await addExpense(
+      {},
+      materialForm({
+        shopId: '__new__',
+        newShopName: 'Nawaloka Timber',
+        price: '1,000.00',
+        discount: '2,000.00',
+      }),
+    )
+    expect(result).toEqual({ error: 'Discount cannot be more than the price.' })
+    expect(resolveShopId).not.toHaveBeenCalled()
+    expect(insertValues).not.toHaveBeenCalled()
+  })
+
   it('fails closed on an unknown category', async () => {
     const result = await addExpense({}, formData({ category: 'crypto' }))
     expect(result).toEqual({ error: 'Unknown expense category.' })

@@ -20,21 +20,32 @@ export async function addExpense(_prevState: ActionState, formData: FormData): P
   const raw = Object.fromEntries(formData) as Record<string, unknown>
   const category = raw.category
 
-  // The shop is resolved BEFORE validation, so the schema only ever sees a real id and
-  // needs no knowledge of the "__new__" sentinel. Keeping that sentinel out of the
-  // schema is what lets a future dropdown-backed field reuse the same pattern.
-  if (raw.shopId === NEW_SHOP_VALUE) {
-    const name = typeof raw.newShopName === 'string' ? raw.newShopName.trim() : ''
-    if (name === '') return { error: 'Enter the new shop name.' }
-    try {
-      raw.shopId = await resolveShopId(name)
-    } catch {
-      return { error: 'Could not save that shop.' }
-    }
+  // The new shop is only a candidate here — nothing is written to the shops table yet.
+  // Writing it before the rest of the form validates would leave an orphaned shop row
+  // behind (with no shop-management screen to clean it up) whenever some other field
+  // then fails validation. `raw.shopId` gets a harmless placeholder so the schema,
+  // which only checks it's non-empty, can validate every other field normally.
+  const isNewShop = raw.shopId === NEW_SHOP_VALUE
+  let newShopName = ''
+  if (isNewShop) {
+    newShopName = typeof raw.newShopName === 'string' ? raw.newShopName.trim() : ''
+    if (newShopName === '') return { error: 'Enter the new shop name.' }
+    if (newShopName.length > 120) return { error: 'Use 120 characters or fewer for the shop name.' }
+    raw.shopId = 'pending-new-shop'
   }
 
   const parsed = parseExpenseForm(category, raw)
   if (!parsed.ok) return { error: parsed.error }
+
+  // Only now, after every other field has validated, does the new shop actually get
+  // written — so a failed submission never leaves a shop behind that nothing points to.
+  if (isNewShop) {
+    try {
+      parsed.value.details.shopId = await resolveShopId(newShopName)
+    } catch {
+      return { error: 'Could not save that shop.' }
+    }
+  }
 
   await db.insert(expenses).values({
     id: randomUUID(),

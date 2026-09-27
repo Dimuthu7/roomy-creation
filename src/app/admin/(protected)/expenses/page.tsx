@@ -1,9 +1,10 @@
+import { redirect } from 'next/navigation'
 import {
   EXPENSE_CATEGORIES,
   isExpenseCategory,
   type ExpenseCategory,
 } from '@/lib/expenses/categories'
-import { currentMonth, formatMonthLabel, recentMonths } from '@/lib/expenses/month'
+import { currentMonth, formatMonthLabel, parseMonth, recentMonths } from '@/lib/expenses/month'
 import { listExpenses, listShops, monthCategoryTotals } from '@/lib/expenses/queries'
 import { categoryBreakdown } from '@/lib/expenses/totals'
 import { ExpenseBreakdown } from './ExpenseBreakdown'
@@ -26,7 +27,7 @@ export default async function ExpensesPage({
   // `now` is captured once and threaded through, so the month list, the default month
   // and the form's default date cannot disagree if the request straddles midnight.
   const now = new Date()
-  const month = params.month ?? currentMonth(now)
+  const month = params.month && parseMonth(params.month) ? params.month : currentMonth(now)
   const category = isExpenseCategory(params.category) ? params.category : undefined
   const page = params.page ? Number(params.page) : 1
   const filters = { month, category, page }
@@ -36,6 +37,17 @@ export default async function ExpensesPage({
     monthCategoryTotals({ month, category }),
     listShops(),
   ])
+
+  // A row deleted from the last page of a filtered view can leave `page` past the new
+  // `totalPages` — land back on the last real page instead of showing an empty list.
+  if (page > totalPages) {
+    const qs = new URLSearchParams()
+    if (month) qs.set('month', month)
+    if (category) qs.set('category', category)
+    if (totalPages > 1) qs.set('page', String(totalPages))
+    const query = qs.toString()
+    redirect(query ? `/admin/expenses?${query}` : '/admin/expenses')
+  }
 
   const { perCategory, totalCents } = categoryBreakdown(totalRows)
 
@@ -62,7 +74,12 @@ export default async function ExpensesPage({
     }
   })
 
-  const today = now.toISOString().slice(0, 10)
+  // Local getters, not toISOString(): the month filter above is computed from `now`'s
+  // local date, and the form's default date must agree with it near a UTC day
+  // boundary in timezones ahead of UTC.
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+
+  const isFiltered = Boolean(category)
 
   return (
     <div className="space-y-8">
@@ -79,7 +96,11 @@ export default async function ExpensesPage({
 
       <div className="space-y-3">
         {listRows.length === 0 && (
-          <p className="u-mono text-sm text-navy/70">No expenses in {formatMonthLabel(month)}.</p>
+          <p className="u-mono text-sm text-navy/70">
+            {isFiltered && category
+              ? `No ${EXPENSE_CATEGORIES[category].label.toLowerCase()} expenses in ${formatMonthLabel(month)}.`
+              : `No expenses in ${formatMonthLabel(month)}.`}
+          </p>
         )}
         {listRows.map((row) => (
           <ExpenseRow key={row.id} expense={row} />
