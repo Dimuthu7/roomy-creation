@@ -280,3 +280,50 @@ export const counters = pgTable('counters', {
   key: text('key').primaryKey(),
   value: integer('value').notNull().default(0),
 })
+
+// ---------------------------------------------------------------------------
+// Expenses. See docs/superpowers/specs/2026-09-24-admin-expenses-design.md
+// ---------------------------------------------------------------------------
+
+// Shops Material can be bought from. A table rather than free text in `details`:
+// typed strings would produce "Ajith Hardware", "ajith hardware" and "Ajith Hardwares"
+// as three distinct shops inside a month, after which no per-shop question could be
+// answered. The case-insensitive unique index is the structural guarantee, the same
+// role the partial unique index plays on unit_options.
+export const shops = pgTable(
+  'shops',
+  {
+    id: text('id').primaryKey(),
+    name: text('name').notNull(),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex('shops_name_lower').on(sql`lower(${t.name})`)],
+)
+
+// One row per expense, in any category. The four columns every category shares are
+// real columns — so the list, the filters and the monthly breakdown are written once
+// and never change — while the per-category fields live in `details`, shaped by that
+// category's Zod schema in src/lib/expenses/schema.ts. Adding a category is a registry
+// entry and needs no migration.
+//
+// `details` is not type-checked by Postgres; the Zod schema is the only guard. That is
+// acceptable here because there is exactly one writer (the addExpense server action)
+// and this is internal bookkeeping — it would not be acceptable for `jobs`.
+//
+// `amount_cents` is ALWAYS the net cost: price minus discount for material, the single
+// money field for the rest. The gross price and discount are kept in `details`, so the
+// breakdown sums one column without knowing what category a row is.
+export const expenses = pgTable(
+  'expenses',
+  {
+    id: text('id').primaryKey(),
+    category: text('category').notNull(), // 'material' | 'salary' | 'business_capital' | 'transport'
+    amountCents: bigint('amount_cents', { mode: 'number' }).notNull(),
+    spentAt: date('spent_at').notNull(),
+    remark: text('remark'),
+    details: jsonb('details').notNull(),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  },
+  (t) => [index('expenses_spent_at_idx').on(t.spentAt), index('expenses_category_idx').on(t.category)],
+)
