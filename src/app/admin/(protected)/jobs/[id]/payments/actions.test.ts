@@ -126,4 +126,41 @@ describe('generateReceipt', () => {
     expect(call.paymentsIncludingThis).toBe(currentBalance.payments)
     expect(call.paymentsIncludingThis).toEqual([newerPayment, olderPayment])
   })
+
+  it('passes the full customer record and sales person through for the letterhead', async () => {
+    getJobBalance.mockResolvedValue({ totals: { totalCents: 300_000_00 }, payments: [], position: null })
+
+    const customer = {
+      name: 'williams',
+      phone: '+94 772383430',
+      email: null,
+      addressLines: ['Galapitamulla', 'Kurunegala.'],
+      city: 'Kurunegala',
+      district: 'North Western',
+    }
+    const payment = { id: 'p1', jobId: 'job-1', kind: 'advance', amountCents: 100_000_00, paidAt: '2026-01-01', method: 'Cash', note: null }
+
+    dbSelect
+      .mockImplementationOnce(() => chain([{ jobs: { ref: 'RC00001', salesPerson: 'ISHAN' }, customers: customer }]))
+      .mockImplementationOnce(() => chain([payment]))
+    dbExecute.mockResolvedValue({ rows: [{ value: 1 }] })
+
+    const { generateReceipt } = await import('./actions')
+
+    const formData = new FormData()
+    formData.set('jobId', 'job-1')
+    formData.set('paymentId', 'p1')
+    await generateReceipt({}, formData)
+
+    const call = buildReceiptSnapshot.mock.calls[0][0]
+    expect(call.salesPerson).toBe('ISHAN')
+    expect(call.customer).toEqual({
+      name: 'williams',
+      phone: '+94 772383430',
+      email: null,
+      addressLines: ['Galapitamulla', 'Kurunegala.'],
+      city: 'Kurunegala',
+      district: 'North Western',
+    })
+  })
 })

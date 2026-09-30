@@ -44,11 +44,13 @@ describe('OrderDocument', () => {
     expect(textOf(OrderDocument({ snapshot: SNAPSHOT }))).toContain('RC00188')
   })
 
-  it('prints Advance Paid and Balance Due under the totals', () => {
+  it('prints Advance and Balance Payment under the totals', () => {
     const text = textOf(OrderDocument({ snapshot: SNAPSHOT }))
-    expect(text).toContain('Advance Paid')
+    expect(text).toContain('Advance')
+    expect(text).not.toContain('Advance Paid')
     expect(text).toContain('100,000.00')
-    expect(text).toContain('Balance Due')
+    expect(text).toContain('Balance Payment')
+    expect(text).not.toContain('Balance Due')
     expect(text).toContain('135,000.00')
   })
 
@@ -58,8 +60,8 @@ describe('OrderDocument', () => {
 
   it('omits the payment rows when there is no payment position', () => {
     const text = textOf(OrderDocument({ snapshot: { ...SNAPSHOT, paymentPosition: null } }))
-    expect(text).not.toContain('Advance Paid')
-    expect(text).not.toContain('Balance Due')
+    expect(text).not.toContain('Advance')
+    expect(text).not.toContain('Balance Payment')
   })
 
   it('still prints the unit table and standing footer copy', () => {

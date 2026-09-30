@@ -1,7 +1,7 @@
 import { AlignmentType, Document, Packer, Paragraph, TextRun } from 'docx'
 import type { CompletionSnapshot } from '@/lib/jobs/snapshot'
 import { FONT, colors, sizes } from './styles'
-import { clauseList, clientAndMetaBlock, companyHeader, deliveryRow, itemsTable, paymentLedger, signatureBlock, totalsBlock } from './blocks'
+import { clauseList, clientBlock, deliveryRow, documentHeader, itemsTable, paymentLedger, signatureBlock, totalsBlock } from './blocks'
 
 /** Both dates appear because the pair states how long the job took, which is the
  *  first question a warranty claim asks. ORDER carries the job's RC ref so the
@@ -9,6 +9,7 @@ import { clauseList, clientAndMetaBlock, companyHeader, deliveryRow, itemsTable,
  *  Mirrors src/pdf/CompletionDocument.tsx's metaFields exactly. */
 function metaFields(snapshot: CompletionSnapshot) {
   return [
+    { label: 'CERTIFICATE', value: snapshot.number },
     { label: 'COMPLETED', value: snapshot.completedDate },
     { label: 'ORDER', value: snapshot.ref },
     { label: 'CONFIRMED', value: snapshot.confirmedDate },
@@ -41,9 +42,8 @@ export function completionDocument(snapshot: CompletionSnapshot): Document {
       {
         properties: { page: { size: { width: 11906, height: 16838 }, margin: { top: 720, bottom: 720, left: 720, right: 720 } } },
         children: [
-          ...companyHeader('COMPLETION CERTIFICATE'),
-          new Paragraph({ alignment: AlignmentType.RIGHT, spacing: { after: 120 }, children: [new TextRun({ text: snapshot.number, font: FONT, bold: true, size: sizes.receiptNumber })] }),
-          clientAndMetaBlock(metaFields(snapshot), snapshot.customer),
+          ...documentHeader('COMPLETION CERTIFICATE', metaFields(snapshot)),
+          ...clientBlock(snapshot.customer),
           new Paragraph({ spacing: { before: 160, after: 80 }, children: [new TextRun({ text: 'Items Delivered', font: FONT, bold: true, size: sizes.sectionHeading })] }),
           itemsTable(snapshot.units),
           ...(delivery ? [delivery] : []),

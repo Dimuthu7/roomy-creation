@@ -175,6 +175,8 @@ const RECEIPT_BASE: ReceiptSnapshotInput = {
   number: 'RCP00001',
   ref: 'RC00188',
   customerName: 'williams',
+  customer: BASE.customer,
+  salesPerson: 'ISHAN',
   amountCents: 150_000_00,
   kind: 'advance',
   paidAt: '2026-09-19',
@@ -218,6 +220,25 @@ describe('buildReceiptSnapshot', () => {
 
   it('has no balance remaining when the job has no total yet', () => {
     expect(buildReceiptSnapshot({ ...RECEIPT_BASE, totalCents: null }).balanceRemainingLabel).toBeNull()
+  })
+
+  it('carries the order total and the running amount paid, for the money block', () => {
+    const snap = buildReceiptSnapshot(RECEIPT_BASE)
+    expect(snap.totalLabel).toBe('368,500.00')
+    expect(snap.paidLabel).toBe('150,000.00')
+  })
+
+  it('has no order total or amount paid while the job total is unresolved', () => {
+    const snap = buildReceiptSnapshot({ ...RECEIPT_BASE, totalCents: null })
+    expect(snap.totalLabel).toBeNull()
+    expect(snap.paidLabel).toBeNull()
+  })
+
+  it('carries the full customer record and sales person for the letterhead', () => {
+    const snap = buildReceiptSnapshot(RECEIPT_BASE)
+    expect(snap.customer?.addressLines).toEqual(['Galapitamulla', 'Kurunegala.'])
+    expect(snap.customer?.phone).toBe('+94 772383430')
+    expect(snap.salesPerson).toBe('ISHAN')
   })
 
   it('carries the payment method through', () => {

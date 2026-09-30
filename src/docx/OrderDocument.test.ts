@@ -36,18 +36,19 @@ describe('orderDocument', () => {
     expect(text).toContain('RC00188')
   })
 
-  it('prints the advance paid and balance due rows when a payment position exists', async () => {
+  it('prints the advance and balance payment rows when a payment position exists', async () => {
     const text = await textFor(SNAPSHOT)
-    expect(text).toContain('Advance Paid')
+    expect(text).toContain('Advance')
+    expect(text).not.toContain('Advance Paid')
     expect(text).toContain('100,000.00')
-    expect(text).toContain('Balance Due')
+    expect(text).toContain('Balance Payment')
     expect(text).toContain('135,000.00')
     expect(text).toContain('Balance due before delivery.')
   })
 
   it('omits the payment position and terms sentence when there is no payment position', async () => {
     const text = await textFor({ ...SNAPSHOT, paymentPosition: null })
-    expect(text).not.toContain('Advance Paid')
+    expect(text).not.toContain('Advance')
     expect(text).not.toContain('Balance due before delivery.')
   })
 })

@@ -1,5 +1,6 @@
-import { Text, View } from '@react-pdf/renderer'
+import { Image, Text, View } from '@react-pdf/renderer'
 import type { CompletionSnapshot, QuotationSnapshot, SnapshotClause, SnapshotCustomer, SnapshotUnit } from '@/lib/jobs/snapshot'
+import { LOGO_MARK_DATA_URI } from '@/assets/logoMark'
 import { styles } from './styles'
 import { SpecMarker, OptionMarker } from './Marker'
 
@@ -10,42 +11,59 @@ import { SpecMarker, OptionMarker } from './Marker'
 // the tree-walking tests read `element.props.children` directly with no render pass,
 // so a `<Section />` tag would just be an unevaluated reference, never resolved.
 
-export function companyHeader(title: string) {
+/** The mark, the company stack and the document's own meta panel, over a rule, under
+ *  a centred title. `fields` may be empty — a document with nothing to put on the
+ *  right simply gets a masthead with an empty right column. */
+export function documentHeader(title: string, fields: { label: string; value: string }[] = []) {
   return (
-    <View style={styles.companyBlock}>
-      <Text style={styles.companyName}>ROOMY CREATIONS</Text>
-      <Text style={styles.companyLine}>Furniture & Interior Solutions</Text>
-      <Text style={styles.companyLine}>+94 72 292 0088 · roomycreation@gmail.com</Text>
+    <View style={styles.headerBlock}>
+      <View style={styles.mastheadRow}>
+        <View style={styles.brandRow}>
+          {/* Decorative: the wordmark beside it already says who this is from. The
+              a11y rule is aimed at DOM images — @react-pdf/renderer's Image draws into
+              a PDF and takes no alt prop. */}
+          {/* eslint-disable-next-line jsx-a11y/alt-text */}
+          <Image src={LOGO_MARK_DATA_URI} style={styles.logoMark} />
+          <View>
+            <Text style={styles.companyName}>Roomy Creations</Text>
+            <Text style={styles.companyLine}>roomycreation@gmail.com</Text>
+            <Text style={styles.companyLine}>Web - roomycreations.com</Text>
+            <Text style={styles.companyLine}>+94 72 292 0088</Text>
+          </View>
+        </View>
+        {fields.length > 0 && (
+          <View style={styles.metaBlock}>
+            {fields.map((f, i) => (
+              <View key={i} style={styles.metaRow}>
+                <Text style={styles.metaLabel}>{f.label}</Text>
+                <Text style={styles.metaValue}>{f.value}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+      </View>
       <View style={styles.ruleThick} />
       <Text style={styles.title}>{title}</Text>
     </View>
   )
 }
 
-export function clientAndMetaBlock(fields: { label: string; value: string }[], customer: SnapshotCustomer) {
+export function clientBlock(customer: SnapshotCustomer) {
   const cityLine = [customer.city, customer.district].filter((v) => v !== null && v !== '').join(', ')
   return (
-    <View style={styles.topRow}>
-      <View style={styles.clientBlock}>
-        <Text style={styles.clientLabel}>TO</Text>
-        <Text style={styles.clientLine}>{customer.name}</Text>
-        {customer.addressLines.map((line, i) => (
-          <Text key={i} style={styles.clientLine}>
-            {line}
-          </Text>
-        ))}
-        {cityLine !== '' && <Text style={styles.clientLine}>{cityLine}</Text>}
-        <Text style={styles.clientLine}>{customer.phone}</Text>
-        {customer.email && <Text style={styles.clientLine}>{customer.email}</Text>}
-      </View>
-      <View style={styles.metaBlock}>
-        {fields.map((f, i) => (
-          <Text key={i} style={styles.metaLine}>
-            <Text style={styles.metaLabel}>{f.label}: </Text>
-            {f.value}
-          </Text>
-        ))}
-      </View>
+    <View style={styles.clientBlock}>
+      {/* Interpolated into one string rather than split across two children: the
+          tests walk the element tree and join sibling children with a space, so
+          `Client Details - {name}` would read as "Client Details -  name". */}
+      <Text style={styles.clientLabel}>{`Client Details - ${customer.name}`}</Text>
+      {customer.addressLines.map((line, i) => (
+        <Text key={i} style={styles.clientLine}>
+          {line}
+        </Text>
+      ))}
+      {cityLine !== '' && <Text style={styles.clientLine}>{cityLine}</Text>}
+      <Text style={styles.clientLine}>{customer.phone}</Text>
+      {customer.email && <Text style={styles.clientLine}>{customer.email}</Text>}
     </View>
   )
 }
@@ -120,34 +138,47 @@ export function deliveryRow(delivery: QuotationSnapshot['delivery']) {
   )
 }
 
-/** `extraRows` prints after the final TOTAL row — used by OrderDocument to add
- *  Advance Paid / Balance Due without a second totals block. */
-export function totalsBlock(totals: QuotationSnapshot['totals'], extraRows: { label: string; value: string }[] = []) {
-  if (!totals) return null
+export interface MoneyRow {
+  label: string
+  value: string
+  /** Banded in grey and set bold — the closing figures, not the arithmetic above them. */
+  emphasis: boolean
+}
+
+/** The bordered right-aligned figures block. Callers compose their own rows, so the
+ *  receipt can close on three rows without inheriting the quotation's arithmetic. */
+export function moneyBlock(rows: MoneyRow[]) {
+  if (rows.length === 0) return null
   return (
     <View style={styles.totalsBlock}>
-      <View style={styles.totalsRow}>
-        <Text style={styles.totalsLabel}>Subtotal</Text>
-        <Text style={styles.totalsValue}>{totals.subtotalLabel}</Text>
-      </View>
-      {totals.discountAmountLabel !== null && (
-        <View style={styles.totalsRow}>
-          <Text style={styles.totalsLabel}>{totals.discountLabel}</Text>
-          <Text style={styles.totalsValue}>{totals.discountAmountLabel}</Text>
-        </View>
-      )}
-      <View style={styles.totalsRowFinal}>
-        <Text style={styles.totalsLabelFinal}>TOTAL</Text>
-        <Text style={styles.totalsValueFinal}>{totals.totalLabel}</Text>
-      </View>
-      {extraRows.map((row, i) => (
-        <View key={i} style={styles.totalsRow}>
-          <Text style={styles.totalsLabel}>{row.label}</Text>
-          <Text style={styles.totalsValue}>{row.value}</Text>
-        </View>
-      ))}
+      {rows.map((row, i) => {
+        const base = row.emphasis ? styles.totalsRowFinal : styles.totalsRow
+        return (
+          <View key={i} style={i === rows.length - 1 ? [base, styles.totalsRowLast] : base}>
+            <Text style={row.emphasis ? styles.totalsLabelFinal : styles.totalsLabel}>{row.label}</Text>
+            <Text style={row.emphasis ? styles.totalsValueFinal : styles.totalsValue}>{row.value}</Text>
+          </View>
+        )
+      })}
     </View>
   )
+}
+
+/** `extraRows` prints after the Total Price row — used by OrderDocument to add
+ *  Advance / Balance Payment without a second block. Label vocabulary (Total → Cash
+ *  Discount → Total Price) follows the printed invoices rather than accounting
+ *  convention, so a customer holding both reads the same words on each. */
+export function totalsBlock(totals: QuotationSnapshot['totals'], extraRows: { label: string; value: string }[] = []) {
+  if (!totals) return null
+
+  const rows: MoneyRow[] = [{ label: 'Total', value: totals.subtotalLabel, emphasis: false }]
+  if (totals.discountAmountLabel !== null) {
+    rows.push({ label: totals.discountLabel, value: totals.discountAmountLabel, emphasis: false })
+  }
+  rows.push({ label: 'Total Price', value: totals.totalLabel, emphasis: true })
+  for (const row of extraRows) rows.push({ ...row, emphasis: true })
+
+  return moneyBlock(rows)
 }
 
 export function clauseList(heading: string, clauses: SnapshotClause[]) {

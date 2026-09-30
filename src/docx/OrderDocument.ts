@@ -1,7 +1,7 @@
 import { AlignmentType, Document, Packer, Paragraph, TextRun } from 'docx'
 import type { OrderSnapshot } from '@/lib/jobs/snapshot'
 import { FONT, colors, sizes } from './styles'
-import { clauseList, clientAndMetaBlock, companyHeader, deliveryRow, itemsTable, signatureBlock, totalsBlock } from './blocks'
+import { clauseList, clientBlock, deliveryRow, documentHeader, itemsTable, signatureBlock, totalsBlock } from './blocks'
 
 function metaFields(snapshot: OrderSnapshot) {
   return [
@@ -30,8 +30,8 @@ function footerThanks() {
 export function orderDocument(snapshot: OrderSnapshot): Document {
   const extraRows = snapshot.paymentPosition
     ? [
-        { label: 'Advance Paid', value: snapshot.paymentPosition.paidLabel },
-        { label: 'Balance Due', value: snapshot.paymentPosition.balanceLabel },
+        { label: 'Advance', value: snapshot.paymentPosition.paidLabel },
+        { label: 'Balance Payment', value: snapshot.paymentPosition.balanceLabel },
       ]
     : []
   const delivery = deliveryRow(snapshot.delivery)
@@ -42,8 +42,8 @@ export function orderDocument(snapshot: OrderSnapshot): Document {
       {
         properties: { page: { size: { width: 11906, height: 16838 }, margin: { top: 720, bottom: 720, left: 720, right: 720 } } },
         children: [
-          ...companyHeader('ORDER'),
-          clientAndMetaBlock(metaFields(snapshot), snapshot.customer),
+          ...documentHeader('ORDER', metaFields(snapshot)),
+          ...clientBlock(snapshot.customer),
           new Paragraph({ children: [] }),
           itemsTable(snapshot.units),
           ...(delivery ? [delivery] : []),

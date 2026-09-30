@@ -1,7 +1,7 @@
 import { Document, Page, Text, View, renderToBuffer } from '@react-pdf/renderer'
 import type { QuotationSnapshot } from '@/lib/jobs/snapshot'
 import { styles } from './styles'
-import { clauseList, clientAndMetaBlock, companyHeader, deliveryRow, signatureBlock, tableHeader, totalsBlock, unitRows } from './blocks'
+import { clauseList, clientBlock, deliveryRow, documentHeader, signatureBlock, tableHeader, totalsBlock, unitRows } from './blocks'
 
 function metaFields(snapshot: QuotationSnapshot) {
   return [
@@ -15,8 +15,8 @@ export function QuotationDocument({ snapshot }: { snapshot: QuotationSnapshot })
   return (
     <Document>
       <Page size="A4" style={styles.page}>
-        {companyHeader('QUOTATION')}
-        {clientAndMetaBlock(metaFields(snapshot), snapshot.customer)}
+        {documentHeader('QUOTATION', metaFields(snapshot))}
+        {clientBlock(snapshot.customer)}
         <View style={styles.table}>
           {tableHeader()}
           {snapshot.units.map((unit, i) => unitRows(unit, i))}
