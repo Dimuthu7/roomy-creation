@@ -40,8 +40,10 @@ export default async function JobDocumentsPage({ params }: { params: Promise<{ i
           <DocumentRow
             key={doc.id}
             id={doc.id}
+            jobId={id}
             kind={doc.kind}
             number={doc.number}
+            format={doc.format}
             blobUrl={doc.blobUrl}
             createdAt={doc.createdAt.toISOString()}
             sentTo={doc.sentTo}

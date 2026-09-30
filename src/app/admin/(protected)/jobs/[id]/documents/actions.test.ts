@@ -1,11 +1,22 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { and, eq } from 'drizzle-orm'
+import { jobDocuments } from '@/db/schema'
 
 vi.mock('@/lib/adminAuth', () => ({ verifyAdminSession: vi.fn().mockResolvedValue(undefined) }))
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }))
-vi.mock('@vercel/blob', () => ({ put: vi.fn().mockResolvedValue({ url: 'https://blob.example/completion.pdf' }) }))
+const blobDel = vi.fn().mockResolvedValue(undefined)
+vi.mock('@vercel/blob', () => ({ put: vi.fn().mockResolvedValue({ url: 'https://blob.example/completion.pdf' }), del: (...args: unknown[]) => blobDel(...args) }))
 vi.mock('@/pdf/CompletionDocument', () => ({ renderCompletionPdf: vi.fn().mockResolvedValue(Buffer.from('pdf')) }))
 vi.mock('@/pdf/OrderDocument', () => ({ renderOrderPdf: vi.fn().mockResolvedValue(Buffer.from('pdf')) }))
 vi.mock('@/pdf/QuotationDocument', () => ({ renderQuotationPdf: vi.fn().mockResolvedValue(Buffer.from('pdf')) }))
+const renderCompletionDocx = vi.fn().mockResolvedValue(Buffer.from('docx'))
+const renderOrderDocx = vi.fn().mockResolvedValue(Buffer.from('docx'))
+const renderQuotationDocx = vi.fn().mockResolvedValue(Buffer.from('docx'))
+const renderReceiptDocx = vi.fn().mockResolvedValue(Buffer.from('docx'))
+vi.mock('@/docx/CompletionDocument', () => ({ renderCompletionDocx }))
+vi.mock('@/docx/OrderDocument', () => ({ renderOrderDocx }))
+vi.mock('@/docx/QuotationDocument', () => ({ renderQuotationDocx }))
+vi.mock('@/docx/ReceiptDocument', () => ({ renderReceiptDocx }))
 vi.mock('@/lib/jobs/mail', () => ({ sendDocumentEmail: vi.fn().mockResolvedValue({}) }))
 
 const buildCompletionSnapshot = vi.fn().mockReturnValue({ number: 'WC00001' })
@@ -21,11 +32,14 @@ vi.mock('@/lib/jobs/queries', () => ({ loadJob, getJobBalance }))
 
 const insertValues = vi.fn().mockResolvedValue(undefined)
 const dbExecute = vi.fn()
+const selectWhere = vi.fn().mockResolvedValue([])
+const deleteWhere = vi.fn().mockResolvedValue(undefined)
 vi.mock('@/db/client', () => ({
   db: {
-    select: vi.fn(),
+    select: vi.fn(() => ({ from: vi.fn(() => ({ where: (...args: unknown[]) => selectWhere(...args) })) })),
     insert: vi.fn(() => ({ values: insertValues })),
     update: vi.fn(() => ({ set: vi.fn(() => ({ where: vi.fn().mockResolvedValue(undefined) })) })),
+    delete: vi.fn(() => ({ where: deleteWhere })),
     execute: (...args: unknown[]) => dbExecute(...args),
   },
 }))
@@ -161,5 +175,131 @@ describe('generateCompletionDocument', () => {
 
     expect(result.error).toContain('db:seed')
     expect(insertValues).not.toHaveBeenCalled()
+  })
+})
+
+function pdfRow(overrides: Record<string, unknown> = {}) {
+  return {
+    id: 'doc-1',
+    jobId: 'job-1',
+    kind: 'quotation',
+    number: 'RC00188',
+    format: 'pdf',
+    blobUrl: 'https://blob.example/quotation.pdf',
+    snapshot: { ref: 'RC00188' },
+    paymentId: null,
+    ...overrides,
+  }
+}
+
+describe('generateWordDocument', () => {
+  it('renders a Word sibling from the stored snapshot and inserts a new docx row', async () => {
+    selectWhere.mockResolvedValue([pdfRow()])
+    const { generateWordDocument } = await import('./actions')
+
+    const formData = new FormData()
+    formData.set('documentId', 'doc-1')
+    const result = await generateWordDocument({}, formData)
+
+    expect(result.success).toBe(true)
+    expect(renderQuotationDocx).toHaveBeenCalledWith({ ref: 'RC00188' })
+    expect(insertValues).toHaveBeenCalledTimes(1)
+    expect(insertValues.mock.calls[0][0]).toMatchObject({
+      jobId: 'job-1',
+      kind: 'quotation',
+      number: 'RC00188',
+      format: 'docx',
+    })
+  })
+
+  it('dispatches to the matching renderer for each document kind', async () => {
+    selectWhere.mockResolvedValue([pdfRow({ id: 'doc-2', kind: 'completion', number: 'WC00001' })])
+    const { generateWordDocument } = await import('./actions')
+
+    const formData = new FormData()
+    formData.set('documentId', 'doc-2')
+    await generateWordDocument({}, formData)
+
+    expect(renderCompletionDocx).toHaveBeenCalled()
+    expect(renderQuotationDocx).not.toHaveBeenCalled()
+  })
+
+  it('refuses when a Word version already exists for this row', async () => {
+    selectWhere.mockResolvedValue([pdfRow({ format: 'docx' })])
+    const { generateWordDocument } = await import('./actions')
+
+    const formData = new FormData()
+    formData.set('documentId', 'doc-1')
+    const result = await generateWordDocument({}, formData)
+
+    expect(result.error).toBeTruthy()
+    expect(insertValues).not.toHaveBeenCalled()
+  })
+
+  it('reports a missing document rather than throwing', async () => {
+    selectWhere.mockResolvedValue([])
+    const { generateWordDocument } = await import('./actions')
+
+    const formData = new FormData()
+    formData.set('documentId', 'missing')
+    const result = await generateWordDocument({}, formData)
+
+    expect(result.error).toBeTruthy()
+    expect(insertValues).not.toHaveBeenCalled()
+  })
+})
+
+describe('deleteDocument', () => {
+  it('deletes the blob and scopes the row delete by both id and jobId', async () => {
+    selectWhere.mockResolvedValue([pdfRow()])
+    const { deleteDocument } = await import('./actions')
+
+    const formData = new FormData()
+    formData.set('id', 'doc-1')
+    formData.set('jobId', 'job-1')
+    await deleteDocument(formData)
+
+    expect(blobDel).toHaveBeenCalledWith('https://blob.example/quotation.pdf')
+    expect(deleteWhere).toHaveBeenCalledTimes(1)
+    // Reconstructed from the real drizzle-orm builders, matching this file's other
+    // scoping test — proves the delete cannot reach a row from a different job.
+    expect(deleteWhere.mock.calls[0][0]).toEqual(and(eq(jobDocuments.id, 'doc-1'), eq(jobDocuments.jobId, 'job-1')))
+  })
+
+  it('still deletes the row when the blob is already gone', async () => {
+    selectWhere.mockResolvedValue([pdfRow()])
+    blobDel.mockRejectedValueOnce(new Error('not found'))
+    const { deleteDocument } = await import('./actions')
+
+    const formData = new FormData()
+    formData.set('id', 'doc-1')
+    formData.set('jobId', 'job-1')
+    await deleteDocument(formData)
+
+    expect(deleteWhere).toHaveBeenCalledTimes(1)
+  })
+
+  it('is a no-op when either id or jobId is missing', async () => {
+    const { deleteDocument } = await import('./actions')
+
+    const formData = new FormData()
+    formData.set('id', 'doc-1')
+    // jobId deliberately omitted
+    await deleteDocument(formData)
+
+    expect(deleteWhere).not.toHaveBeenCalled()
+  })
+
+  it('is a no-op when no matching row exists for that job', async () => {
+    selectWhere.mockResolvedValue([])
+    const { deleteDocument } = await import('./actions')
+
+    const formData = new FormData()
+    formData.set('id', 'doc-1')
+    formData.set('jobId', 'job-1')
+    await deleteDocument(formData)
+
+    expect(blobDel).not.toHaveBeenCalled()
+    expect(deleteWhere).not.toHaveBeenCalled()
   })
 })

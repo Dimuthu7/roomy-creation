@@ -1,8 +1,8 @@
 'use server'
 import { randomUUID } from 'crypto'
-import { desc, eq, sql } from 'drizzle-orm'
+import { and, desc, eq, sql } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
-import { put } from '@vercel/blob'
+import { del, put } from '@vercel/blob'
 import { verifyAdminSession } from '@/lib/adminAuth'
 import { db } from '@/db/client'
 import { customers, jobDocuments, jobs } from '@/db/schema'
@@ -12,7 +12,12 @@ import { formatWarrantyNumber } from '@/lib/jobs/reference'
 import { renderCompletionPdf } from '@/pdf/CompletionDocument'
 import { renderOrderPdf } from '@/pdf/OrderDocument'
 import { renderQuotationPdf } from '@/pdf/QuotationDocument'
+import { renderCompletionDocx } from '@/docx/CompletionDocument'
+import { renderOrderDocx } from '@/docx/OrderDocument'
+import { renderQuotationDocx } from '@/docx/QuotationDocument'
+import { renderReceiptDocx } from '@/docx/ReceiptDocument'
 import { sendDocumentEmail } from '@/lib/jobs/mail'
+import type { CompletionSnapshot, OrderSnapshot, QuotationSnapshot, ReceiptSnapshot } from '@/lib/jobs/snapshot'
 
 export interface ActionState {
   error?: string
@@ -21,6 +26,31 @@ export interface ActionState {
 
 export async function listDocuments(jobId: string) {
   return db.select().from(jobDocuments).where(eq(jobDocuments.jobId, jobId)).orderBy(desc(jobDocuments.createdAt))
+}
+
+/** Best-effort blob cleanup, then the row — the row is the source of truth for what
+ *  the documents list shows, so a stale or already-gone blob must never block removing
+ *  it. Unlike every generator above, this is a real deletion, not an immutable
+ *  snapshot: the admin is discarding a document, not superseding it with a new one. */
+export async function deleteDocument(formData: FormData): Promise<void> {
+  await verifyAdminSession()
+
+  const id = String(formData.get('id') ?? '')
+  const jobId = String(formData.get('jobId') ?? '')
+  if (!id || !jobId) return
+
+  const [row] = await db.select().from(jobDocuments).where(and(eq(jobDocuments.id, id), eq(jobDocuments.jobId, jobId)))
+  if (!row) return
+
+  try {
+    await del(row.blobUrl)
+  } catch {
+    // The blob may already be gone — deleting the row is what the admin asked for.
+  }
+
+  await db.delete(jobDocuments).where(and(eq(jobDocuments.id, id), eq(jobDocuments.jobId, jobId)))
+
+  revalidatePath(`/admin/jobs/${jobId}/documents`)
 }
 
 /** Renders and stores a new quotation PDF. Always inserts a fresh row rather than
@@ -215,6 +245,57 @@ export async function generateCompletionDocument(_prevState: ActionState, formDa
   return { success: true }
 }
 
+/** Renders an editable Word sibling of an already-generated PDF document. Reuses the
+ *  PDF's own stored `snapshot` rather than recomputing one, so it never re-runs the
+ *  business rules (or side effects, like the completion certificate's warranty-number
+ *  allocation) that produced the original — regenerating those belongs to the PDF
+ *  generators above, not to a format conversion. Immutable like every other document
+ *  row: this always inserts a new row, never edits the PDF row it was generated from. */
+export async function generateWordDocument(_prevState: ActionState, formData: FormData): Promise<ActionState> {
+  await verifyAdminSession()
+
+  const documentId = String(formData.get('documentId') ?? '')
+  if (!documentId) return { error: 'Missing document id.' }
+
+  const [row] = await db.select().from(jobDocuments).where(eq(jobDocuments.id, documentId))
+  if (!row) return { error: 'Document not found.' }
+  if (row.format !== 'pdf') return { error: 'A Word version already exists for this document.' }
+
+  let docx: Buffer
+  switch (row.kind) {
+    case 'quotation':
+      docx = await renderQuotationDocx(row.snapshot as QuotationSnapshot)
+      break
+    case 'order':
+      docx = await renderOrderDocx(row.snapshot as OrderSnapshot)
+      break
+    case 'completion':
+      docx = await renderCompletionDocx(row.snapshot as CompletionSnapshot)
+      break
+    case 'receipt':
+      docx = await renderReceiptDocx(row.snapshot as ReceiptSnapshot)
+      break
+    default:
+      return { error: `Word export is not available for ${row.kind} documents.` }
+  }
+
+  const blob = await put(`${row.kind}s/${row.number}-${Date.now()}.docx`, docx, { access: 'public' })
+
+  await db.insert(jobDocuments).values({
+    id: randomUUID(),
+    jobId: row.jobId,
+    kind: row.kind,
+    number: row.number,
+    format: 'docx',
+    blobUrl: blob.url,
+    snapshot: row.snapshot,
+    paymentId: row.paymentId,
+  })
+
+  revalidatePath(`/admin/jobs/${row.jobId}/documents`)
+  return { success: true }
+}
+
 const DOCUMENT_LABELS: Record<string, string> = {
   quotation: 'Quotation',
   order: 'Order confirmation',
@@ -241,16 +322,17 @@ export async function emailDocument(_prevState: ActionState, formData: FormData)
   const email = row.customers.email
   if (!email) return { error: 'This customer has no email address on file.' }
 
-  const pdfResponse = await fetch(row.job_documents.blobUrl)
-  if (!pdfResponse.ok) return { error: 'Could not fetch the stored PDF.' }
-  const pdf = Buffer.from(await pdfResponse.arrayBuffer())
+  const fileResponse = await fetch(row.job_documents.blobUrl)
+  if (!fileResponse.ok) return { error: 'Could not fetch the stored document.' }
+  const pdf = Buffer.from(await fileResponse.arrayBuffer())
 
   const label = DOCUMENT_LABELS[row.job_documents.kind] ?? 'Document'
+  const extension = row.job_documents.format === 'docx' ? 'docx' : 'pdf'
   const { error } = await sendDocumentEmail({
     to: email,
     subject: `${label} ${row.job_documents.number} — Roomy Creations`,
     body: `Hi ${row.customers.name},\n\nPlease find attached your ${label.toLowerCase()} ${row.job_documents.number} from Roomy Creations.\n\nThank you for your business.`,
-    filename: `${row.job_documents.number}.pdf`,
+    filename: `${row.job_documents.number}.${extension}`,
     pdf,
   })
   if (error) return { error }

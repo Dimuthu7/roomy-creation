@@ -261,6 +261,11 @@ export const jobDocuments = pgTable(
       .references(() => jobs.id, { onDelete: 'cascade' }),
     kind: text('kind').notNull(), // 'quotation' | 'order' | 'receipt' | 'completion' | 'advance_invoice' | 'final_invoice'
     number: text('number').notNull(),
+    // 'pdf' | 'docx'. A Word row is a sibling of an existing 'pdf' row (same kind,
+    // number and snapshot) generated on demand so the admin can edit it — see
+    // generateWordDocument. Defaults 'pdf' so every row written before this column
+    // existed reads correctly without a backfill.
+    format: text('format').notNull().default('pdf'),
     blobUrl: text('blob_url').notNull(),
     snapshot: jsonb('snapshot').notNull(),
     // Which payment a 'receipt' document was issued for. Nullable and ON DELETE SET
