@@ -8,6 +8,7 @@ import { CancelQuotationButton } from './CancelQuotationButton'
 import { CompleteOrderButton } from './CompleteOrderButton'
 import { JobEditor } from './JobEditor'
 import { StageButtons } from './StageButtons'
+import { StatusBadge } from '../StatusBadge'
 
 export default async function JobEditPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -38,6 +39,9 @@ export default async function JobEditPage({ params }: { params: Promise<{ id: st
           </Link>
           <h1 className="mt-2 font-display text-2xl text-navy">{loaded.job.ref}</h1>
           <p className="u-mono mt-1 text-navy/70">{loaded.customer.name}</p>
+          <div className="mt-2">
+            <StatusBadge stage={loaded.job.stage} status={loaded.job.status} />
+          </div>
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <StageButtons jobId={id} stage={loaded.job.stage} resolved={resolved} hasOrderDocument={hasOrderDocument} />

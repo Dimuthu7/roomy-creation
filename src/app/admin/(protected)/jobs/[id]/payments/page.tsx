@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { formatCents } from '@/lib/money'
 import { getJobBalance, loadJob } from '@/lib/jobs/queries'
+import { BalanceAmount } from './BalanceAmount'
 import { PaymentForm } from './PaymentForm'
 import { PaymentRow } from './PaymentRow'
 
@@ -37,7 +38,9 @@ export default async function JobPaymentsPage({ params }: { params: Promise<{ id
             </div>
             <div>
               <dt className="text-navy/60">Balance</dt>
-              <dd data-testid="balance-remaining">{formatCents(balance.position.balanceCents)}</dd>
+              <dd data-testid="balance-remaining">
+                <BalanceAmount balanceCents={balance.position.balanceCents} />
+              </dd>
             </div>
           </dl>
         ) : (
