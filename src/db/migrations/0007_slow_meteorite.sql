@@ -1,0 +1,1 @@
+ALTER TABLE "job_documents" ADD COLUMN "format" text DEFAULT 'pdf' NOT NULL;

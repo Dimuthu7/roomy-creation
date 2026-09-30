@@ -1,13 +1,8 @@
 import Link from 'next/link'
 import { listJobs } from '@/lib/jobs/queries'
-import { STATUS_LABELS } from '@/lib/jobs/schema'
 import { JobFilters } from './JobFilters'
 import { JobsPagination } from './JobsPagination'
-
-const STAGE_LABELS: Record<string, string> = {
-  quotation: 'Quotation',
-  order: 'Order',
-}
+import { StatusBadge } from './StatusBadge'
 
 export default async function JobsPage({
   searchParams,
@@ -56,8 +51,7 @@ export default async function JobsPage({
             </div>
             <div className="u-mono flex shrink-0 items-center gap-4 text-xs">
               <span>{row.quotationDate}</span>
-              <span>{STAGE_LABELS[row.stage] ?? row.stage}</span>
-              <span>{STATUS_LABELS[row.status as keyof typeof STATUS_LABELS] ?? row.status}</span>
+              <StatusBadge stage={row.stage} status={row.status} />
             </div>
           </Link>
         ))}
