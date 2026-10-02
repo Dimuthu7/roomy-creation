@@ -3,7 +3,7 @@ import { unstable_cache } from 'next/cache'
 import { eq } from 'drizzle-orm'
 import { db } from '@/db/client'
 import { siteConfig } from '@/db/schema'
-import { TBC, type Maybe } from '@/lib/tbc'
+import { TBC, isTBC, type Maybe } from '@/lib/tbc'
 
 export interface SiteConfig {
   name: string
@@ -83,4 +83,13 @@ const fetchSiteConfig = unstable_cache(
 /** Reads the site's contact/business details and stats from the database. */
 export async function getSiteConfig(): Promise<SiteConfig> {
   return fetchSiteConfig()
+}
+
+/** The site's contact email, resolved for callers that need a plain `string | null`
+ *  rather than the TBC sentinel — generated documents' masthead, in particular. Used
+ *  instead of a hardcoded address so an admin who updates the email from Site Details
+ *  sees it on the next document generated, with no code change. */
+export async function getCompanyEmail(): Promise<string | null> {
+  const site = await getSiteConfig()
+  return isTBC(site.email) ? null : site.email
 }

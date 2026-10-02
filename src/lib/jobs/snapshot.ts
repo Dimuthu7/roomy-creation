@@ -66,6 +66,11 @@ export interface QuotationSnapshot {
   totals: SnapshotTotals | null
   terms: SnapshotClause[]
   warranty: SnapshotClause[]
+  /** The masthead's contact line. Sourced from site_config, not hardcoded, and frozen
+   *  into the snapshot at generation time like everything else here — a document
+   *  already issued must not change if the site's contact email changes later. Null
+   *  when the admin has not set one, in which case the masthead simply omits the line. */
+  companyEmail: string | null
 }
 
 export interface SnapshotInput {
@@ -78,6 +83,7 @@ export interface SnapshotInput {
   discountCents: number
   freeDelivery: boolean
   deliveryChargeCents: number | null
+  companyEmail: string | null
   terms: SnapshotClause[]
   warranty: SnapshotClause[]
 }
@@ -131,6 +137,7 @@ export function buildQuotationSnapshot(input: SnapshotInput): QuotationSnapshot 
       : null,
     terms: input.terms,
     warranty: input.warranty,
+    companyEmail: input.companyEmail,
   }
 }
 
@@ -185,12 +192,27 @@ export interface ReceiptSnapshot {
   paidAtLabel: string
   method: string | null
   balanceRemainingLabel: string | null
+  /** Everything below is optional because a snapshot is re-rendered from the jsonb it
+   *  was stored as: receipts issued before the redesign have none of these fields, and
+   *  a Word export of one must still succeed. The renderers omit the blocks that need
+   *  them rather than assuming they are there. `customer` overlaps `customerName` for
+   *  the same reason — customerName is what the older receipts have. */
+  customer?: SnapshotCustomer
+  salesPerson?: string | null
+  totalLabel?: string | null
+  paidLabel?: string | null
+  /** See QuotationSnapshot's note — same field, same optional-for-legacy-snapshots
+   *  reasoning as customer/salesPerson above. */
+  companyEmail?: string | null
 }
 
 export interface ReceiptSnapshotInput {
   number: string
   ref: string
   customerName: string
+  customer: SnapshotCustomer
+  salesPerson: string | null
+  companyEmail: string | null
   amountCents: number
   kind: 'advance' | 'final' | 'other'
   note?: string | null
@@ -213,19 +235,27 @@ export function paymentKindLabel(kind: ReceiptSnapshotInput['kind'], note: strin
   return note && note.trim() !== '' ? note : 'payment'
 }
 
-/** Deliberately minimal — a single acknowledgement line, not an itemised invoice.
- *  See the Slice 2 spec's "receipt document" section: this is not the advance/final
- *  invoice reserved for Slice 4. */
+/** An acknowledgement of one payment plus where the job now stands — not an itemised
+ *  invoice. The unit table stays on the quotation and the order: a receipt that
+ *  restated it would be a second contract for the customer to reconcile. See the
+ *  Slice 2 spec's "receipt document" section. */
 export function buildReceiptSnapshot(input: ReceiptSnapshotInput): ReceiptSnapshot {
   const position = paymentPosition(input.totalCents, input.paymentsIncludingThis)
   return {
     number: input.number,
     ref: input.ref,
     customerName: input.customerName,
+    customer: input.customer,
+    salesPerson: input.salesPerson,
+    companyEmail: input.companyEmail,
     amountLabel: formatCents(input.amountCents),
     kindLabel: paymentKindLabel(input.kind, input.note),
     paidAtLabel: input.paidAt,
     method: input.method,
+    // All three come from the same position, so the money block is either wholly
+    // present or wholly absent — never a Total Price with no Balance under it.
+    totalLabel: input.totalCents === null ? null : formatCents(input.totalCents),
+    paidLabel: position ? formatCents(position.paidCents) : null,
     balanceRemainingLabel: position ? formatCents(position.balanceCents) : null,
   }
 }

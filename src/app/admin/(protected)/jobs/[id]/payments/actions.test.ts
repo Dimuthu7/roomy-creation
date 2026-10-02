@@ -13,6 +13,11 @@ vi.mock('@/lib/jobs/snapshot', () => ({ buildReceiptSnapshot }))
 const getJobBalance = vi.fn()
 vi.mock('@/lib/jobs/queries', () => ({ getJobBalance }))
 
+// Defaults to a configured email; individual tests override with null to check the
+// omit-rather-than-hardcode behaviour — matches the documents actions test's mock.
+const getCompanyEmail = vi.fn().mockResolvedValue('roomycreation@gmail.com')
+vi.mock('@/data/site', () => ({ getCompanyEmail: (...args: unknown[]) => getCompanyEmail(...args) }))
+
 // A minimal chainable, thenable stand-in for drizzle's fluent query builder: every
 // chain method returns itself, and awaiting the chain resolves to the fixed `rows`
 // it was built with — exactly what `await db.select()...` needs.
@@ -125,5 +130,82 @@ describe('generateReceipt', () => {
     const call = buildReceiptSnapshot.mock.calls[0][0]
     expect(call.paymentsIncludingThis).toBe(currentBalance.payments)
     expect(call.paymentsIncludingThis).toEqual([newerPayment, olderPayment])
+  })
+
+  it('passes the full customer record and sales person through for the letterhead', async () => {
+    getJobBalance.mockResolvedValue({ totals: { totalCents: 300_000_00 }, payments: [], position: null })
+
+    const customer = {
+      name: 'williams',
+      phone: '+94 772383430',
+      email: null,
+      addressLines: ['Galapitamulla', 'Kurunegala.'],
+      city: 'Kurunegala',
+      district: 'North Western',
+    }
+    const payment = { id: 'p1', jobId: 'job-1', kind: 'advance', amountCents: 100_000_00, paidAt: '2026-01-01', method: 'Cash', note: null }
+
+    dbSelect
+      .mockImplementationOnce(() => chain([{ jobs: { ref: 'RC00001', salesPerson: 'ISHAN' }, customers: customer }]))
+      .mockImplementationOnce(() => chain([payment]))
+    dbExecute.mockResolvedValue({ rows: [{ value: 1 }] })
+
+    const { generateReceipt } = await import('./actions')
+
+    const formData = new FormData()
+    formData.set('jobId', 'job-1')
+    formData.set('paymentId', 'p1')
+    await generateReceipt({}, formData)
+
+    const call = buildReceiptSnapshot.mock.calls[0][0]
+    expect(call.salesPerson).toBe('ISHAN')
+    expect(call.customer).toEqual({
+      name: 'williams',
+      phone: '+94 772383430',
+      email: null,
+      addressLines: ['Galapitamulla', 'Kurunegala.'],
+      city: 'Kurunegala',
+      district: 'North Western',
+    })
+  })
+
+  it('uses the site-configured email for the masthead rather than a hardcoded one', async () => {
+    getJobBalance.mockResolvedValue({ totals: { totalCents: 300_000_00 }, payments: [], position: null })
+    getCompanyEmail.mockResolvedValue('contact@roomycreations.lk')
+
+    const payment = { id: 'p1', jobId: 'job-1', kind: 'advance', amountCents: 100_000_00, paidAt: '2026-01-01', method: 'Cash', note: null }
+    dbSelect
+      .mockImplementationOnce(() => chain([{ jobs: { ref: 'RC00001', salesPerson: 'ISHAN' }, customers: { name: 'williams' } }]))
+      .mockImplementationOnce(() => chain([payment]))
+    dbExecute.mockResolvedValue({ rows: [{ value: 1 }] })
+
+    const { generateReceipt } = await import('./actions')
+
+    const formData = new FormData()
+    formData.set('jobId', 'job-1')
+    formData.set('paymentId', 'p1')
+    await generateReceipt({}, formData)
+
+    expect(buildReceiptSnapshot.mock.calls[0][0].companyEmail).toBe('contact@roomycreations.lk')
+  })
+
+  it('passes no company email when the site has none configured, rather than a placeholder', async () => {
+    getJobBalance.mockResolvedValue({ totals: { totalCents: 300_000_00 }, payments: [], position: null })
+    getCompanyEmail.mockResolvedValue(null)
+
+    const payment = { id: 'p1', jobId: 'job-1', kind: 'advance', amountCents: 100_000_00, paidAt: '2026-01-01', method: 'Cash', note: null }
+    dbSelect
+      .mockImplementationOnce(() => chain([{ jobs: { ref: 'RC00001', salesPerson: 'ISHAN' }, customers: { name: 'williams' } }]))
+      .mockImplementationOnce(() => chain([payment]))
+    dbExecute.mockResolvedValue({ rows: [{ value: 1 }] })
+
+    const { generateReceipt } = await import('./actions')
+
+    const formData = new FormData()
+    formData.set('jobId', 'job-1')
+    formData.set('paymentId', 'p1')
+    await generateReceipt({}, formData)
+
+    expect(buildReceiptSnapshot.mock.calls[0][0].companyEmail).toBeNull()
   })
 })

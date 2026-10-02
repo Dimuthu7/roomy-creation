@@ -19,6 +19,7 @@ const SNAPSHOT: QuotationSnapshot = {
   totals: { subtotalLabel: '430,000.00', discountLabel: 'Cash Discount', discountAmountLabel: '30,000.00', totalLabel: '400,000.00' },
   terms: [{ body: 'Manufacturing time - 15 to 30 days after the advance payment paid.', emphasis: false }],
   warranty: [],
+  companyEmail: 'roomycreation@gmail.com',
 }
 
 async function textFor(snapshot: QuotationSnapshot): Promise<string> {
@@ -26,6 +27,23 @@ async function textFor(snapshot: QuotationSnapshot): Promise<string> {
 }
 
 describe('quotationDocument', () => {
+  it('prints the whole company contact stack in the masthead', async () => {
+    const text = await textFor(SNAPSHOT)
+    expect(text).toContain('roomycreation@gmail.com')
+    expect(text).toContain('Web - roomycreations.com')
+    expect(text).toContain('+94 72 292 0088')
+  })
+
+  it('heads the customer block with the client name rather than a bare TO', async () => {
+    expect(await textFor(SNAPSHOT)).toContain('Client Details - williams')
+  })
+
+  it('names the money rows the way the printed invoices do', async () => {
+    const text = await textFor(SNAPSHOT)
+    expect(text).toContain('Total Price')
+    expect(text).not.toContain('Subtotal')
+  })
+
   it('prints the reference, date and sales person', async () => {
     const text = await textFor(SNAPSHOT)
     expect(text).toContain('RC00188')

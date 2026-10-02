@@ -17,6 +17,7 @@ const SNAPSHOT: QuotationSnapshot = {
   totals: { subtotalLabel: '430,000.00', discountLabel: 'Cash Discount', discountAmountLabel: '30,000.00', totalLabel: '400,000.00' },
   terms: [{ body: 'Manufacturing time - 15 to 30 days after the advance payment paid.', emphasis: false }],
   warranty: [],
+  companyEmail: 'roomycreation@gmail.com',
 }
 
 /** Collects every string in a React element tree, so assertions can be made about
@@ -30,6 +31,23 @@ function textOf(node: unknown): string {
 }
 
 describe('QuotationDocument', () => {
+  it('prints the whole company contact stack in the masthead, using the site-configured email', () => {
+    const text = textOf(QuotationDocument({ snapshot: SNAPSHOT }))
+    expect(text).toContain('roomycreation@gmail.com')
+    expect(text).toContain('Web - roomycreations.com')
+    expect(text).toContain('+94 72 292 0088')
+  })
+
+  it('omits the email line when the site has none configured, rather than falling back to a hardcoded one', () => {
+    const text = textOf(QuotationDocument({ snapshot: { ...SNAPSHOT, companyEmail: null } }))
+    expect(text).not.toContain('@')
+  })
+
+  it('heads the customer block with the client name rather than a bare TO', () => {
+    const text = textOf(QuotationDocument({ snapshot: SNAPSHOT }))
+    expect(text).toContain('Client Details - williams')
+  })
+
   it('prints the reference, date and sales person', () => {
     const text = textOf(QuotationDocument({ snapshot: SNAPSHOT }))
     expect(text).toContain('RC00188')
@@ -56,6 +74,13 @@ describe('QuotationDocument', () => {
     const text = textOf(QuotationDocument({ snapshot: SNAPSHOT }))
     expect(text).toContain('Cash Discount')
     expect(text).toContain('400,000.00')
+  })
+
+  it('names the money rows the way the printed invoices do', () => {
+    const text = textOf(QuotationDocument({ snapshot: SNAPSHOT }))
+    expect(text).toContain('Total Price')
+    expect(text).not.toContain('Subtotal')
+    expect(text).not.toContain('TOTAL 400,000.00')
   })
 
   it('omits the totals block entirely when a choice is still open', () => {

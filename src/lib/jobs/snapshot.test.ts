@@ -36,6 +36,7 @@ const BASE: SnapshotInput = {
   deliveryChargeCents: null,
   terms: [{ body: 'Manufacturing time - 15 to 30 days after the advance payment paid.', emphasis: false }],
   warranty: [],
+  companyEmail: 'roomycreation@gmail.com',
 }
 
 describe('buildQuotationSnapshot', () => {
@@ -43,6 +44,14 @@ describe('buildQuotationSnapshot', () => {
     const snap = buildQuotationSnapshot(BASE)
     expect(snap.ref).toBe('RC00188')
     expect(snap.salesPerson).toBe('ISHAN')
+  })
+
+  it('carries the company email through, frozen at generation time rather than read live', () => {
+    expect(buildQuotationSnapshot({ ...BASE, companyEmail: 'roomycreations@gmail.com' }).companyEmail).toBe('roomycreations@gmail.com')
+  })
+
+  it('has no company email when the site has none configured', () => {
+    expect(buildQuotationSnapshot({ ...BASE, companyEmail: null }).companyEmail).toBeNull()
   })
 
   it('flattens each unit to the single option it resolves to', () => {
@@ -175,6 +184,9 @@ const RECEIPT_BASE: ReceiptSnapshotInput = {
   number: 'RCP00001',
   ref: 'RC00188',
   customerName: 'williams',
+  customer: BASE.customer,
+  salesPerson: 'ISHAN',
+  companyEmail: 'roomycreation@gmail.com',
   amountCents: 150_000_00,
   kind: 'advance',
   paidAt: '2026-09-19',
@@ -220,6 +232,29 @@ describe('buildReceiptSnapshot', () => {
     expect(buildReceiptSnapshot({ ...RECEIPT_BASE, totalCents: null }).balanceRemainingLabel).toBeNull()
   })
 
+  it('carries the order total and the running amount paid, for the money block', () => {
+    const snap = buildReceiptSnapshot(RECEIPT_BASE)
+    expect(snap.totalLabel).toBe('368,500.00')
+    expect(snap.paidLabel).toBe('150,000.00')
+  })
+
+  it('has no order total or amount paid while the job total is unresolved', () => {
+    const snap = buildReceiptSnapshot({ ...RECEIPT_BASE, totalCents: null })
+    expect(snap.totalLabel).toBeNull()
+    expect(snap.paidLabel).toBeNull()
+  })
+
+  it('carries the full customer record and sales person for the letterhead', () => {
+    const snap = buildReceiptSnapshot(RECEIPT_BASE)
+    expect(snap.customer?.addressLines).toEqual(['Galapitamulla', 'Kurunegala.'])
+    expect(snap.customer?.phone).toBe('+94 772383430')
+    expect(snap.salesPerson).toBe('ISHAN')
+  })
+
+  it('carries the company email through', () => {
+    expect(buildReceiptSnapshot(RECEIPT_BASE).companyEmail).toBe('roomycreation@gmail.com')
+  })
+
   it('carries the payment method through', () => {
     expect(buildReceiptSnapshot(RECEIPT_BASE).method).toBe('Bank transfer')
   })
@@ -251,6 +286,7 @@ describe('buildCompletionSnapshot', () => {
     deliveryChargeCents: null,
     terms: [{ body: 'A term.', emphasis: false }],
     warranty: [{ body: 'A warranty clause.', emphasis: true }],
+    companyEmail: 'roomycreation@gmail.com',
     payments: [
       // Deliberately newest-first, as listPayments returns them.
       { amountCents: 200_000_00, paidAt: '2026-02-01', kind: 'final', method: 'Cash', note: null, createdAt: new Date('2026-02-01T00:00:00Z') },

@@ -11,6 +11,7 @@ import { formatReceiptNumber } from '@/lib/jobs/reference'
 import { buildReceiptSnapshot } from '@/lib/jobs/snapshot'
 import { renderReceiptPdf } from '@/pdf/ReceiptDocument'
 import { getJobBalance } from '@/lib/jobs/queries'
+import { getCompanyEmail } from '@/data/site'
 
 export interface ActionState {
   error?: string
@@ -93,6 +94,18 @@ export async function generateReceipt(_prevState: ActionState, formData: FormDat
     number: formatReceiptNumber(seq),
     ref: job.jobs.ref,
     customerName: job.customers.name,
+    // Same mapping the other three documents use — see generateQuotationPdf. No extra
+    // query: the customer row is already joined above and getJobBalance loaded the job.
+    customer: {
+      name: job.customers.name,
+      phone: job.customers.phone,
+      email: job.customers.email,
+      addressLines: job.customers.addressLines ?? [],
+      city: job.customers.city,
+      district: job.customers.district,
+    },
+    salesPerson: job.jobs.salesPerson,
+    companyEmail: await getCompanyEmail(),
     amountCents: payment.amountCents,
     kind: payment.kind as 'advance' | 'final' | 'other',
     note: payment.note,

@@ -1,7 +1,7 @@
 import { AlignmentType, Document, Packer, Paragraph, TextRun } from 'docx'
 import type { QuotationSnapshot } from '@/lib/jobs/snapshot'
 import { FONT, colors, sizes } from './styles'
-import { clauseList, clientAndMetaBlock, companyHeader, deliveryRow, itemsTable, signatureBlock, totalsBlock } from './blocks'
+import { clauseList, clientBlock, deliveryRow, documentHeader, itemsTable, signatureBlock, totalsBlock } from './blocks'
 
 function metaFields(snapshot: QuotationSnapshot) {
   return [
@@ -34,8 +34,8 @@ export function quotationDocument(snapshot: QuotationSnapshot): Document {
       {
         properties: { page: { size: { width: 11906, height: 16838 }, margin: { top: 720, bottom: 720, left: 720, right: 720 } } },
         children: [
-          ...companyHeader('QUOTATION'),
-          clientAndMetaBlock(metaFields(snapshot), snapshot.customer),
+          ...documentHeader('QUOTATION', metaFields(snapshot), snapshot.companyEmail),
+          ...clientBlock(snapshot.customer),
           new Paragraph({ children: [] }),
           itemsTable(snapshot.units),
           ...(delivery ? [delivery] : []),

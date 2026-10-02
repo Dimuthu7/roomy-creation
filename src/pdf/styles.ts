@@ -12,60 +12,80 @@ export const styles = StyleSheet.create({
     color: '#111111',
   },
 
-  // Company block + title
-  companyBlock: {
-    textAlign: 'center',
+  // Masthead: mark + company stack on the left, document meta on the right, a rule
+  // beneath them both, then the title — the shape of the printed invoices this
+  // replaces, rather than the centred stack the documents used before.
+  headerBlock: {
     marginBottom: 10,
+  },
+  mastheadRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  brandRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  logoMark: {
+    width: 38,
+    height: 38,
   },
   companyName: {
     fontFamily: 'Helvetica-Bold',
-    fontSize: 18,
-    letterSpacing: 1,
+    fontSize: 15,
+    marginBottom: 1,
   },
   companyLine: {
-    fontSize: 8.5,
+    fontSize: 8,
     color: '#333333',
   },
   ruleThick: {
     borderBottomWidth: 2,
     borderBottomColor: '#111111',
-    marginTop: 6,
+    marginTop: 8,
     marginBottom: 8,
   },
   title: {
     textAlign: 'center',
     fontFamily: 'Helvetica-Bold',
-    fontSize: 13,
-    letterSpacing: 2,
-    marginBottom: 10,
+    fontSize: 15,
+    letterSpacing: 3,
+    marginBottom: 4,
   },
 
-  // Client details + meta block
-  topRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 10,
-  },
+  // Client details block
   clientBlock: {
-    maxWidth: '55%',
+    maxWidth: '60%',
+    marginBottom: 10,
   },
   clientLabel: {
     fontFamily: 'Helvetica-Bold',
-    fontSize: 8.5,
+    fontSize: 10,
     marginBottom: 2,
   },
   clientLine: {
     fontSize: 9.5,
   },
+  // Label column and value column, so the values line up as a column of their own
+  // instead of ragging off the end of labels of different lengths.
   metaBlock: {
-    textAlign: 'right',
+    minWidth: 190,
   },
-  metaLine: {
-    fontSize: 9.5,
+  metaRow: {
+    flexDirection: 'row',
     marginBottom: 2,
   },
   metaLabel: {
+    flexGrow: 1,
     fontFamily: 'Helvetica-Bold',
+    fontSize: 9,
+  },
+  metaValue: {
+    width: 95,
+    fontSize: 9,
+    textAlign: 'right',
   },
 
   // Table
@@ -149,6 +169,11 @@ export const styles = StyleSheet.create({
     paddingLeft: 8,
   },
   specText: {
+    // Without flex the Text sizes to its content inside this row and runs over the
+    // cell's right border instead of wrapping inside it — the same reason clauseBody
+    // carries it. Not something the tree-walking tests can catch: they read the
+    // element tree, which has no layout pass. Verified by rendering.
+    flex: 1,
     fontSize: 8.5,
     color: '#222222',
   },
@@ -167,36 +192,47 @@ export const styles = StyleSheet.create({
   },
   totalsBlock: {
     alignSelf: 'flex-end',
-    width: 220,
-    marginTop: 4,
+    width: 250,
+    marginTop: 6,
     marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#111111',
   },
   totalsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: 2,
+    paddingVertical: 3,
+    paddingHorizontal: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#cccccc',
   },
+  // The reference invoices band their closing rows in grey — it is what makes the
+  // number the customer actually owes findable at a glance on a dense page.
   totalsRowFinal: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingVertical: 4,
-    marginTop: 2,
-    borderTopWidth: 1,
-    borderTopColor: '#111111',
+    paddingHorizontal: 8,
+    backgroundColor: '#e4e4e4',
+    borderBottomWidth: 1,
+    borderBottomColor: '#cccccc',
+  },
+  totalsRowLast: {
+    borderBottomWidth: 0,
   },
   totalsLabel: {
     fontSize: 9.5,
   },
   totalsLabelFinal: {
     fontFamily: 'Helvetica-Bold',
-    fontSize: 10.5,
+    fontSize: 10,
   },
   totalsValue: {
     fontSize: 9.5,
   },
   totalsValueFinal: {
     fontFamily: 'Helvetica-Bold',
-    fontSize: 10.5,
+    fontSize: 10,
   },
   paymentTerms: {
     alignSelf: 'flex-end',
@@ -260,31 +296,48 @@ export const styles = StyleSheet.create({
     fontSize: 8.5,
   },
 
-  // Receipt body
-  receiptNumberRow: {
-    alignItems: 'flex-end',
-    marginBottom: 16,
-  },
-  receiptNumber: {
-    fontFamily: 'Helvetica-Bold',
-    fontSize: 11,
-  },
+  // Receipt body: a bordered panel stating what was paid, closing on the amount —
+  // the one figure the customer is checking when they take the page.
   ackBlock: {
-    marginTop: 20,
-    gap: 10,
+    marginTop: 6,
+    marginBottom: 4,
+    borderWidth: 1,
+    borderColor: '#111111',
   },
   ackRow: {
     flexDirection: 'row',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#cccccc',
   },
   ackLabel: {
-    width: 160,
-    fontSize: 10,
+    width: 150,
+    fontSize: 9.5,
     color: '#333333',
   },
   ackValue: {
     flex: 1,
-    fontSize: 10.5,
+    fontSize: 9.5,
     fontFamily: 'Helvetica-Bold',
+  },
+  ackTotalRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+    backgroundColor: '#e4e4e4',
+    borderTopWidth: 1,
+    borderTopColor: '#111111',
+  },
+  ackTotalLabel: {
+    fontFamily: 'Helvetica-Bold',
+    fontSize: 10,
+    letterSpacing: 0.5,
+  },
+  ackTotalValue: {
+    fontFamily: 'Helvetica-Bold',
+    fontSize: 12,
   },
 
   // Payment ledger (completion certificate)

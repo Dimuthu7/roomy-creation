@@ -1,7 +1,7 @@
 import { Document, Page, Text, View, renderToBuffer } from '@react-pdf/renderer'
 import type { OrderSnapshot } from '@/lib/jobs/snapshot'
 import { styles } from './styles'
-import { clauseList, clientAndMetaBlock, companyHeader, deliveryRow, signatureBlock, tableHeader, totalsBlock, unitRows } from './blocks'
+import { clauseList, clientBlock, deliveryRow, documentHeader, signatureBlock, tableHeader, totalsBlock, unitRows } from './blocks'
 
 function metaFields(snapshot: OrderSnapshot) {
   return [
@@ -14,16 +14,16 @@ function metaFields(snapshot: OrderSnapshot) {
 export function OrderDocument({ snapshot }: { snapshot: OrderSnapshot }) {
   const extraRows = snapshot.paymentPosition
     ? [
-        { label: 'Advance Paid', value: snapshot.paymentPosition.paidLabel },
-        { label: 'Balance Due', value: snapshot.paymentPosition.balanceLabel },
+        { label: 'Advance', value: snapshot.paymentPosition.paidLabel },
+        { label: 'Balance Payment', value: snapshot.paymentPosition.balanceLabel },
       ]
     : []
 
   return (
     <Document>
       <Page size="A4" style={styles.page}>
-        {companyHeader('ORDER')}
-        {clientAndMetaBlock(metaFields(snapshot), snapshot.customer)}
+        {documentHeader('ORDER', metaFields(snapshot), snapshot.companyEmail)}
+        {clientBlock(snapshot.customer)}
         <View style={styles.table}>
           {tableHeader()}
           {snapshot.units.map((unit, i) => unitRows(unit, i))}

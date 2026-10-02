@@ -1,5 +1,6 @@
-import { AlignmentType, BorderStyle, Paragraph, ShadingType, Table, TableCell, TableRow, TabStopType, TextRun, VerticalAlign, WidthType } from 'docx'
+import { AlignmentType, BorderStyle, ImageRun, Paragraph, ShadingType, Table, TableCell, TableRow, TabStopType, TextRun, VerticalAlign, WidthType } from 'docx'
 import type { CompletionSnapshot, QuotationSnapshot, SnapshotClause, SnapshotCustomer, SnapshotUnit } from '@/lib/jobs/snapshot'
+import { logoMarkBytes } from '@/assets/logoMark'
 import { FONT, cellBorders, colors, lightBorder, noBorders, sizes, thinBorder } from './styles'
 
 // The Word twin of src/pdf/blocks.tsx — same section list, same call convention
@@ -8,69 +9,94 @@ import { FONT, cellBorders, colors, lightBorder, noBorders, sizes, thinBorder } 
 // nested-View model, so a PDF View that only grouped children collapses here into
 // whatever flat sequence of Paragraph/Table nodes it wrapped.
 
-export function companyHeader(title: string): (Paragraph | Table)[] {
+/** The Word twin of src/pdf/blocks.tsx's documentHeader: mark and company stack on
+ *  the left, meta panel on the right, a rule beneath, then the centred title.
+ *  `companyEmail` comes from the snapshot (ultimately site_config), not a literal —
+ *  see the PDF twin's note. Null omits the line rather than falling back to one. */
+export function documentHeader(title: string, fields: { label: string; value: string }[] = [], companyEmail: string | null = null): (Paragraph | Table)[] {
+  const markCell = new TableCell({
+    borders: noBorders,
+    width: { size: 10, type: WidthType.PERCENTAGE },
+    verticalAlign: VerticalAlign.CENTER,
+    children: [
+      new Paragraph({
+        children: [
+          new ImageRun({
+            type: 'png',
+            data: logoMarkBytes(),
+            transformation: { width: 48, height: 48 },
+            altText: { name: 'Roomy Creations', title: 'Roomy Creations', description: 'Roomy Creations mark' },
+          }),
+        ],
+      }),
+    ],
+  })
+
+  const companyCell = new TableCell({
+    borders: noBorders,
+    width: { size: 45, type: WidthType.PERCENTAGE },
+    verticalAlign: VerticalAlign.CENTER,
+    children: [
+      new Paragraph({ children: [new TextRun({ text: 'Roomy Creations', font: FONT, bold: true, size: sizes.companyName })] }),
+      ...[...(companyEmail ? [companyEmail] : []), 'Web - roomycreations.com', '+94 72 292 0088'].map(
+        (line) => new Paragraph({ children: [new TextRun({ text: line, font: FONT, size: sizes.small, color: colors.muted })] }),
+      ),
+    ],
+  })
+
+  // A right tab stop at the cell's own right edge, so the values line up as a column
+  // rather than ragging off the end of labels of different lengths.
+  const META_TAB = 4000
+  const metaCell = new TableCell({
+    borders: noBorders,
+    width: { size: 45, type: WidthType.PERCENTAGE },
+    children:
+      fields.length > 0
+        ? fields.map(
+            (f) =>
+              new Paragraph({
+                tabStops: [{ type: TabStopType.RIGHT, position: META_TAB }],
+                children: [
+                  new TextRun({ text: `${f.label}\t`, font: FONT, bold: true, size: sizes.body }),
+                  new TextRun({ text: f.value, font: FONT, size: sizes.body }),
+                ],
+              }),
+          )
+        : [new Paragraph({ children: [] })],
+  })
+
   return [
-    new Paragraph({
-      alignment: AlignmentType.CENTER,
-      spacing: { after: 20 },
-      children: [new TextRun({ text: 'ROOMY CREATIONS', font: FONT, bold: true, size: sizes.companyName })],
+    new Table({
+      width: { size: 100, type: WidthType.PERCENTAGE },
+      rows: [new TableRow({ children: [markCell, companyCell, metaCell] })],
     }),
     new Paragraph({
-      alignment: AlignmentType.CENTER,
-      children: [new TextRun({ text: 'Furniture & Interior Solutions', font: FONT, size: sizes.small, color: colors.muted })],
-    }),
-    new Paragraph({
-      alignment: AlignmentType.CENTER,
       border: { bottom: { style: BorderStyle.SINGLE, size: 12, color: colors.border, space: 6 } },
-      spacing: { after: 160 },
-      children: [new TextRun({ text: '+94 72 292 0088 · roomycreation@gmail.com', font: FONT, size: sizes.small, color: colors.muted })],
+      spacing: { before: 80, after: 160 },
+      children: [],
     }),
     new Paragraph({
       alignment: AlignmentType.CENTER,
       spacing: { after: 200 },
-      children: [new TextRun({ text: title, font: FONT, bold: true, size: sizes.title, characterSpacing: 20 })],
+      children: [new TextRun({ text: title, font: FONT, bold: true, size: sizes.title, characterSpacing: 30 })],
     }),
   ]
 }
 
-export function clientAndMetaBlock(fields: { label: string; value: string }[], customer: SnapshotCustomer): Table {
+export function clientBlock(customer: SnapshotCustomer): Paragraph[] {
   const cityLine = [customer.city, customer.district].filter((v) => v !== null && v !== '').join(', ')
-  const addressLines = [
-    customer.name,
+  const lines = [
     ...customer.addressLines,
     ...(cityLine !== '' ? [cityLine] : []),
     customer.phone,
     ...(customer.email ? [customer.email] : []),
   ]
 
-  const clientCell = new TableCell({
-    borders: noBorders,
-    width: { size: 55, type: WidthType.PERCENTAGE },
-    children: [
-      new Paragraph({ children: [new TextRun({ text: 'TO', font: FONT, bold: true, size: sizes.small })] }),
-      ...addressLines.map((line) => new Paragraph({ children: [new TextRun({ text: line, font: FONT, size: sizes.body })] })),
-    ],
-  })
-
-  const metaCell = new TableCell({
-    borders: noBorders,
-    width: { size: 45, type: WidthType.PERCENTAGE },
-    children: fields.map(
-      (f) =>
-        new Paragraph({
-          alignment: AlignmentType.RIGHT,
-          children: [
-            new TextRun({ text: `${f.label}: `, font: FONT, bold: true, size: sizes.body }),
-            new TextRun({ text: f.value, font: FONT, size: sizes.body }),
-          ],
-        }),
-    ),
-  })
-
-  return new Table({
-    width: { size: 100, type: WidthType.PERCENTAGE },
-    rows: [new TableRow({ children: [clientCell, metaCell] })],
-  })
+  return [
+    new Paragraph({ children: [new TextRun({ text: `Client Details - ${customer.name}`, font: FONT, bold: true, size: sizes.sectionHeading })] }),
+    ...lines.map((line) => new Paragraph({ children: [new TextRun({ text: line, font: FONT, size: sizes.body })] })),
+    new Paragraph({ spacing: { after: 160 }, children: [] }),
+  ]
 }
 
 const COLUMN_WIDTHS = [52, 16, 16, 16]
@@ -175,35 +201,51 @@ export function deliveryRow(delivery: QuotationSnapshot['delivery']): Paragraph 
   })
 }
 
+export interface MoneyRow {
+  label: string
+  value: string
+  /** Banded in grey and set bold, mirroring src/pdf/blocks.tsx's moneyBlock. */
+  emphasis: boolean
+}
+
 function totalsRow(label: string, value: string, emphasis: boolean): TableRow {
+  const shading = emphasis ? { shading: { type: ShadingType.CLEAR, color: 'auto', fill: 'E4E4E4' } } : {}
+  const runFor = (text: string) => new TextRun({ text, font: FONT, bold: emphasis, size: emphasis ? sizes.sectionHeading : sizes.body })
   return new TableRow({
     children: [
+      new TableCell({ borders: cellBorders({ bottom: lightBorder }), ...shading, children: [new Paragraph({ children: [runFor(label)] })] }),
       new TableCell({
-        borders: noBorders,
-        children: [new Paragraph({ children: [new TextRun({ text: label, font: FONT, bold: emphasis, size: emphasis ? sizes.sectionHeading : sizes.body })] })],
-      }),
-      new TableCell({
-        borders: noBorders,
-        children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: value, font: FONT, bold: emphasis, size: emphasis ? sizes.sectionHeading : sizes.body })] })],
+        borders: cellBorders({ bottom: lightBorder }),
+        ...shading,
+        children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [runFor(value)] })],
       }),
     ],
   })
 }
 
-/** `extraRows` prints after the final TOTAL row — used by OrderDocument to add
- *  Advance Paid / Balance Due without a second totals table. */
-export function totalsBlock(totals: QuotationSnapshot['totals'], extraRows: { label: string; value: string }[] = []): Table | null {
-  if (!totals) return null
-  const rows = [totalsRow('Subtotal', totals.subtotalLabel, false)]
-  if (totals.discountAmountLabel !== null) rows.push(totalsRow(totals.discountLabel, totals.discountAmountLabel, false))
-  rows.push(totalsRow('TOTAL', totals.totalLabel, true))
-  for (const row of extraRows) rows.push(totalsRow(row.label, row.value, false))
-
+/** The bordered right-aligned figures table. Callers compose their own rows, so the
+ *  receipt can close on three rows without inheriting the quotation's arithmetic. */
+export function moneyBlock(rows: MoneyRow[]): Table | null {
+  if (rows.length === 0) return null
   return new Table({
     alignment: AlignmentType.RIGHT,
-    width: { size: 40, type: WidthType.PERCENTAGE },
-    rows,
+    width: { size: 45, type: WidthType.PERCENTAGE },
+    borders: { top: thinBorder, left: thinBorder, right: thinBorder, bottom: thinBorder, insideHorizontal: lightBorder, insideVertical: lightBorder },
+    rows: rows.map((row) => totalsRow(row.label, row.value, row.emphasis)),
   })
+}
+
+/** `extraRows` prints after the Total Price row — used by OrderDocument to add
+ *  Advance / Balance Payment without a second table. Label vocabulary follows the
+ *  printed invoices, exactly as the PDF twin does. */
+export function totalsBlock(totals: QuotationSnapshot['totals'], extraRows: { label: string; value: string }[] = []): Table | null {
+  if (!totals) return null
+  const rows: MoneyRow[] = [{ label: 'Total', value: totals.subtotalLabel, emphasis: false }]
+  if (totals.discountAmountLabel !== null) rows.push({ label: totals.discountLabel, value: totals.discountAmountLabel, emphasis: false })
+  rows.push({ label: 'Total Price', value: totals.totalLabel, emphasis: true })
+  for (const row of extraRows) rows.push({ ...row, emphasis: true })
+
+  return moneyBlock(rows)
 }
 
 export function clauseList(heading: string, clauses: SnapshotClause[]): Paragraph[] {

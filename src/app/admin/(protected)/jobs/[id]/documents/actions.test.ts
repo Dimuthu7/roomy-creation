@@ -20,15 +20,22 @@ vi.mock('@/docx/ReceiptDocument', () => ({ renderReceiptDocx }))
 vi.mock('@/lib/jobs/mail', () => ({ sendDocumentEmail: vi.fn().mockResolvedValue({}) }))
 
 const buildCompletionSnapshot = vi.fn().mockReturnValue({ number: 'WC00001' })
+const buildOrderSnapshot = vi.fn()
+const buildQuotationSnapshot = vi.fn()
 vi.mock('@/lib/jobs/snapshot', () => ({
   buildCompletionSnapshot,
-  buildOrderSnapshot: vi.fn(),
-  buildQuotationSnapshot: vi.fn(),
+  buildOrderSnapshot,
+  buildQuotationSnapshot,
 }))
 
 const loadJob = vi.fn()
 const getJobBalance = vi.fn()
 vi.mock('@/lib/jobs/queries', () => ({ loadJob, getJobBalance }))
+
+// Defaults to a configured email; individual tests override with null to check the
+// omit-rather-than-hardcode behaviour.
+const getCompanyEmail = vi.fn().mockResolvedValue('roomycreation@gmail.com')
+vi.mock('@/data/site', () => ({ getCompanyEmail: (...args: unknown[]) => getCompanyEmail(...args) }))
 
 const insertValues = vi.fn().mockResolvedValue(undefined)
 const dbExecute = vi.fn()
@@ -44,7 +51,7 @@ vi.mock('@/db/client', () => ({
   },
 }))
 
-function finishedJob(overrides: Record<string, unknown> = {}) {
+function finishedJob(overrides: Record<string, unknown> = {}, units: unknown[] = []) {
   return {
     job: {
       id: 'job-1',
@@ -62,7 +69,7 @@ function finishedJob(overrides: Record<string, unknown> = {}) {
       ...overrides,
     },
     customer: { name: 'williams', phone: '+94 772383430', email: null, addressLines: null, city: null, district: null },
-    units: [],
+    units,
     terms: [],
     warranty: [],
   }
@@ -77,6 +84,49 @@ const RESOLVED_BALANCE = {
 beforeEach(() => {
   vi.clearAllMocks()
   dbExecute.mockResolvedValue({ rows: [{ value: 1 }] })
+})
+
+const ONE_UNIT = [{ id: 'u1', title: 'Unit 01', options: [{ id: 'o1', label: null, priceCents: 100_000_00, qty: 1, selected: true, specs: [] }] }]
+
+describe('generateQuotationPdf', () => {
+  it('uses the site-configured email for the masthead rather than a hardcoded one', async () => {
+    loadJob.mockResolvedValue(finishedJob({ stage: 'quotation' }, ONE_UNIT))
+    getCompanyEmail.mockResolvedValue('contact@roomycreations.lk')
+    const { generateQuotationPdf } = await import('./actions')
+
+    const formData = new FormData()
+    formData.set('jobId', 'job-1')
+    await generateQuotationPdf({}, formData)
+
+    expect(buildQuotationSnapshot.mock.calls[0][0].companyEmail).toBe('contact@roomycreations.lk')
+  })
+
+  it('passes no company email when the site has none configured', async () => {
+    loadJob.mockResolvedValue(finishedJob({ stage: 'quotation' }, ONE_UNIT))
+    getCompanyEmail.mockResolvedValue(null)
+    const { generateQuotationPdf } = await import('./actions')
+
+    const formData = new FormData()
+    formData.set('jobId', 'job-1')
+    await generateQuotationPdf({}, formData)
+
+    expect(buildQuotationSnapshot.mock.calls[0][0].companyEmail).toBeNull()
+  })
+})
+
+describe('generateOrderDocument', () => {
+  it('uses the site-configured email for the masthead rather than a hardcoded one', async () => {
+    loadJob.mockResolvedValue(finishedJob())
+    getJobBalance.mockResolvedValue(RESOLVED_BALANCE)
+    getCompanyEmail.mockResolvedValue('contact@roomycreations.lk')
+    const { generateOrderDocument } = await import('./actions')
+
+    const formData = new FormData()
+    formData.set('jobId', 'job-1')
+    await generateOrderDocument({}, formData)
+
+    expect(buildOrderSnapshot.mock.calls[0][0].companyEmail).toBe('contact@roomycreations.lk')
+  })
 })
 
 describe('generateCompletionDocument', () => {
@@ -175,6 +225,32 @@ describe('generateCompletionDocument', () => {
 
     expect(result.error).toContain('db:seed')
     expect(insertValues).not.toHaveBeenCalled()
+  })
+
+  it('uses the site-configured email for the masthead rather than a hardcoded one', async () => {
+    loadJob.mockResolvedValue(finishedJob())
+    getJobBalance.mockResolvedValue(RESOLVED_BALANCE)
+    getCompanyEmail.mockResolvedValue('contact@roomycreations.lk')
+    const { generateCompletionDocument } = await import('./actions')
+
+    const formData = new FormData()
+    formData.set('jobId', 'job-1')
+    await generateCompletionDocument({}, formData)
+
+    expect(buildCompletionSnapshot.mock.calls[0][0].companyEmail).toBe('contact@roomycreations.lk')
+  })
+
+  it('passes no company email when the site has none configured, rather than a placeholder', async () => {
+    loadJob.mockResolvedValue(finishedJob())
+    getJobBalance.mockResolvedValue(RESOLVED_BALANCE)
+    getCompanyEmail.mockResolvedValue(null)
+    const { generateCompletionDocument } = await import('./actions')
+
+    const formData = new FormData()
+    formData.set('jobId', 'job-1')
+    await generateCompletionDocument({}, formData)
+
+    expect(buildCompletionSnapshot.mock.calls[0][0].companyEmail).toBeNull()
   })
 })
 

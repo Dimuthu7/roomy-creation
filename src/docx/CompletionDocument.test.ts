@@ -24,6 +24,7 @@ const SNAPSHOT: CompletionSnapshot = {
   warranty: [{ body: '1 year warranty on all fittings.', emphasis: true }],
   payments: [{ paidAtLabel: '01-April-2026', kindLabel: 'Advance payment', method: 'Cash', amountLabel: '235,000.00' }],
   paymentPosition: { paidLabel: '235,000.00', balanceLabel: '0.00' },
+  companyEmail: 'roomycreation@gmail.com',
 }
 
 async function textFor(snapshot: CompletionSnapshot): Promise<string> {
