@@ -8,6 +8,7 @@ const SNAPSHOT: ReceiptSnapshot = {
   customerName: 'Mr. W. Williams',
   customer: { name: 'Mr. W. Williams', phone: '+94 772383430', email: null, addressLines: ['Galapitamulla', 'Kurunegala.'], city: null, district: null },
   salesPerson: 'ISHAN',
+  companyEmail: 'roomycreation@gmail.com',
   amountLabel: '150,000.00',
   kindLabel: 'advance payment',
   paidAtLabel: '19 Sep 2026',
@@ -45,6 +46,11 @@ describe('ReceiptDocument', () => {
     expect(text).toContain('RCP00001')
     expect(text).toContain('19 Sep 2026')
     expect(text).toContain('ISHAN')
+  })
+
+  it('prints the site-configured company email, and omits it when none is set', () => {
+    expect(textOf(ReceiptDocument({ snapshot: SNAPSHOT }))).toContain('roomycreation@gmail.com')
+    expect(textOf(ReceiptDocument({ snapshot: { ...SNAPSHOT, companyEmail: null } }))).not.toContain('@')
   })
 
   it('prints the client details block', () => {

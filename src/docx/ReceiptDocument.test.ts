@@ -10,6 +10,7 @@ const SNAPSHOT: ReceiptSnapshot = {
   customerName: 'williams',
   customer: { name: 'williams', phone: '+94 772383430', email: null, addressLines: ['Galapitamulla', 'Kurunegala.'], city: null, district: null },
   salesPerson: 'ISHAN',
+  companyEmail: 'roomycreation@gmail.com',
   amountLabel: '100,000.00',
   kindLabel: 'advance payment',
   paidAtLabel: '01-April-2026',
@@ -47,9 +48,15 @@ describe('receiptDocument', () => {
 
   it('prints the masthead contact stack and the client details block', async () => {
     const text = await textFor(SNAPSHOT)
+    expect(text).toContain('roomycreation@gmail.com')
     expect(text).toContain('Web - roomycreations.com')
     expect(text).toContain('Client Details - williams')
     expect(text).toContain('Galapitamulla')
+  })
+
+  it('omits the email line when the site has none configured', async () => {
+    const text = await textFor({ ...SNAPSHOT, companyEmail: null })
+    expect(text).not.toContain('@')
   })
 
   it('prints the date and sales person in the meta panel', async () => {

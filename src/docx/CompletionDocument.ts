@@ -42,7 +42,7 @@ export function completionDocument(snapshot: CompletionSnapshot): Document {
       {
         properties: { page: { size: { width: 11906, height: 16838 }, margin: { top: 720, bottom: 720, left: 720, right: 720 } } },
         children: [
-          ...documentHeader('COMPLETION CERTIFICATE', metaFields(snapshot)),
+          ...documentHeader('COMPLETION CERTIFICATE', metaFields(snapshot), snapshot.companyEmail),
           ...clientBlock(snapshot.customer),
           new Paragraph({ spacing: { before: 160, after: 80 }, children: [new TextRun({ text: 'Items Delivered', font: FONT, bold: true, size: sizes.sectionHeading })] }),
           itemsTable(snapshot.units),

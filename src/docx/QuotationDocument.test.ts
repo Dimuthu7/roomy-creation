@@ -19,6 +19,7 @@ const SNAPSHOT: QuotationSnapshot = {
   totals: { subtotalLabel: '430,000.00', discountLabel: 'Cash Discount', discountAmountLabel: '30,000.00', totalLabel: '400,000.00' },
   terms: [{ body: 'Manufacturing time - 15 to 30 days after the advance payment paid.', emphasis: false }],
   warranty: [],
+  companyEmail: 'roomycreation@gmail.com',
 }
 
 async function textFor(snapshot: QuotationSnapshot): Promise<string> {

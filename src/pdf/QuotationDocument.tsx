@@ -15,7 +15,7 @@ export function QuotationDocument({ snapshot }: { snapshot: QuotationSnapshot })
   return (
     <Document>
       <Page size="A4" style={styles.page}>
-        {documentHeader('QUOTATION', metaFields(snapshot))}
+        {documentHeader('QUOTATION', metaFields(snapshot), snapshot.companyEmail)}
         {clientBlock(snapshot.customer)}
         <View style={styles.table}>
           {tableHeader()}

@@ -25,6 +25,7 @@ const SNAPSHOT: CompletionSnapshot = {
   paymentPosition: { paidLabel: '235,000.00', balanceLabel: '0.00' },
   terms: [{ body: 'Delivery within 15 to 30 days.', emphasis: false }],
   warranty: [{ body: 'Five year warranty on structure.', emphasis: true }],
+  companyEmail: 'roomycreation@gmail.com',
 }
 
 function textOf(node: unknown): string {

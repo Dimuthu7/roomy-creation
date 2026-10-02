@@ -20,6 +20,7 @@ const SNAPSHOT: OrderSnapshot = {
   paymentTerms: 'Balance payable on completion of installation.',
   terms: [],
   warranty: [],
+  companyEmail: 'roomycreation@gmail.com',
 }
 
 function textOf(node: unknown): string {

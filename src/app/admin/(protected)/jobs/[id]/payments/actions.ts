@@ -11,6 +11,7 @@ import { formatReceiptNumber } from '@/lib/jobs/reference'
 import { buildReceiptSnapshot } from '@/lib/jobs/snapshot'
 import { renderReceiptPdf } from '@/pdf/ReceiptDocument'
 import { getJobBalance } from '@/lib/jobs/queries'
+import { getCompanyEmail } from '@/data/site'
 
 export interface ActionState {
   error?: string
@@ -104,6 +105,7 @@ export async function generateReceipt(_prevState: ActionState, formData: FormDat
       district: job.customers.district,
     },
     salesPerson: job.jobs.salesPerson,
+    companyEmail: await getCompanyEmail(),
     amountCents: payment.amountCents,
     kind: payment.kind as 'advance' | 'final' | 'other',
     note: payment.note,

@@ -13,8 +13,12 @@ import { SpecMarker, OptionMarker } from './Marker'
 
 /** The mark, the company stack and the document's own meta panel, over a rule, under
  *  a centred title. `fields` may be empty — a document with nothing to put on the
- *  right simply gets a masthead with an empty right column. */
-export function documentHeader(title: string, fields: { label: string; value: string }[] = []) {
+ *  right simply gets a masthead with an empty right column. `companyEmail` comes from
+ *  the snapshot (ultimately site_config, set from Site Details), not a literal here —
+ *  an admin who updates the site's contact email must not need a code change to have
+ *  new documents reflect it. Null omits the line rather than falling back to a
+ *  hardcoded address, matching how the customer's own email is handled below. */
+export function documentHeader(title: string, fields: { label: string; value: string }[] = [], companyEmail: string | null = null) {
   return (
     <View style={styles.headerBlock}>
       <View style={styles.mastheadRow}>
@@ -26,7 +30,7 @@ export function documentHeader(title: string, fields: { label: string; value: st
           <Image src={LOGO_MARK_DATA_URI} style={styles.logoMark} />
           <View>
             <Text style={styles.companyName}>Roomy Creations</Text>
-            <Text style={styles.companyLine}>roomycreation@gmail.com</Text>
+            {companyEmail && <Text style={styles.companyLine}>{companyEmail}</Text>}
             <Text style={styles.companyLine}>Web - roomycreations.com</Text>
             <Text style={styles.companyLine}>+94 72 292 0088</Text>
           </View>

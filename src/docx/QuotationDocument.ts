@@ -34,7 +34,7 @@ export function quotationDocument(snapshot: QuotationSnapshot): Document {
       {
         properties: { page: { size: { width: 11906, height: 16838 }, margin: { top: 720, bottom: 720, left: 720, right: 720 } } },
         children: [
-          ...documentHeader('QUOTATION', metaFields(snapshot)),
+          ...documentHeader('QUOTATION', metaFields(snapshot), snapshot.companyEmail),
           ...clientBlock(snapshot.customer),
           new Paragraph({ children: [] }),
           itemsTable(snapshot.units),

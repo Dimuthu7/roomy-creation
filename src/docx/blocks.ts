@@ -10,8 +10,10 @@ import { FONT, cellBorders, colors, lightBorder, noBorders, sizes, thinBorder } 
 // whatever flat sequence of Paragraph/Table nodes it wrapped.
 
 /** The Word twin of src/pdf/blocks.tsx's documentHeader: mark and company stack on
- *  the left, meta panel on the right, a rule beneath, then the centred title. */
-export function documentHeader(title: string, fields: { label: string; value: string }[] = []): (Paragraph | Table)[] {
+ *  the left, meta panel on the right, a rule beneath, then the centred title.
+ *  `companyEmail` comes from the snapshot (ultimately site_config), not a literal —
+ *  see the PDF twin's note. Null omits the line rather than falling back to one. */
+export function documentHeader(title: string, fields: { label: string; value: string }[] = [], companyEmail: string | null = null): (Paragraph | Table)[] {
   const markCell = new TableCell({
     borders: noBorders,
     width: { size: 10, type: WidthType.PERCENTAGE },
@@ -36,7 +38,7 @@ export function documentHeader(title: string, fields: { label: string; value: st
     verticalAlign: VerticalAlign.CENTER,
     children: [
       new Paragraph({ children: [new TextRun({ text: 'Roomy Creations', font: FONT, bold: true, size: sizes.companyName })] }),
-      ...['roomycreation@gmail.com', 'Web - roomycreations.com', '+94 72 292 0088'].map(
+      ...[...(companyEmail ? [companyEmail] : []), 'Web - roomycreations.com', '+94 72 292 0088'].map(
         (line) => new Paragraph({ children: [new TextRun({ text: line, font: FONT, size: sizes.small, color: colors.muted })] }),
       ),
     ],

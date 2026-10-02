@@ -6,6 +6,7 @@ import { del, put } from '@vercel/blob'
 import { verifyAdminSession } from '@/lib/adminAuth'
 import { db } from '@/db/client'
 import { customers, jobDocuments, jobs } from '@/db/schema'
+import { getCompanyEmail } from '@/data/site'
 import { getJobBalance, loadJob } from '@/lib/jobs/queries'
 import { buildCompletionSnapshot, buildOrderSnapshot, buildQuotationSnapshot } from '@/lib/jobs/snapshot'
 import { formatWarrantyNumber } from '@/lib/jobs/reference'
@@ -85,6 +86,7 @@ export async function generateQuotationPdf(_prevState: ActionState, formData: Fo
     deliveryChargeCents: loaded.job.deliveryChargeCents,
     terms: loaded.terms.map((c) => ({ body: c.body, emphasis: c.emphasis })),
     warranty: loaded.warranty.map((c) => ({ body: c.body, emphasis: c.emphasis })),
+    companyEmail: await getCompanyEmail(),
   })
 
   const pdf = await renderQuotationPdf(snapshot)
@@ -143,6 +145,7 @@ export async function generateOrderDocument(_prevState: ActionState, formData: F
     payments: balance.payments,
     terms: loaded.terms.map((c) => ({ body: c.body, emphasis: c.emphasis })),
     warranty: loaded.warranty.map((c) => ({ body: c.body, emphasis: c.emphasis })),
+    companyEmail: await getCompanyEmail(),
   })
 
   const pdf = await renderOrderPdf(snapshot)
@@ -227,6 +230,7 @@ export async function generateCompletionDocument(_prevState: ActionState, formDa
     })),
     terms: loaded.terms.map((c) => ({ body: c.body, emphasis: c.emphasis })),
     warranty: loaded.warranty.map((c) => ({ body: c.body, emphasis: c.emphasis })),
+    companyEmail: await getCompanyEmail(),
   })
 
   const pdf = await renderCompletionPdf(snapshot)

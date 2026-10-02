@@ -99,7 +99,7 @@ export function receiptDocument(snapshot: ReceiptSnapshot): Document {
       {
         properties: { page: { size: { width: 11906, height: 16838 }, margin: { top: 720, bottom: 720, left: 720, right: 720 } } },
         children: [
-          ...documentHeader('RECEIPT', metaFields(snapshot)),
+          ...documentHeader('RECEIPT', metaFields(snapshot), snapshot.companyEmail ?? null),
           ...(snapshot.customer ? clientBlock(snapshot.customer) : []),
           acknowledgement(snapshot),
           ...(position ? [new Paragraph({ spacing: { after: 80 }, children: [] }), position] : []),

@@ -20,7 +20,7 @@ export function CompletionDocument({ snapshot }: { snapshot: CompletionSnapshot 
   return (
     <Document>
       <Page size="A4" style={styles.page}>
-        {documentHeader('COMPLETION CERTIFICATE', metaFields(snapshot))}
+        {documentHeader('COMPLETION CERTIFICATE', metaFields(snapshot), snapshot.companyEmail)}
         {clientBlock(snapshot.customer)}
         <Text style={styles.sectionHeading}>Items Delivered</Text>
         <View style={styles.table}>

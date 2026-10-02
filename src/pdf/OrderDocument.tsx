@@ -22,7 +22,7 @@ export function OrderDocument({ snapshot }: { snapshot: OrderSnapshot }) {
   return (
     <Document>
       <Page size="A4" style={styles.page}>
-        {documentHeader('ORDER', metaFields(snapshot))}
+        {documentHeader('ORDER', metaFields(snapshot), snapshot.companyEmail)}
         {clientBlock(snapshot.customer)}
         <View style={styles.table}>
           {tableHeader()}

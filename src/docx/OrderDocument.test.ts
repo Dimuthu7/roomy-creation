@@ -22,6 +22,7 @@ const SNAPSHOT: OrderSnapshot = {
   warranty: [],
   paymentPosition: { paidLabel: '100,000.00', balanceLabel: '135,000.00' },
   paymentTerms: 'Balance due before delivery.',
+  companyEmail: 'roomycreation@gmail.com',
 }
 
 async function textFor(snapshot: OrderSnapshot): Promise<string> {

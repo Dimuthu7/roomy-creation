@@ -40,7 +40,7 @@ export function ReceiptDocument({ snapshot }: { snapshot: ReceiptSnapshot }) {
   return (
     <Document>
       <Page size="A4" style={styles.page}>
-        {documentHeader('RECEIPT', metaFields(snapshot))}
+        {documentHeader('RECEIPT', metaFields(snapshot), snapshot.companyEmail ?? null)}
         {snapshot.customer && clientBlock(snapshot.customer)}
         <View style={styles.ackBlock}>
           {ackRow('Received With Thanks From', snapshot.customerName)}

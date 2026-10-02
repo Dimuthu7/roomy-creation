@@ -66,6 +66,11 @@ export interface QuotationSnapshot {
   totals: SnapshotTotals | null
   terms: SnapshotClause[]
   warranty: SnapshotClause[]
+  /** The masthead's contact line. Sourced from site_config, not hardcoded, and frozen
+   *  into the snapshot at generation time like everything else here — a document
+   *  already issued must not change if the site's contact email changes later. Null
+   *  when the admin has not set one, in which case the masthead simply omits the line. */
+  companyEmail: string | null
 }
 
 export interface SnapshotInput {
@@ -78,6 +83,7 @@ export interface SnapshotInput {
   discountCents: number
   freeDelivery: boolean
   deliveryChargeCents: number | null
+  companyEmail: string | null
   terms: SnapshotClause[]
   warranty: SnapshotClause[]
 }
@@ -131,6 +137,7 @@ export function buildQuotationSnapshot(input: SnapshotInput): QuotationSnapshot 
       : null,
     terms: input.terms,
     warranty: input.warranty,
+    companyEmail: input.companyEmail,
   }
 }
 
@@ -194,6 +201,9 @@ export interface ReceiptSnapshot {
   salesPerson?: string | null
   totalLabel?: string | null
   paidLabel?: string | null
+  /** See QuotationSnapshot's note — same field, same optional-for-legacy-snapshots
+   *  reasoning as customer/salesPerson above. */
+  companyEmail?: string | null
 }
 
 export interface ReceiptSnapshotInput {
@@ -202,6 +212,7 @@ export interface ReceiptSnapshotInput {
   customerName: string
   customer: SnapshotCustomer
   salesPerson: string | null
+  companyEmail: string | null
   amountCents: number
   kind: 'advance' | 'final' | 'other'
   note?: string | null
@@ -236,6 +247,7 @@ export function buildReceiptSnapshot(input: ReceiptSnapshotInput): ReceiptSnapsh
     customerName: input.customerName,
     customer: input.customer,
     salesPerson: input.salesPerson,
+    companyEmail: input.companyEmail,
     amountLabel: formatCents(input.amountCents),
     kindLabel: paymentKindLabel(input.kind, input.note),
     paidAtLabel: input.paidAt,
