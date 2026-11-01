@@ -75,9 +75,9 @@ export default async function TestimonialsPage() {
             <div
               key={row.id}
               data-testid="testimonial-row"
-              className="flex flex-wrap items-start justify-between gap-4 border-2 border-navy p-4"
+              className="flex flex-col gap-4 border-2 border-navy p-4 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between"
             >
-              <div className="flex min-w-0 flex-1 gap-3">
+              <div className="flex min-w-0 gap-3 sm:flex-1">
                 <RowAvatar row={row} />
                 <div className="min-w-0">
                   <p className="u-mono text-xs text-navy/60">
@@ -89,7 +89,7 @@ export default async function TestimonialsPage() {
                 </div>
               </div>
 
-              <div className="flex shrink-0 items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
                 {row.visible && (
                   <>
                     <form action={moveTestimonial}>

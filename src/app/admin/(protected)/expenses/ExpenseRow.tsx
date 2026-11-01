@@ -22,46 +22,48 @@ export function ExpenseRow({ expense }: { expense: ExpenseRowData }) {
   return (
     <div
       data-testid="expense-row"
-      className="flex flex-wrap items-center justify-between gap-4 border-2 border-navy p-4"
+      className="flex flex-col gap-3 border-2 border-navy p-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-4"
     >
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0 sm:flex-1">
         <p className="u-mono text-xs text-navy/60">
           {expense.spentAt} · {EXPENSE_CATEGORIES[expense.category]?.label ?? expense.category}
         </p>
         <p className="mt-1 truncate text-sm text-navy">{expense.detail}</p>
       </div>
 
-      <span className="font-display text-sm text-navy tabular-nums">{formatCents(expense.amountCents)}</span>
+      <div className="flex items-center justify-between gap-3 sm:justify-end sm:gap-4">
+        <span className="font-display text-sm text-navy tabular-nums">{formatCents(expense.amountCents)}</span>
 
-      {confirming ? (
-        <div className="flex items-center gap-2">
-          <form action={deleteExpense}>
-            <input type="hidden" name="id" value={expense.id} />
-            <AdminSubmitButton
-              label="Delete"
-              pendingLabel="Deleting"
-              spinnerSize={12}
-              className="rounded-full border border-navy bg-navy px-3 py-1.5 font-display text-xs text-paper transition duration-200 active:scale-95 disabled:opacity-60"
-            />
-          </form>
+        {confirming ? (
+          <div className="flex items-center gap-2">
+            <form action={deleteExpense}>
+              <input type="hidden" name="id" value={expense.id} />
+              <AdminSubmitButton
+                label="Delete"
+                pendingLabel="Deleting"
+                spinnerSize={12}
+                className="rounded-full border border-navy bg-navy px-3 py-1.5 font-display text-xs text-paper transition duration-200 active:scale-95 disabled:opacity-60"
+              />
+            </form>
+            <button
+              type="button"
+              onClick={() => setConfirming(false)}
+              className="u-mono text-xs text-navy underline underline-offset-4 hover:text-navy/70"
+            >
+              Cancel
+            </button>
+          </div>
+        ) : (
           <button
             type="button"
-            onClick={() => setConfirming(false)}
-            className="u-mono text-xs text-navy underline underline-offset-4 hover:text-navy/70"
+            onClick={() => setConfirming(true)}
+            aria-label={`Delete expense ${expense.detail}`}
+            className="rounded-full border border-navy px-3 py-1.5 font-display text-xs text-navy transition duration-200 hover:bg-navy hover:text-paper active:scale-95"
           >
-            Cancel
+            ×
           </button>
-        </div>
-      ) : (
-        <button
-          type="button"
-          onClick={() => setConfirming(true)}
-          aria-label={`Delete expense ${expense.detail}`}
-          className="rounded-full border border-navy px-3 py-1.5 font-display text-xs text-navy transition duration-200 hover:bg-navy hover:text-paper active:scale-95"
-        >
-          ×
-        </button>
-      )}
+        )}
+      </div>
     </div>
   )
 }

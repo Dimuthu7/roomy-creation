@@ -59,7 +59,7 @@ export function WorkSlotForm({ slot }: { slot: WorkSlot }) {
         <input id={`${slot.id}-title`} name="title" defaultValue={slot.title} required className={FIELD} />
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div>
           <label htmlFor={`${slot.id}-category`} className={LABEL}>
             Category
@@ -86,7 +86,7 @@ export function WorkSlotForm({ slot }: { slot: WorkSlot }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div>
           <label htmlFor={`${slot.id}-materials`} className={LABEL}>
             Materials

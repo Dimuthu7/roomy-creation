@@ -111,7 +111,7 @@ export function JobEditor({
           </label>
           <input id="name" name="name" defaultValue={customer.name} required className={FIELD} />
         </div>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label htmlFor="phone" className={LABEL}>
               Phone
@@ -137,7 +137,7 @@ export function JobEditor({
             className={FIELD}
           />
         </div>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label htmlFor="city" className={LABEL}>
               City
@@ -164,7 +164,7 @@ export function JobEditor({
 
       <section className="space-y-4">
         <h2 className="font-display text-lg text-navy">Quotation details</h2>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label htmlFor="salesPerson" className={LABEL}>
               Sales person
@@ -188,7 +188,7 @@ export function JobEditor({
             </select>
           </div>
         </div>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label htmlFor="quotationDate" className={LABEL}>
               Quotation date
@@ -215,7 +215,7 @@ export function JobEditor({
             />
           </div>
         </div>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label htmlFor="discountLabel" className={LABEL}>
               Discount label

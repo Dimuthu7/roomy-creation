@@ -27,8 +27,14 @@ const LINK_CLASS =
 const SCROLL_SHRINK_THRESHOLD = 24
 
 // The back-out easing (overshoot then settle) is what gives the grow-back-to-top
-// motion its "zoom" pop, rather than a flat linear resize.
-const SHRINK_TRANSITION = 'transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]'
+// motion its "zoom" pop, rather than a flat linear resize. Each usage below lists
+// only the properties it actually animates — `transition-all` was making the browser
+// watch every property on a `fixed` header during scroll, which is what showed up as
+// visible jank/lag on mobile.
+const SHRINK_EASING = 'duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]'
+const HEADER_TRANSITION = `transition-[background-color,box-shadow] ${SHRINK_EASING}`
+const NAV_TRANSITION = `transition-[padding] ${SHRINK_EASING}`
+const LOGO_TRANSITION = `transition-transform ${SHRINK_EASING}`
 
 export function Nav() {
   const level = useMotionLevel()
@@ -81,13 +87,13 @@ export function Nav() {
       {/* z-50: sits above a navy hero. The hairline is what keeps it visible at rest
           against a navy section beneath it. */}
       <header
-        className={`fixed inset-x-0 top-0 z-50 border-b border-teal/30 ${SHRINK_TRANSITION} ${
-          scrolled ? 'bg-navy/95 shadow-lg shadow-navy/30 backdrop-blur-sm' : 'bg-navy'
+        className={`fixed inset-x-0 top-0 z-50 border-b border-teal/30 ${HEADER_TRANSITION} ${
+          scrolled ? 'bg-navy/95 shadow-lg shadow-navy/30 sm:backdrop-blur-sm' : 'bg-navy'
         }`}
       >
         <nav
           aria-label="Primary"
-          className={`mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-6 ${SHRINK_TRANSITION} ${
+          className={`mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-6 ${NAV_TRANSITION} ${
             scrolled ? 'py-2.5' : 'py-4'
           }`}
         >
@@ -95,7 +101,7 @@ export function Nav() {
             {isAdmin ? (
               <Link
                 href="/admin"
-                className={`origin-left ${SHRINK_TRANSITION} ${scrolled ? 'scale-90' : 'scale-100'}`}
+                className={`origin-left ${LOGO_TRANSITION} ${scrolled ? 'scale-90' : 'scale-100'}`}
               >
                 <Logo variant="yellow" />
               </Link>
@@ -103,7 +109,7 @@ export function Nav() {
               <a
                 href="#top"
                 onClick={(e) => scrollToSection(e, '#top')}
-                className={`origin-left ${SHRINK_TRANSITION} ${scrolled ? 'scale-90' : 'scale-100'}`}
+                className={`origin-left ${LOGO_TRANSITION} ${scrolled ? 'scale-90' : 'scale-100'}`}
               >
                 <Logo variant="yellow" />
               </a>
@@ -148,14 +154,20 @@ export function Nav() {
           >
             {isAdmin ? (
               <>
-                <Link href="/admin" className={LINK_CLASS}>
+                <Link href="/admin" className={LINK_CLASS} onClick={() => setMenuOpen(false)}>
                   Home
                 </Link>
-                <a href="/" target="_blank" rel="noopener noreferrer" className={LINK_CLASS}>
+                <a
+                  href="/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={LINK_CLASS}
+                  onClick={() => setMenuOpen(false)}
+                >
                   View site
                 </a>
                 <form action={logout}>
-                  <button type="submit" className={LINK_CLASS}>
+                  <button type="submit" className={LINK_CLASS} onClick={() => setMenuOpen(false)}>
                     Sign out
                   </button>
                 </form>

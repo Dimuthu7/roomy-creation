@@ -181,15 +181,15 @@ export function UnitFields({
 
       {units.map((unit, unitIndex) => (
         <div key={unit.key} data-testid="unit-row" className="space-y-4 border-2 border-navy p-4">
-          <div className="flex items-start justify-between gap-4">
+          <div className="flex flex-wrap items-start justify-between gap-4">
             <input
               data-testid="unit-title"
               value={unit.title}
               onChange={(e) => dispatch({ type: 'setUnitTitle', unitKey: unit.key, title: e.target.value })}
               placeholder="Unit title, e.g. Wardrobe with Dressing Unit"
-              className={`${FIELD} flex-1 font-display`}
+              className={`${FIELD} min-w-0 flex-1 font-display`}
             />
-            <div className="flex shrink-0 gap-2">
+            <div className="flex flex-wrap shrink-0 gap-2">
               <button
                 type="button"
                 disabled={unitIndex === 0}
