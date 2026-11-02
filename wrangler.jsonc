@@ -1,0 +1,51 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "roomy-creations",
+	"main": ".open-next/worker.js",
+	"compatibility_date": "2026-10-01",
+	"compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+	"assets": {
+		"directory": ".open-next/assets",
+		"binding": "ASSETS"
+	},
+	"services": [
+		{
+			// Self-reference the OpenNext adapter needs; must match "name" above.
+			"binding": "WORKER_SELF_REFERENCE",
+			"service": "roomy-creations"
+		}
+	],
+	"r2_buckets": [
+		{
+			// Admin uploads: gallery photos and generated quotation/order/receipt
+			// PDFs and DOCX files. Served publicly from R2_PUBLIC_URL. `remote`
+			// makes `next dev` write to the real bucket, so uploaded files resolve
+			// at their public URL locally too (run `npx wrangler login` once).
+			"binding": "UPLOADS",
+			"bucket_name": "roomy-creations-uploads",
+			"remote": true
+		},
+		{
+			// Next.js data cache (unstable_cache, prerendered pages).
+			"binding": "NEXT_INC_CACHE_R2_BUCKET",
+			"bucket_name": "roomy-creations-cache"
+		}
+	],
+	"d1_databases": [
+		{
+			// Records revalidatePath() calls so an admin save refreshes the
+			// public site. Its table is created by `opennextjs-cloudflare deploy`.
+			"binding": "NEXT_TAG_CACHE_D1",
+			"database_name": "roomy-creations-tag-cache",
+			"database_id": "18a33bcc-3a80-429e-9354-b058bf0f81a0"
+		}
+	],
+	"images": {
+		// next/image optimisation through Cloudflare Images (5,000 free
+		// unique transformations a month).
+		"binding": "IMAGES"
+	},
+	"observability": {
+		"enabled": true
+	}
+}

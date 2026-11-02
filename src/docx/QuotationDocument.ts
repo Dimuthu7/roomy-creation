@@ -1,4 +1,4 @@
-import { AlignmentType, Document, Packer, Paragraph, TextRun } from 'docx'
+import { AlignmentType, Document, Paragraph, TextRun } from 'docx'
 import type { QuotationSnapshot } from '@/lib/jobs/snapshot'
 import { FONT, colors, sizes } from './styles'
 import { clauseList, clientBlock, deliveryRow, documentHeader, itemsTable, signatureBlock, totalsBlock } from './blocks'
@@ -50,8 +50,4 @@ export function quotationDocument(snapshot: QuotationSnapshot): Document {
       },
     ],
   })
-}
-
-export async function renderQuotationDocx(snapshot: QuotationSnapshot): Promise<Buffer> {
-  return Packer.toBuffer(quotationDocument(snapshot))
 }

@@ -2,14 +2,13 @@
 import { randomUUID } from 'crypto'
 import { and, desc, eq, sql } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
-import { put } from '@vercel/blob'
+import type { PrepareState } from '@/lib/jobs/documentFiles'
 import { verifyAdminSession } from '@/lib/adminAuth'
 import { db } from '@/db/client'
-import { customers, jobDocuments, jobs, payments } from '@/db/schema'
+import { customers, jobs, payments } from '@/db/schema'
 import { paymentFormSchema } from '@/lib/jobs/schema'
 import { formatReceiptNumber } from '@/lib/jobs/reference'
 import { buildReceiptSnapshot } from '@/lib/jobs/snapshot'
-import { renderReceiptPdf } from '@/pdf/ReceiptDocument'
 import { getJobBalance } from '@/lib/jobs/queries'
 import { getCompanyEmail } from '@/data/site'
 
@@ -60,11 +59,13 @@ export async function deletePayment(formData: FormData): Promise<void> {
   revalidatePath(`/admin/jobs/${jobId}/payments`)
 }
 
-/** One receipt per payment, generated on demand rather than automatically — an admin
- *  may record several payments before printing anything, or reprint one later. Always
- *  a fresh row (immutable-snapshot rule): re-generating a receipt for the same
- *  payment produces a second document, not an overwrite. */
-export async function generateReceipt(_prevState: ActionState, formData: FormData): Promise<ActionState> {
+/** Step 1 of one receipt per payment, generated on demand rather than automatically —
+ *  an admin may record several payments before printing anything, or reprint one
+ *  later. Builds the snapshot (and takes the receipt number) for the browser to draw;
+ *  documents/actions.ts's saveGeneratedDocument then stores it as a fresh row
+ *  (immutable-snapshot rule): re-generating a receipt for the same payment produces a
+ *  second document, not an overwrite. */
+export async function prepareReceipt(_prevState: PrepareState, formData: FormData): Promise<PrepareState> {
   await verifyAdminSession()
 
   const jobId = String(formData.get('jobId') ?? '')
@@ -115,20 +116,5 @@ export async function generateReceipt(_prevState: ActionState, formData: FormDat
     paymentsIncludingThis: balance?.payments ?? [],
   })
 
-  const pdf = await renderReceiptPdf(snapshot)
-  const blob = await put(`receipts/${snapshot.number}-${Date.now()}.pdf`, pdf, { access: 'public' })
-
-  await db.insert(jobDocuments).values({
-    id: randomUUID(),
-    jobId,
-    kind: 'receipt',
-    number: snapshot.number,
-    blobUrl: blob.url,
-    snapshot,
-    paymentId,
-  })
-
-  revalidatePath(`/admin/jobs/${jobId}/payments`)
-  revalidatePath(`/admin/jobs/${jobId}/documents`)
-  return { success: true }
+  return { prepared: { jobId, kind: 'receipt', number: snapshot.number, format: 'pdf', paymentId, snapshot } }
 }

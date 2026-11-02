@@ -5,18 +5,7 @@ import { jobDocuments } from '@/db/schema'
 vi.mock('@/lib/adminAuth', () => ({ verifyAdminSession: vi.fn().mockResolvedValue(undefined) }))
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }))
 const blobDel = vi.fn().mockResolvedValue(undefined)
-vi.mock('@vercel/blob', () => ({ put: vi.fn().mockResolvedValue({ url: 'https://blob.example/completion.pdf' }), del: (...args: unknown[]) => blobDel(...args) }))
-vi.mock('@/pdf/CompletionDocument', () => ({ renderCompletionPdf: vi.fn().mockResolvedValue(Buffer.from('pdf')) }))
-vi.mock('@/pdf/OrderDocument', () => ({ renderOrderPdf: vi.fn().mockResolvedValue(Buffer.from('pdf')) }))
-vi.mock('@/pdf/QuotationDocument', () => ({ renderQuotationPdf: vi.fn().mockResolvedValue(Buffer.from('pdf')) }))
-const renderCompletionDocx = vi.fn().mockResolvedValue(Buffer.from('docx'))
-const renderOrderDocx = vi.fn().mockResolvedValue(Buffer.from('docx'))
-const renderQuotationDocx = vi.fn().mockResolvedValue(Buffer.from('docx'))
-const renderReceiptDocx = vi.fn().mockResolvedValue(Buffer.from('docx'))
-vi.mock('@/docx/CompletionDocument', () => ({ renderCompletionDocx }))
-vi.mock('@/docx/OrderDocument', () => ({ renderOrderDocx }))
-vi.mock('@/docx/QuotationDocument', () => ({ renderQuotationDocx }))
-vi.mock('@/docx/ReceiptDocument', () => ({ renderReceiptDocx }))
+vi.mock('@/lib/storage', () => ({ uploadPublicFile: vi.fn().mockResolvedValue({ url: 'https://blob.example/completion.pdf' }), deletePublicFile: (...args: unknown[]) => blobDel(...args) }))
 vi.mock('@/lib/jobs/mail', () => ({ sendDocumentEmail: vi.fn().mockResolvedValue({}) }))
 
 const buildCompletionSnapshot = vi.fn().mockReturnValue({ number: 'WC00001' })
@@ -88,15 +77,15 @@ beforeEach(() => {
 
 const ONE_UNIT = [{ id: 'u1', title: 'Unit 01', options: [{ id: 'o1', label: null, priceCents: 100_000_00, qty: 1, selected: true, specs: [] }] }]
 
-describe('generateQuotationPdf', () => {
+describe('prepareQuotationDocument', () => {
   it('uses the site-configured email for the masthead rather than a hardcoded one', async () => {
     loadJob.mockResolvedValue(finishedJob({ stage: 'quotation' }, ONE_UNIT))
     getCompanyEmail.mockResolvedValue('contact@roomycreations.lk')
-    const { generateQuotationPdf } = await import('./actions')
+    const { prepareQuotationDocument } = await import('./actions')
 
     const formData = new FormData()
     formData.set('jobId', 'job-1')
-    await generateQuotationPdf({}, formData)
+    await prepareQuotationDocument({}, formData)
 
     expect(buildQuotationSnapshot.mock.calls[0][0].companyEmail).toBe('contact@roomycreations.lk')
   })
@@ -104,71 +93,72 @@ describe('generateQuotationPdf', () => {
   it('passes no company email when the site has none configured', async () => {
     loadJob.mockResolvedValue(finishedJob({ stage: 'quotation' }, ONE_UNIT))
     getCompanyEmail.mockResolvedValue(null)
-    const { generateQuotationPdf } = await import('./actions')
+    const { prepareQuotationDocument } = await import('./actions')
 
     const formData = new FormData()
     formData.set('jobId', 'job-1')
-    await generateQuotationPdf({}, formData)
+    await prepareQuotationDocument({}, formData)
 
     expect(buildQuotationSnapshot.mock.calls[0][0].companyEmail).toBeNull()
   })
 })
 
-describe('generateOrderDocument', () => {
+describe('prepareOrderDocument', () => {
   it('uses the site-configured email for the masthead rather than a hardcoded one', async () => {
     loadJob.mockResolvedValue(finishedJob())
     getJobBalance.mockResolvedValue(RESOLVED_BALANCE)
     getCompanyEmail.mockResolvedValue('contact@roomycreations.lk')
-    const { generateOrderDocument } = await import('./actions')
+    const { prepareOrderDocument } = await import('./actions')
 
     const formData = new FormData()
     formData.set('jobId', 'job-1')
-    await generateOrderDocument({}, formData)
+    await prepareOrderDocument({}, formData)
 
     expect(buildOrderSnapshot.mock.calls[0][0].companyEmail).toBe('contact@roomycreations.lk')
   })
 })
 
-describe('generateCompletionDocument', () => {
+describe('prepareCompletionDocument', () => {
   it('generates a certificate for a finished order', async () => {
     loadJob.mockResolvedValue(finishedJob())
     getJobBalance.mockResolvedValue(RESOLVED_BALANCE)
-    const { generateCompletionDocument } = await import('./actions')
+    const { prepareCompletionDocument } = await import('./actions')
 
     const formData = new FormData()
     formData.set('jobId', 'job-1')
-    const result = await generateCompletionDocument({}, formData)
+    const result = await prepareCompletionDocument({}, formData)
 
-    expect(result.success).toBe(true)
-    expect(insertValues).toHaveBeenCalledTimes(1)
-    expect(insertValues.mock.calls[0][0]).toMatchObject({ kind: 'completion', number: 'WC00001', jobId: 'job-1' })
+    expect(result.error).toBeUndefined()
+    expect(result.prepared).toMatchObject({ kind: 'completion', number: 'WC00001', jobId: 'job-1', format: 'pdf', paymentId: null })
+    // Preparing stores nothing: the row is written only once the browser hands back a file.
+    expect(insertValues).not.toHaveBeenCalled()
   })
 
   it('numbers the certificate from the WC series rather than reusing the job ref', async () => {
     loadJob.mockResolvedValue(finishedJob())
     getJobBalance.mockResolvedValue(RESOLVED_BALANCE)
-    const { generateCompletionDocument } = await import('./actions')
+    const { prepareCompletionDocument } = await import('./actions')
 
     const formData = new FormData()
     formData.set('jobId', 'job-1')
-    await generateCompletionDocument({}, formData)
+    await prepareCompletionDocument({}, formData)
 
     // Asserted through the number handed to the snapshot builder, not by
     // stringifying the drizzle `sql` template — an SQL object's toString is an
     // implementation detail and makes for a test that breaks on an ORM upgrade.
     expect(dbExecute).toHaveBeenCalledTimes(1)
     expect(buildCompletionSnapshot.mock.calls[0][0].number).toBe('WC00001')
-    expect(insertValues.mock.calls[0][0].number).not.toBe('RC00188')
+    expect(buildCompletionSnapshot.mock.calls[0][0].number).not.toBe('RC00188')
   })
 
   it('refuses a job that has not been completed yet', async () => {
     loadJob.mockResolvedValue(finishedJob({ status: 'in_progress' }))
     getJobBalance.mockResolvedValue(RESOLVED_BALANCE)
-    const { generateCompletionDocument } = await import('./actions')
+    const { prepareCompletionDocument } = await import('./actions')
 
     const formData = new FormData()
     formData.set('jobId', 'job-1')
-    const result = await generateCompletionDocument({}, formData)
+    const result = await prepareCompletionDocument({}, formData)
 
     expect(result.error).toBeTruthy()
     expect(insertValues).not.toHaveBeenCalled()
@@ -177,11 +167,11 @@ describe('generateCompletionDocument', () => {
   it('refuses a job that is not an order', async () => {
     loadJob.mockResolvedValue(finishedJob({ stage: 'quotation' }))
     getJobBalance.mockResolvedValue(RESOLVED_BALANCE)
-    const { generateCompletionDocument } = await import('./actions')
+    const { prepareCompletionDocument } = await import('./actions')
 
     const formData = new FormData()
     formData.set('jobId', 'job-1')
-    const result = await generateCompletionDocument({}, formData)
+    const result = await prepareCompletionDocument({}, formData)
 
     expect(result.error).toBeTruthy()
     expect(insertValues).not.toHaveBeenCalled()
@@ -190,11 +180,11 @@ describe('generateCompletionDocument', () => {
   it('refuses when a unit is still unresolved, so no total exists', async () => {
     loadJob.mockResolvedValue(finishedJob())
     getJobBalance.mockResolvedValue({ totals: null, payments: [], position: null })
-    const { generateCompletionDocument } = await import('./actions')
+    const { prepareCompletionDocument } = await import('./actions')
 
     const formData = new FormData()
     formData.set('jobId', 'job-1')
-    const result = await generateCompletionDocument({}, formData)
+    const result = await prepareCompletionDocument({}, formData)
 
     expect(result.error).toBeTruthy()
     expect(insertValues).not.toHaveBeenCalled()
@@ -203,11 +193,11 @@ describe('generateCompletionDocument', () => {
   it('refuses a job whose status was set to finished directly (e.g. via the Status dropdown) without ever completing it', async () => {
     loadJob.mockResolvedValue(finishedJob({ completedAt: null }))
     getJobBalance.mockResolvedValue(RESOLVED_BALANCE)
-    const { generateCompletionDocument } = await import('./actions')
+    const { prepareCompletionDocument } = await import('./actions')
 
     const formData = new FormData()
     formData.set('jobId', 'job-1')
-    const result = await generateCompletionDocument({}, formData)
+    const result = await prepareCompletionDocument({}, formData)
 
     expect(result.error).toBeTruthy()
     expect(insertValues).not.toHaveBeenCalled()
@@ -217,11 +207,11 @@ describe('generateCompletionDocument', () => {
     loadJob.mockResolvedValue(finishedJob())
     getJobBalance.mockResolvedValue(RESOLVED_BALANCE)
     dbExecute.mockResolvedValue({ rows: [] })
-    const { generateCompletionDocument } = await import('./actions')
+    const { prepareCompletionDocument } = await import('./actions')
 
     const formData = new FormData()
     formData.set('jobId', 'job-1')
-    const result = await generateCompletionDocument({}, formData)
+    const result = await prepareCompletionDocument({}, formData)
 
     expect(result.error).toContain('db:seed')
     expect(insertValues).not.toHaveBeenCalled()
@@ -231,11 +221,11 @@ describe('generateCompletionDocument', () => {
     loadJob.mockResolvedValue(finishedJob())
     getJobBalance.mockResolvedValue(RESOLVED_BALANCE)
     getCompanyEmail.mockResolvedValue('contact@roomycreations.lk')
-    const { generateCompletionDocument } = await import('./actions')
+    const { prepareCompletionDocument } = await import('./actions')
 
     const formData = new FormData()
     formData.set('jobId', 'job-1')
-    await generateCompletionDocument({}, formData)
+    await prepareCompletionDocument({}, formData)
 
     expect(buildCompletionSnapshot.mock.calls[0][0].companyEmail).toBe('contact@roomycreations.lk')
   })
@@ -244,11 +234,11 @@ describe('generateCompletionDocument', () => {
     loadJob.mockResolvedValue(finishedJob())
     getJobBalance.mockResolvedValue(RESOLVED_BALANCE)
     getCompanyEmail.mockResolvedValue(null)
-    const { generateCompletionDocument } = await import('./actions')
+    const { prepareCompletionDocument } = await import('./actions')
 
     const formData = new FormData()
     formData.set('jobId', 'job-1')
-    await generateCompletionDocument({}, formData)
+    await prepareCompletionDocument({}, formData)
 
     expect(buildCompletionSnapshot.mock.calls[0][0].companyEmail).toBeNull()
   })
@@ -268,59 +258,139 @@ function pdfRow(overrides: Record<string, unknown> = {}) {
   }
 }
 
-describe('generateWordDocument', () => {
-  it('renders a Word sibling from the stored snapshot and inserts a new docx row', async () => {
+describe('prepareWordDocument', () => {
+  it('hands the browser the PDF row\'s stored snapshot to draw a Word sibling from', async () => {
     selectWhere.mockResolvedValue([pdfRow()])
-    const { generateWordDocument } = await import('./actions')
+    const { prepareWordDocument } = await import('./actions')
 
     const formData = new FormData()
     formData.set('documentId', 'doc-1')
-    const result = await generateWordDocument({}, formData)
+    const result = await prepareWordDocument({}, formData)
+
+    expect(result.prepared).toEqual({
+      jobId: 'job-1',
+      kind: 'quotation',
+      number: 'RC00188',
+      format: 'docx',
+      paymentId: null,
+      snapshot: { ref: 'RC00188' },
+    })
+    expect(insertValues).not.toHaveBeenCalled()
+  })
+
+  it('carries the kind through for each document type', async () => {
+    selectWhere.mockResolvedValue([pdfRow({ id: 'doc-2', kind: 'completion', number: 'WC00001' })])
+    const { prepareWordDocument } = await import('./actions')
+
+    const formData = new FormData()
+    formData.set('documentId', 'doc-2')
+    const result = await prepareWordDocument({}, formData)
+
+    expect(result.prepared).toMatchObject({ kind: 'completion', number: 'WC00001' })
+  })
+
+  it('refuses when a Word version already exists for this row', async () => {
+    selectWhere.mockResolvedValue([pdfRow({ format: 'docx' })])
+    const { prepareWordDocument } = await import('./actions')
+
+    const formData = new FormData()
+    formData.set('documentId', 'doc-1')
+    const result = await prepareWordDocument({}, formData)
+
+    expect(result.error).toBeTruthy()
+    expect(result.prepared).toBeUndefined()
+  })
+
+  it('reports a missing document rather than throwing', async () => {
+    selectWhere.mockResolvedValue([])
+    const { prepareWordDocument } = await import('./actions')
+
+    const formData = new FormData()
+    formData.set('documentId', 'missing')
+    const result = await prepareWordDocument({}, formData)
+
+    expect(result.error).toBeTruthy()
+    expect(result.prepared).toBeUndefined()
+  })
+})
+
+function savedFormData(overrides: Record<string, string | File> = {}) {
+  const formData = new FormData()
+  const fields: Record<string, string | File> = {
+    file: new File(['%PDF-1.4'], 'RC00188.pdf', { type: 'application/pdf' }),
+    jobId: 'job-1',
+    kind: 'quotation',
+    number: 'RC00188',
+    format: 'pdf',
+    paymentId: '',
+    snapshot: JSON.stringify({ ref: 'RC00188' }),
+    ...overrides,
+  }
+  for (const [name, value] of Object.entries(fields)) formData.set(name, value)
+  return formData
+}
+
+describe('saveGeneratedDocument', () => {
+  it('stores the browser-drawn file and inserts a new immutable row', async () => {
+    selectWhere.mockResolvedValue([{ id: 'job-1' }])
+    const { saveGeneratedDocument } = await import('./actions')
+    const { uploadPublicFile } = await import('@/lib/storage')
+
+    const result = await saveGeneratedDocument(savedFormData())
 
     expect(result.success).toBe(true)
-    expect(renderQuotationDocx).toHaveBeenCalledWith({ ref: 'RC00188' })
+    expect(uploadPublicFile).toHaveBeenCalledWith(expect.stringMatching(/^quotations\/RC00188-\d+\.pdf$/), expect.any(Blob))
     expect(insertValues).toHaveBeenCalledTimes(1)
     expect(insertValues.mock.calls[0][0]).toMatchObject({
       jobId: 'job-1',
       kind: 'quotation',
       number: 'RC00188',
-      format: 'docx',
+      format: 'pdf',
+      snapshot: { ref: 'RC00188' },
+      paymentId: null,
     })
   })
 
-  it('dispatches to the matching renderer for each document kind', async () => {
-    selectWhere.mockResolvedValue([pdfRow({ id: 'doc-2', kind: 'completion', number: 'WC00001' })])
-    const { generateWordDocument } = await import('./actions')
+  it('records a Word file and the payment a receipt belongs to', async () => {
+    selectWhere.mockResolvedValue([{ id: 'job-1' }])
+    const { saveGeneratedDocument } = await import('./actions')
 
-    const formData = new FormData()
-    formData.set('documentId', 'doc-2')
-    await generateWordDocument({}, formData)
+    const result = await saveGeneratedDocument(
+      savedFormData({ kind: 'receipt', number: 'RCP00001', format: 'docx', paymentId: 'pay-1', file: new File(['PK'], 'x.docx') }),
+    )
 
-    expect(renderCompletionDocx).toHaveBeenCalled()
-    expect(renderQuotationDocx).not.toHaveBeenCalled()
+    expect(result.success).toBe(true)
+    expect(insertValues.mock.calls[0][0]).toMatchObject({ kind: 'receipt', format: 'docx', paymentId: 'pay-1' })
   })
 
-  it('refuses when a Word version already exists for this row', async () => {
-    selectWhere.mockResolvedValue([pdfRow({ format: 'docx' })])
-    const { generateWordDocument } = await import('./actions')
+  it.each([
+    ['an unknown document type', { kind: 'invoice' }],
+    ['an unknown format', { format: 'exe' }],
+    ['a missing snapshot', { snapshot: '' }],
+    ['a snapshot that is not JSON', { snapshot: '{oops' }],
+    ['an empty file', { file: new File([], 'x.pdf') }],
+    ['a missing job id', { jobId: '' }],
+  ])('refuses %s without storing anything', async (_label, overrides) => {
+    selectWhere.mockResolvedValue([{ id: 'job-1' }])
+    const { saveGeneratedDocument } = await import('./actions')
+    const { uploadPublicFile } = await import('@/lib/storage')
 
-    const formData = new FormData()
-    formData.set('documentId', 'doc-1')
-    const result = await generateWordDocument({}, formData)
+    const result = await saveGeneratedDocument(savedFormData(overrides as Record<string, string | File>))
 
     expect(result.error).toBeTruthy()
+    expect(uploadPublicFile).not.toHaveBeenCalled()
     expect(insertValues).not.toHaveBeenCalled()
   })
 
-  it('reports a missing document rather than throwing', async () => {
+  it('refuses a file for a job that does not exist', async () => {
     selectWhere.mockResolvedValue([])
-    const { generateWordDocument } = await import('./actions')
+    const { saveGeneratedDocument } = await import('./actions')
+    const { uploadPublicFile } = await import('@/lib/storage')
 
-    const formData = new FormData()
-    formData.set('documentId', 'missing')
-    const result = await generateWordDocument({}, formData)
+    const result = await saveGeneratedDocument(savedFormData())
 
     expect(result.error).toBeTruthy()
+    expect(uploadPublicFile).not.toHaveBeenCalled()
     expect(insertValues).not.toHaveBeenCalled()
   })
 })

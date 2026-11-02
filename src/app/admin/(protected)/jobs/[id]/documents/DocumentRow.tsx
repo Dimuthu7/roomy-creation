@@ -2,7 +2,8 @@
 import { useActionState, useEffect } from 'react'
 import { toast } from 'sonner'
 import { AdminSubmitButton } from '@/components/admin/AdminSubmitButton'
-import { deleteDocument, emailDocument, generateWordDocument, type ActionState } from './actions'
+import { GenerateDocumentButton } from '@/components/admin/GenerateDocumentButton'
+import { deleteDocument, emailDocument, prepareWordDocument, type ActionState } from './actions'
 
 const initialState: ActionState = {}
 
@@ -41,17 +42,11 @@ export function DocumentRow({
   stale: boolean
 }) {
   const [state, formAction] = useActionState(emailDocument, initialState)
-  const [wordState, wordFormAction] = useActionState(generateWordDocument, initialState)
 
   useEffect(() => {
     if (state.success) toast.success('Emailed to the customer.')
     else if (state.error) toast.error(state.error)
   }, [state])
-
-  useEffect(() => {
-    if (wordState.success) toast.success('Word version generated.')
-    else if (wordState.error) toast.error(wordState.error)
-  }, [wordState])
 
   return (
     <div data-testid="document-row" className="flex flex-wrap items-center justify-between gap-4 border border-navy/40 p-4">
@@ -81,15 +76,14 @@ export function DocumentRow({
           Download
         </a>
         {format === 'pdf' && (
-          <form action={wordFormAction}>
-            <input type="hidden" name="documentId" value={id} />
-            <AdminSubmitButton
-              label="Generate Word version"
-              pendingLabel="Generating"
-              className="rounded-full border border-navy px-4 py-2 font-display text-xs text-navy transition duration-200 hover:bg-navy hover:text-paper active:scale-95 disabled:opacity-60"
-              ariaLabel={`Generate a Word version of ${number}`}
-            />
-          </form>
+          <GenerateDocumentButton
+            prepare={prepareWordDocument}
+            fields={{ documentId: id }}
+            label="Generate Word version"
+            successMessage="Word version generated."
+            className="rounded-full border border-navy px-4 py-2 font-display text-xs text-navy transition duration-200 hover:bg-navy hover:text-paper active:scale-95 disabled:opacity-60"
+            ariaLabel={`Generate a Word version of ${number}`}
+          />
         )}
         <form action={formAction}>
           <input type="hidden" name="documentId" value={id} />

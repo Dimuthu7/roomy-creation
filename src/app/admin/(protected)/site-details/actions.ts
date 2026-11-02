@@ -1,7 +1,7 @@
 'use server'
 import { eq } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
-import { put } from '@vercel/blob'
+import { uploadPublicFile } from '@/lib/storage'
 import { verifyAdminSession } from '@/lib/adminAuth'
 import { db } from '@/db/client'
 import { siteConfig, works } from '@/db/schema'
@@ -81,9 +81,7 @@ export async function saveWork(_prevState: ActionState, formData: FormData): Pro
     if (file.size > MAX_UPLOAD_BYTES) {
       return { error: 'Image is too large — 10MB maximum.' }
     }
-    const blob = await put(`work/${id}-${Date.now()}.${extensionFor(file.type)}`, file, {
-      access: 'public',
-    })
+    const blob = await uploadPublicFile(`work/${id}-${Date.now()}.${extensionFor(file.type)}`, file)
     imageUrl = blob.url
   }
 

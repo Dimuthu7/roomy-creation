@@ -4,8 +4,6 @@ import { payments } from '@/db/schema'
 
 vi.mock('@/lib/adminAuth', () => ({ verifyAdminSession: vi.fn().mockResolvedValue(undefined) }))
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }))
-vi.mock('@vercel/blob', () => ({ put: vi.fn().mockResolvedValue({ url: 'https://blob.example/receipt.pdf' }) }))
-vi.mock('@/pdf/ReceiptDocument', () => ({ renderReceiptPdf: vi.fn().mockResolvedValue(Buffer.from('pdf')) }))
 
 const buildReceiptSnapshot = vi.fn().mockReturnValue({ number: 'RCP00001' })
 vi.mock('@/lib/jobs/snapshot', () => ({ buildReceiptSnapshot }))
@@ -51,7 +49,7 @@ beforeEach(() => {
 })
 
 describe('deletePayment', () => {
-  it('scopes the delete by both payment id and jobId, matching generateReceipt\'s job-scoping pattern', async () => {
+  it('scopes the delete by both payment id and jobId, matching prepareReceipt\'s job-scoping pattern', async () => {
     const { deletePayment } = await import('./actions')
 
     const formData = new FormData()
@@ -79,7 +77,7 @@ describe('deletePayment', () => {
   })
 })
 
-describe('generateReceipt', () => {
+describe('prepareReceipt', () => {
   it('uses the full current payment list for the balance, not a historical subset frozen at the receipted payment\'s own time', async () => {
     const olderPayment = {
       id: 'p1',
@@ -114,7 +112,7 @@ describe('generateReceipt', () => {
       .mockImplementationOnce(() => chain([newerPayment, olderPayment]))
     dbExecute.mockResolvedValue({ rows: [{ value: 1 }] })
 
-    const { generateReceipt } = await import('./actions')
+    const { prepareReceipt } = await import('./actions')
 
     const formData = new FormData()
     formData.set('jobId', 'job-1')
@@ -123,9 +121,10 @@ describe('generateReceipt', () => {
     // have excluded `newerPayment`. The spec calls for the full current list instead.
     formData.set('paymentId', 'p1')
 
-    const result = await generateReceipt({}, formData)
+    const result = await prepareReceipt({}, formData)
 
-    expect(result.success).toBe(true)
+    expect(result.error).toBeUndefined()
+    expect(result.prepared).toMatchObject({ kind: 'receipt', number: 'RCP00001', jobId: 'job-1', paymentId: 'p1', format: 'pdf' })
     expect(buildReceiptSnapshot).toHaveBeenCalledTimes(1)
     const call = buildReceiptSnapshot.mock.calls[0][0]
     expect(call.paymentsIncludingThis).toBe(currentBalance.payments)
@@ -150,12 +149,12 @@ describe('generateReceipt', () => {
       .mockImplementationOnce(() => chain([payment]))
     dbExecute.mockResolvedValue({ rows: [{ value: 1 }] })
 
-    const { generateReceipt } = await import('./actions')
+    const { prepareReceipt } = await import('./actions')
 
     const formData = new FormData()
     formData.set('jobId', 'job-1')
     formData.set('paymentId', 'p1')
-    await generateReceipt({}, formData)
+    await prepareReceipt({}, formData)
 
     const call = buildReceiptSnapshot.mock.calls[0][0]
     expect(call.salesPerson).toBe('ISHAN')
@@ -179,12 +178,12 @@ describe('generateReceipt', () => {
       .mockImplementationOnce(() => chain([payment]))
     dbExecute.mockResolvedValue({ rows: [{ value: 1 }] })
 
-    const { generateReceipt } = await import('./actions')
+    const { prepareReceipt } = await import('./actions')
 
     const formData = new FormData()
     formData.set('jobId', 'job-1')
     formData.set('paymentId', 'p1')
-    await generateReceipt({}, formData)
+    await prepareReceipt({}, formData)
 
     expect(buildReceiptSnapshot.mock.calls[0][0].companyEmail).toBe('contact@roomycreations.lk')
   })
@@ -199,12 +198,12 @@ describe('generateReceipt', () => {
       .mockImplementationOnce(() => chain([payment]))
     dbExecute.mockResolvedValue({ rows: [{ value: 1 }] })
 
-    const { generateReceipt } = await import('./actions')
+    const { prepareReceipt } = await import('./actions')
 
     const formData = new FormData()
     formData.set('jobId', 'job-1')
     formData.set('paymentId', 'p1')
-    await generateReceipt({}, formData)
+    await prepareReceipt({}, formData)
 
     expect(buildReceiptSnapshot.mock.calls[0][0].companyEmail).toBeNull()
   })
