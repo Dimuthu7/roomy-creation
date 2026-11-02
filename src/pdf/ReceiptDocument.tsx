@@ -1,4 +1,4 @@
-import { Document, Page, Text, View, renderToBuffer } from '@react-pdf/renderer'
+import { Document, Page, Text, View } from '@react-pdf/renderer'
 import type { ReceiptSnapshot } from '@/lib/jobs/snapshot'
 import { styles } from './styles'
 import { clientBlock, documentHeader, moneyBlock, signatureBlock } from './blocks'
@@ -60,8 +60,4 @@ export function ReceiptDocument({ snapshot }: { snapshot: ReceiptSnapshot }) {
       </Page>
     </Document>
   )
-}
-
-export async function renderReceiptPdf(snapshot: ReceiptSnapshot): Promise<Buffer> {
-  return renderToBuffer(<ReceiptDocument snapshot={snapshot} />)
 }

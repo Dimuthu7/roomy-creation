@@ -1,4 +1,4 @@
-import { Document, Page, Text, View, renderToBuffer } from '@react-pdf/renderer'
+import { Document, Page, Text, View } from '@react-pdf/renderer'
 import type { CompletionSnapshot } from '@/lib/jobs/snapshot'
 import { styles } from './styles'
 import { clauseList, clientBlock, deliveryRow, documentHeader, paymentLedger, signatureBlock, tableHeader, totalsBlock, unitRows } from './blocks'
@@ -40,8 +40,4 @@ export function CompletionDocument({ snapshot }: { snapshot: CompletionSnapshot 
       </Page>
     </Document>
   )
-}
-
-export async function renderCompletionPdf(snapshot: CompletionSnapshot): Promise<Buffer> {
-  return renderToBuffer(<CompletionDocument snapshot={snapshot} />)
 }

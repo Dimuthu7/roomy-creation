@@ -2,7 +2,8 @@
 import { randomUUID } from 'crypto'
 import { and, desc, eq, sql } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
-import { del, put } from '@vercel/blob'
+import { deletePublicFile, uploadPublicFile } from '@/lib/storage'
+import { DOCUMENT_MIME, MAX_DOCUMENT_BYTES, isDocumentKind, type DocumentFormat, type PrepareState } from '@/lib/jobs/documentFiles'
 import { verifyAdminSession } from '@/lib/adminAuth'
 import { db } from '@/db/client'
 import { customers, jobDocuments, jobs } from '@/db/schema'
@@ -10,15 +11,7 @@ import { getCompanyEmail } from '@/data/site'
 import { getJobBalance, loadJob } from '@/lib/jobs/queries'
 import { buildCompletionSnapshot, buildOrderSnapshot, buildQuotationSnapshot } from '@/lib/jobs/snapshot'
 import { formatWarrantyNumber } from '@/lib/jobs/reference'
-import { renderCompletionPdf } from '@/pdf/CompletionDocument'
-import { renderOrderPdf } from '@/pdf/OrderDocument'
-import { renderQuotationPdf } from '@/pdf/QuotationDocument'
-import { renderCompletionDocx } from '@/docx/CompletionDocument'
-import { renderOrderDocx } from '@/docx/OrderDocument'
-import { renderQuotationDocx } from '@/docx/QuotationDocument'
-import { renderReceiptDocx } from '@/docx/ReceiptDocument'
 import { sendDocumentEmail } from '@/lib/jobs/mail'
-import type { CompletionSnapshot, OrderSnapshot, QuotationSnapshot, ReceiptSnapshot } from '@/lib/jobs/snapshot'
 
 export interface ActionState {
   error?: string
@@ -44,7 +37,7 @@ export async function deleteDocument(formData: FormData): Promise<void> {
   if (!row) return
 
   try {
-    await del(row.blobUrl)
+    await deletePublicFile(row.blobUrl)
   } catch {
     // The blob may already be gone — deleting the row is what the admin asked for.
   }
@@ -54,10 +47,12 @@ export async function deleteDocument(formData: FormData): Promise<void> {
   revalidatePath(`/admin/jobs/${jobId}/documents`)
 }
 
-/** Renders and stores a new quotation PDF. Always inserts a fresh row rather than
- *  updating one — see the spec's "Documents are immutable snapshots": editing the
- *  job afterwards must never rewrite a PDF a customer has already been sent. */
-export async function generateQuotationPdf(_prevState: ActionState, formData: FormData): Promise<ActionState> {
+/** Step 1 of a new quotation PDF: validates and builds the snapshot the browser will
+ *  draw. Nothing is stored yet — saveGeneratedDocument does that with the finished
+ *  file, and always inserts a fresh row rather than updating one (see the spec's
+ *  "Documents are immutable snapshots": editing the job afterwards must never rewrite a
+ *  PDF a customer has already been sent). */
+export async function prepareQuotationDocument(_prevState: PrepareState, formData: FormData): Promise<PrepareState> {
   await verifyAdminSession()
 
   const jobId = String(formData.get('jobId') ?? '')
@@ -89,20 +84,7 @@ export async function generateQuotationPdf(_prevState: ActionState, formData: Fo
     companyEmail: await getCompanyEmail(),
   })
 
-  const pdf = await renderQuotationPdf(snapshot)
-  const blob = await put(`quotations/${loaded.job.ref}-${Date.now()}.pdf`, pdf, { access: 'public' })
-
-  await db.insert(jobDocuments).values({
-    id: randomUUID(),
-    jobId,
-    kind: 'quotation',
-    number: loaded.job.ref,
-    blobUrl: blob.url,
-    snapshot,
-  })
-
-  revalidatePath(`/admin/jobs/${jobId}/documents`)
-  return { success: true }
+  return { prepared: { jobId, kind: 'quotation', number: loaded.job.ref, format: 'pdf', paymentId: null, snapshot } }
 }
 
 /** Refuses outside stage 'order' or while any unit is unresolved — the same
@@ -110,7 +92,7 @@ export async function generateQuotationPdf(_prevState: ActionState, formData: Fo
  *  document generator must never trust that the caller already checked. Reuses the
  *  job's own ref, never allocating a new number — see buildOrderSnapshot's doc
  *  comment. */
-export async function generateOrderDocument(_prevState: ActionState, formData: FormData): Promise<ActionState> {
+export async function prepareOrderDocument(_prevState: PrepareState, formData: FormData): Promise<PrepareState> {
   await verifyAdminSession()
 
   const jobId = String(formData.get('jobId') ?? '')
@@ -148,20 +130,7 @@ export async function generateOrderDocument(_prevState: ActionState, formData: F
     companyEmail: await getCompanyEmail(),
   })
 
-  const pdf = await renderOrderPdf(snapshot)
-  const blob = await put(`orders/${loaded.job.ref}-${Date.now()}.pdf`, pdf, { access: 'public' })
-
-  await db.insert(jobDocuments).values({
-    id: randomUUID(),
-    jobId,
-    kind: 'order',
-    number: loaded.job.ref,
-    blobUrl: blob.url,
-    snapshot,
-  })
-
-  revalidatePath(`/admin/jobs/${jobId}/documents`)
-  return { success: true }
+  return { prepared: { jobId, kind: 'order', number: loaded.job.ref, format: 'pdf', paymentId: null, snapshot } }
 }
 
 /** The job's closing document. Refuses unless the job is actually finished — checked
@@ -172,8 +141,10 @@ export async function generateOrderDocument(_prevState: ActionState, formData: F
  *  Slice 1 reserved for it: a warranty instrument is quoted by its own number years
  *  later, against a job reference the customer no longer remembers. Regenerating
  *  allocates a fresh number, the same way regenerating a receipt does — documents are
- *  immutable, so a reissue is a new document, never an edit. */
-export async function generateCompletionDocument(_prevState: ActionState, formData: FormData): Promise<ActionState> {
+ *  immutable, so a reissue is a new document, never an edit. The number is taken here,
+ *  in the prepare step, so one that never reaches saveGeneratedDocument (the browser
+ *  failed to draw the file) leaves a gap in the series rather than reusing a number. */
+export async function prepareCompletionDocument(_prevState: PrepareState, formData: FormData): Promise<PrepareState> {
   await verifyAdminSession()
 
   const jobId = String(formData.get('jobId') ?? '')
@@ -233,29 +204,17 @@ export async function generateCompletionDocument(_prevState: ActionState, formDa
     companyEmail: await getCompanyEmail(),
   })
 
-  const pdf = await renderCompletionPdf(snapshot)
-  const blob = await put(`completions/${snapshot.number}-${Date.now()}.pdf`, pdf, { access: 'public' })
-
-  await db.insert(jobDocuments).values({
-    id: randomUUID(),
-    jobId,
-    kind: 'completion',
-    number: snapshot.number,
-    blobUrl: blob.url,
-    snapshot,
-  })
-
-  revalidatePath(`/admin/jobs/${jobId}/documents`)
-  return { success: true }
+  return { prepared: { jobId, kind: 'completion', number: snapshot.number, format: 'pdf', paymentId: null, snapshot } }
 }
 
-/** Renders an editable Word sibling of an already-generated PDF document. Reuses the
- *  PDF's own stored `snapshot` rather than recomputing one, so it never re-runs the
- *  business rules (or side effects, like the completion certificate's warranty-number
- *  allocation) that produced the original — regenerating those belongs to the PDF
- *  generators above, not to a format conversion. Immutable like every other document
- *  row: this always inserts a new row, never edits the PDF row it was generated from. */
-export async function generateWordDocument(_prevState: ActionState, formData: FormData): Promise<ActionState> {
+/** Step 1 of an editable Word sibling of an already-generated PDF document. Hands the
+ *  browser the PDF's own stored `snapshot` rather than recomputing one, so it never
+ *  re-runs the business rules (or side effects, like the completion certificate's
+ *  warranty-number allocation) that produced the original — regenerating those belongs
+ *  to the PDF generators above, not to a format conversion. Immutable like every other
+ *  document row: saveGeneratedDocument always inserts a new row, never edits the PDF
+ *  row this was prepared from. */
+export async function prepareWordDocument(_prevState: PrepareState, formData: FormData): Promise<PrepareState> {
   await verifyAdminSession()
 
   const documentId = String(formData.get('documentId') ?? '')
@@ -264,39 +223,62 @@ export async function generateWordDocument(_prevState: ActionState, formData: Fo
   const [row] = await db.select().from(jobDocuments).where(eq(jobDocuments.id, documentId))
   if (!row) return { error: 'Document not found.' }
   if (row.format !== 'pdf') return { error: 'A Word version already exists for this document.' }
+  if (!isDocumentKind(row.kind)) return { error: `Word export is not available for ${row.kind} documents.` }
 
-  let docx: Buffer
-  switch (row.kind) {
-    case 'quotation':
-      docx = await renderQuotationDocx(row.snapshot as QuotationSnapshot)
-      break
-    case 'order':
-      docx = await renderOrderDocx(row.snapshot as OrderSnapshot)
-      break
-    case 'completion':
-      docx = await renderCompletionDocx(row.snapshot as CompletionSnapshot)
-      break
-    case 'receipt':
-      docx = await renderReceiptDocx(row.snapshot as ReceiptSnapshot)
-      break
-    default:
-      return { error: `Word export is not available for ${row.kind} documents.` }
+  return {
+    prepared: { jobId: row.jobId, kind: row.kind, number: row.number, format: 'docx', paymentId: row.paymentId, snapshot: row.snapshot },
+  }
+}
+
+/** Step 2 of every document: stores the file the browser drew and records it. The
+ *  snapshot comes back from the browser along with the file, so this trusts the
+ *  signed-in admin for what the document says — the same trust the admin already has
+ *  to edit the job itself. */
+export async function saveGeneratedDocument(formData: FormData): Promise<ActionState> {
+  await verifyAdminSession()
+
+  const file = formData.get('file')
+  const jobId = String(formData.get('jobId') ?? '')
+  const kind = String(formData.get('kind') ?? '')
+  const number = String(formData.get('number') ?? '')
+  const format = String(formData.get('format') ?? '')
+  const paymentId = String(formData.get('paymentId') ?? '') || null
+  const snapshotJson = String(formData.get('snapshot') ?? '')
+
+  if (!(file instanceof File) || !jobId || !number || !snapshotJson) return { error: 'Missing document data.' }
+  if (!isDocumentKind(kind)) return { error: 'Unknown document type.' }
+  if (format !== 'pdf' && format !== 'docx') return { error: 'Unknown document format.' }
+  if (file.size === 0 || file.size > MAX_DOCUMENT_BYTES) return { error: 'The generated file is empty or too large.' }
+
+  let snapshot: unknown
+  try {
+    snapshot = JSON.parse(snapshotJson)
+  } catch {
+    return { error: 'Missing document data.' }
   }
 
-  const blob = await put(`${row.kind}s/${row.number}-${Date.now()}.docx`, docx, { access: 'public' })
+  const [job] = await db.select().from(jobs).where(eq(jobs.id, jobId))
+  if (!job) return { error: 'Quotation not found.' }
+
+  const documentFormat: DocumentFormat = format
+  const blob = await uploadPublicFile(
+    `${kind}s/${number}-${Date.now()}.${documentFormat}`,
+    new Blob([await file.arrayBuffer()], { type: DOCUMENT_MIME[documentFormat] }),
+  )
 
   await db.insert(jobDocuments).values({
     id: randomUUID(),
-    jobId: row.jobId,
-    kind: row.kind,
-    number: row.number,
-    format: 'docx',
+    jobId,
+    kind,
+    number,
+    format: documentFormat,
     blobUrl: blob.url,
-    snapshot: row.snapshot,
-    paymentId: row.paymentId,
+    snapshot,
+    paymentId,
   })
 
-  revalidatePath(`/admin/jobs/${row.jobId}/documents`)
+  revalidatePath(`/admin/jobs/${jobId}/documents`)
+  revalidatePath(`/admin/jobs/${jobId}/payments`)
   return { success: true }
 }
 

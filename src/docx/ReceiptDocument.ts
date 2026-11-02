@@ -1,4 +1,4 @@
-import { AlignmentType, Document, Packer, Paragraph, ShadingType, Table, TableCell, TableRow, TextRun, WidthType } from 'docx'
+import { AlignmentType, Document, Paragraph, ShadingType, Table, TableCell, TableRow, TextRun, WidthType } from 'docx'
 import type { ReceiptSnapshot } from '@/lib/jobs/snapshot'
 import { FONT, cellBorders, colors, lightBorder, sizes, thinBorder } from './styles'
 import { clientBlock, documentHeader, moneyBlock, signatureBlock } from './blocks'
@@ -110,8 +110,4 @@ export function receiptDocument(snapshot: ReceiptSnapshot): Document {
       },
     ],
   })
-}
-
-export async function renderReceiptDocx(snapshot: ReceiptSnapshot): Promise<Buffer> {
-  return Packer.toBuffer(receiptDocument(snapshot))
 }

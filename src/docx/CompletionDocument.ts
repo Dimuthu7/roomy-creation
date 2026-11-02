@@ -1,4 +1,4 @@
-import { AlignmentType, Document, Packer, Paragraph, TextRun } from 'docx'
+import { AlignmentType, Document, Paragraph, TextRun } from 'docx'
 import type { CompletionSnapshot } from '@/lib/jobs/snapshot'
 import { FONT, colors, sizes } from './styles'
 import { clauseList, clientBlock, deliveryRow, documentHeader, itemsTable, paymentLedger, signatureBlock, totalsBlock } from './blocks'
@@ -59,8 +59,4 @@ export function completionDocument(snapshot: CompletionSnapshot): Document {
       },
     ],
   })
-}
-
-export async function renderCompletionDocx(snapshot: CompletionSnapshot): Promise<Buffer> {
-  return Packer.toBuffer(completionDocument(snapshot))
 }

@@ -13,7 +13,8 @@ const BASE64 =
 /** For @react-pdf/renderer's <Image src>, which takes a data URI. */
 export const LOGO_MARK_DATA_URI = `data:image/png;base64,${BASE64}`
 
-/** For docx's ImageRun, which takes raw bytes. */
-export function logoMarkBytes(): Buffer {
-  return Buffer.from(BASE64, 'base64')
+/** For docx's ImageRun, which takes raw bytes. Built with atob rather than Buffer so
+ *  it also runs in the browser, where the Word files are now generated. */
+export function logoMarkBytes(): Uint8Array {
+  return Uint8Array.from(atob(BASE64), (c) => c.charCodeAt(0))
 }

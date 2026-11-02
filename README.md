@@ -24,7 +24,7 @@ does not go live — do not skip that step.
 Content is stored in Neon Postgres (`src/db/schema.ts`), accessed through Drizzle
 ORM, and read via cached data-access functions (`src/data/site.ts`,
 `src/data/works.ts`, `src/data/testimonials.ts`). Gallery photos are uploaded to
-Vercel Blob.
+Cloudflare R2.
 
 ```
 npm run db:generate   # generate a migration from a schema change
@@ -33,11 +33,31 @@ npm run db:seed       # one-time: populate an empty database from the original s
 ```
 
 First-time setup against a fresh database: set `DATABASE_URL` and
-`BLOB_READ_WRITE_TOKEN` in `.env.local`, run `npm run db:migrate`, then
+`R2_PUBLIC_URL` in `.env.local` (and run `npx wrangler login` once so `next dev` can reach the R2 bucket), run `npm run db:migrate`, then
 `npm run db:seed`. Seeding also sets the quotation reference counter to 194 (so
 the first quotation created is `RC00195`), the receipt counter to 0, and
 populates the clause library with the six standard terms transcribed from the
 original paper quotations.
+
+## Deployment (Cloudflare Workers)
+
+The site runs on Cloudflare Workers through the OpenNext adapter (`wrangler.jsonc`,
+`open-next.config.ts`), with Neon for the database, R2 for uploads and Resend for email.
+
+```
+npm run preview   # build for Cloudflare and run it locally in the Workers runtime
+npm run deploy    # build and deploy (needs `npx wrangler login` or CLOUDFLARE_API_TOKEN)
+```
+
+Cloudflare resources used: R2 buckets `roomy-creations-uploads` (admin uploads, served
+from its public address, `R2_PUBLIC_URL`) and `roomy-creations-cache` (Next.js cache),
+and the D1 database `roomy-creations-tag-cache` (records cache refreshes after admin
+saves). Set the environment variables below as Worker variables/secrets.
+
+PDFs and Word files are drawn in the admin's browser, not on the server: the Workers
+free plan allows 10 ms of CPU per request, too little to lay out a PDF. The server
+prepares the document's contents and stores the finished file
+(`src/app/admin/(protected)/jobs/[id]/documents/actions.ts`).
 
 ## Admin portal
 
@@ -66,7 +86,7 @@ admin function. Saves go live immediately (no publish step).
   "Selected" (clicking it again clears the selection), at which point the total
   appears. Status can be set to Pending, In progress, Finished or Cancelled.
   The **Documents** screen (linked from the edit screen) generates a quotation
-  PDF, stores it in Vercel Blob as an immutable snapshot, and can email it to the
+  PDF, stores it in R2 as an immutable snapshot, and can email it to the
   customer via Resend — see `DOCS_FROM_EMAIL` below. Regenerating after an edit
   creates a new document rather than replacing the old one; the Documents screen
   flags any document generated before the quotation's last edit. Once every unit
@@ -225,7 +245,7 @@ including local dev:
 | Variable | What breaks without it |
 |---|---|
 | `DATABASE_URL` | Every page fails to render — all site content reads from here. |
-| `BLOB_READ_WRITE_TOKEN` | Gallery photo uploads and quotation PDF generation in the admin portal fail. |
+| `R2_PUBLIC_URL` | Gallery photo uploads and document generation in the admin portal fail. The public address of the R2 uploads bucket. |
 | `ADMIN_USERNAME` / `ADMIN_PASSWORD` | Nothing can log in to `/admin` — every attempt is rejected. |
 | `ADMIN_SESSION_SECRET` | Admin sessions can't be signed — logging in fails. Generate with `openssl rand -base64 32`. |
 

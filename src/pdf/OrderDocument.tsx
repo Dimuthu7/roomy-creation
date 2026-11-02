@@ -1,4 +1,4 @@
-import { Document, Page, Text, View, renderToBuffer } from '@react-pdf/renderer'
+import { Document, Page, Text, View } from '@react-pdf/renderer'
 import type { OrderSnapshot } from '@/lib/jobs/snapshot'
 import { styles } from './styles'
 import { clauseList, clientBlock, deliveryRow, documentHeader, signatureBlock, tableHeader, totalsBlock, unitRows } from './blocks'
@@ -41,8 +41,4 @@ export function OrderDocument({ snapshot }: { snapshot: OrderSnapshot }) {
       </Page>
     </Document>
   )
-}
-
-export async function renderOrderPdf(snapshot: OrderSnapshot): Promise<Buffer> {
-  return renderToBuffer(<OrderDocument snapshot={snapshot} />)
 }

@@ -1,4 +1,4 @@
-import { AlignmentType, Document, Packer, Paragraph, TextRun } from 'docx'
+import { AlignmentType, Document, Paragraph, TextRun } from 'docx'
 import type { OrderSnapshot } from '@/lib/jobs/snapshot'
 import { FONT, colors, sizes } from './styles'
 import { clauseList, clientBlock, deliveryRow, documentHeader, itemsTable, signatureBlock, totalsBlock } from './blocks'
@@ -61,8 +61,4 @@ export function orderDocument(snapshot: OrderSnapshot): Document {
       },
     ],
   })
-}
-
-export async function renderOrderDocx(snapshot: OrderSnapshot): Promise<Buffer> {
-  return Packer.toBuffer(orderDocument(snapshot))
 }

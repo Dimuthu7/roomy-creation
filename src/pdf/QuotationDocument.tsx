@@ -1,4 +1,4 @@
-import { Document, Page, Text, View, renderToBuffer } from '@react-pdf/renderer'
+import { Document, Page, Text, View } from '@react-pdf/renderer'
 import type { QuotationSnapshot } from '@/lib/jobs/snapshot'
 import { styles } from './styles'
 import { clauseList, clientBlock, deliveryRow, documentHeader, signatureBlock, tableHeader, totalsBlock, unitRows } from './blocks'
@@ -33,8 +33,4 @@ export function QuotationDocument({ snapshot }: { snapshot: QuotationSnapshot })
       </Page>
     </Document>
   )
-}
-
-export async function renderQuotationPdf(snapshot: QuotationSnapshot): Promise<Buffer> {
-  return renderToBuffer(<QuotationDocument snapshot={snapshot} />)
 }
