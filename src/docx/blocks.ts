@@ -24,7 +24,7 @@ export function documentHeader(title: string, fields: { label: string; value: st
           new ImageRun({
             type: 'png',
             data: logoMarkBytes(),
-            transformation: { width: 48, height: 48 },
+            transformation: { width: 58, height: 48 }, // RC mark is ~1.21:1
             altText: { name: 'Roomy Creations', title: 'Roomy Creations', description: 'Roomy Creations mark' },
           }),
         ],
