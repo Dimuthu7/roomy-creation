@@ -79,7 +79,7 @@ describe('Home page assembly', () => {
     await renderPage()
     await user.click(screen.getAllByRole('button', { name: /Built-in wardrobe/ })[0])
     await user.click(
-      screen.getByRole('button', { name: 'Enquire about something like this' }),
+      screen.getByRole('button', { name: 'Enquire about this' }),
     )
     const enquirySection = document.getElementById('enquiry') as HTMLElement
     const checkbox = within(enquirySection).getByRole('checkbox', { name: /wardrobe/i })

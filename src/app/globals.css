@@ -23,8 +23,8 @@ html {
    * scrollIntoView hides "Get a quotation" — on a single-page site whose entire
    * navigation is anchors, that is every route there is.
    *
-   * 5rem clears the bar's measured 65px (py-4 = 32px, plus the h-8 logo, plus the
-   * 1px hairline) with room to spare. It covers scrollIntoView as well as anchor
+   * 5rem clears the bar's resting height (py-4 = 32px, plus a row of at most 36px —
+   * the logo or the mobile menu button — plus the 1px hairline) with room to spare. It covers scrollIntoView as well as anchor
    * clicks, which is why it lives here rather than as scroll-margin-top on each of
    * the five targets.
    */

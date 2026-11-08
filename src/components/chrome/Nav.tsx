@@ -186,7 +186,7 @@ export function Nav() {
                 href="/admin"
                 className={`origin-left ${LOGO_TRANSITION} ${scrolled ? 'scale-90' : 'scale-100'}`}
               >
-                <Logo variant="yellow" />
+                <Logo variant="yellow" size="nav" />
               </Link>
             ) : (
               <a
@@ -194,7 +194,7 @@ export function Nav() {
                 onClick={(e) => scrollToSection(e, '#top')}
                 className={`origin-left ${LOGO_TRANSITION} ${scrolled ? 'scale-90' : 'scale-100'}`}
               >
-                <Logo variant="yellow" />
+                <Logo variant="yellow" size="nav" />
               </a>
             )}
             {/* Stands in for the removed "Roomy Creations — Admin" page header — the

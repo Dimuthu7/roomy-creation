@@ -130,10 +130,10 @@ describe('Lightbox', () => {
     expect(screen.queryByText(/\[TBC\]/)).not.toBeInTheDocument()
   })
 
-  it('offers a single enquire action named "Enquire about something like this"', () => {
+  it('offers a single enquire action named "Enquire about this"', () => {
     setup()
     expect(
-      screen.getAllByRole('button', { name: 'Enquire about something like this' }),
+      screen.getAllByRole('button', { name: 'Enquire about this' }),
     ).toHaveLength(1)
   })
 
@@ -225,7 +225,7 @@ describe('Lightbox', () => {
         <Lightbox index={0} onClose={onClose} onIndexChange={vi.fn()} />
       </EnquiryPrefillProvider>,
     )
-    await user.click(screen.getByRole('button', { name: 'Enquire about something like this' }))
+    await user.click(screen.getByRole('button', { name: 'Enquire about this' }))
     expect(screen.getByTestId('needs')).toHaveTextContent(WORKS[0].category)
     expect(onClose).toHaveBeenCalled()
   })
@@ -277,7 +277,7 @@ describe('Lightbox', () => {
         <Lightbox index={0} onClose={onClose} onIndexChange={vi.fn()} />
       </EnquiryPrefillProvider>,
     )
-    await user.click(screen.getByRole('button', { name: 'Enquire about something like this' }))
+    await user.click(screen.getByRole('button', { name: 'Enquire about this' }))
     const calls = getScrollIntoViewCalls()
     expect(calls[calls.length - 1].arg).toEqual({ behavior: 'auto' })
   })
