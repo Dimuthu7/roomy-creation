@@ -74,6 +74,25 @@ async function fillValid(user: ReturnType<typeof userEvent.setup>) {
   await chooseOption(user, /how you found us/i, 'Facebook')
 }
 
+// Root cause of this file flaking on CI (GitHub's 2-core runners, or this suite pinned
+// to 2 cores locally): Headless UI closes an open Listbox when its button "disappears",
+// which it detects as getBoundingClientRect() returning x, y, width and height all 0
+// (use-on-disappear.js), re-checked from an IntersectionObserver callback. jsdom does
+// no layout, so every element measures all-zero, and our IntersectionObserver stub fires
+// on observe() — so whenever that check ran before the option click landed, the panel
+// shut itself and the choice silently never committed. A real visible button always has
+// a size, so give the Listbox buttons one here, like a browser would.
+beforeEach(() => {
+  const realRect = HTMLElement.prototype.getBoundingClientRect
+  vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (
+    this: HTMLElement,
+  ) {
+    return this.getAttribute('aria-haspopup') === 'listbox'
+      ? new DOMRect(0, 0, 240, 48)
+      : realRect.call(this)
+  })
+})
+
 beforeEach(() => {
   vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({ ok: true }) }))
 })
