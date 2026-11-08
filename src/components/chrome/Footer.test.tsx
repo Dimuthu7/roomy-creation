@@ -2,16 +2,26 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { TBC } from '@/lib/tbc'
 import { SITE_FIXTURE } from '@/test/fixtures'
+import type { SiteConfig } from '@/data/site'
+import { Footer } from './Footer'
+
+// One hoisted mock whose return value each test sets, rather than vi.resetModules()
+// plus a fresh vi.doMock() per test. That pattern was order-dependent: under a busy
+// full-suite run the re-imported Footer sometimes resolved the beforeEach mock
+// instead of the test's own, so a test asserting its override saw fixture data.
+const site = vi.hoisted(() => ({ current: null as unknown as SiteConfig }))
+vi.mock('@/data/site', () => ({ getSiteConfig: async () => site.current }))
+
+function setSite(config: SiteConfig) {
+  site.current = config
+}
 
 async function renderFooter() {
-  const { Footer } = await import('./Footer')
   return render(await Footer())
 }
 
 beforeEach(() => {
-  vi.resetModules()
-  vi.doUnmock('@/data/site')
-  vi.doMock('@/data/site', () => ({ getSiteConfig: async () => SITE_FIXTURE }))
+  setSite(SITE_FIXTURE)
 })
 
 describe('Footer', () => {
@@ -32,8 +42,7 @@ describe('Footer', () => {
   // site.ts's ambient state, which stopped being all-TBC once real contact details
   // were entered — this test proves the gating logic, not today's data.
   it('renders no contact, visit, districts or follow block while site data is all [TBC]', async () => {
-    vi.doMock('@/data/site', () => ({
-      getSiteConfig: async () => ({
+    setSite({
         ...SITE_FIXTURE,
         phone: TBC,
         email: TBC,
@@ -42,8 +51,7 @@ describe('Footer', () => {
         openingHours: TBC,
         districts: TBC,
         social: { facebook: TBC, instagram: TBC, tiktok: TBC },
-      }),
-    }))
+      })
     const { container } = await renderFooter()
     expect(screen.queryByRole('heading', { name: 'Contact' })).not.toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: 'Visit' })).not.toBeInTheDocument()
@@ -60,9 +68,7 @@ describe('Footer', () => {
   })
 
   it('shows the contact block, as tel: and mailto: links, once phone and email are known', async () => {
-    vi.doMock('@/data/site', () => ({
-      getSiteConfig: async () => ({ ...SITE_FIXTURE, phone: '+94112345678', email: 'hello@example.lk' }),
-    }))
+    setSite({ ...SITE_FIXTURE, phone: '+94112345678', email: 'hello@example.lk' })
     await renderFooter()
     expect(screen.getByRole('heading', { name: 'Contact' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: '+94112345678' })).toHaveAttribute(
@@ -76,9 +82,7 @@ describe('Footer', () => {
   })
 
   it('dims contact links on tap, since :hover alone does not fire on touch', async () => {
-    vi.doMock('@/data/site', () => ({
-      getSiteConfig: async () => ({ ...SITE_FIXTURE, phone: '+94112345678', email: 'hello@example.lk' }),
-    }))
+    setSite({ ...SITE_FIXTURE, phone: '+94112345678', email: 'hello@example.lk' })
     await renderFooter()
     expect(screen.getByRole('link', { name: '+94112345678' }).className).toMatch(
       /active:opacity-60/,
@@ -93,14 +97,12 @@ describe('Footer', () => {
   })
 
   it('shows the visit block once address, city or opening hours is known', async () => {
-    vi.doMock('@/data/site', () => ({
-      getSiteConfig: async () => ({
+    setSite({
         ...SITE_FIXTURE,
         addressLines: ['12 Galle Road'],
         city: 'Colombo',
         openingHours: ['Mo-Sa 09:00-18:00'],
-      }),
-    }))
+      })
     const { container } = await renderFooter()
     expect(screen.getByRole('heading', { name: 'Visit' })).toBeInTheDocument()
     expect(screen.getByText('12 Galle Road')).toBeInTheDocument()
@@ -110,9 +112,7 @@ describe('Footer', () => {
   })
 
   it('shows the districts block once site.districts is known', async () => {
-    vi.doMock('@/data/site', () => ({
-      getSiteConfig: async () => ({ ...SITE_FIXTURE, districts: ['Colombo', 'Gampaha'] }),
-    }))
+    setSite({ ...SITE_FIXTURE, districts: ['Colombo', 'Gampaha'] })
     await renderFooter()
     expect(screen.getByRole('heading', { name: 'Districts we cover' })).toBeInTheDocument()
     expect(screen.getByText('Colombo, Gampaha')).toBeInTheDocument()
@@ -121,12 +121,10 @@ describe('Footer', () => {
   it('shows the follow block with working links once a social handle is known', async () => {
     // facebook and tiktok forced to TBC so this proves isolation between social
     // fields, rather than happening to pass because the fixture has all three filled.
-    vi.doMock('@/data/site', () => ({
-      getSiteConfig: async () => ({
+    setSite({
         ...SITE_FIXTURE,
         social: { facebook: TBC, instagram: 'https://instagram.com/roomycreations', tiktok: TBC },
-      }),
-    }))
+      })
     await renderFooter()
     expect(screen.getByRole('heading', { name: 'Follow' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Instagram' })).toHaveAttribute(
@@ -137,12 +135,10 @@ describe('Footer', () => {
   })
 
   it('compresses a social icon on tap', async () => {
-    vi.doMock('@/data/site', () => ({
-      getSiteConfig: async () => ({
+    setSite({
         ...SITE_FIXTURE,
         social: { facebook: TBC, instagram: 'https://instagram.com/roomycreations', tiktok: TBC },
-      }),
-    }))
+      })
     await renderFooter()
     expect(screen.getByRole('link', { name: 'Instagram' }).className).toMatch(/active:scale-95/)
   })
