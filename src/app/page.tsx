@@ -9,6 +9,7 @@ import { Testimonials } from '@/components/sections/Testimonials'
 import { Enquiry } from '@/components/sections/Enquiry'
 import { WeaveDivider } from '@/components/weave/WeaveDivider'
 import { EnquiryPrefillProvider } from '@/context/EnquiryPrefill'
+import { GalleryFilterProvider } from '@/context/GalleryFilter'
 import { buildLocalBusinessSchema } from '@/lib/schema'
 import { getSiteConfig } from '@/data/site'
 
@@ -23,21 +24,25 @@ export default async function Home() {
 
   return (
     <EnquiryPrefillProvider>
-      <main id="main">
-        <Hero />
-        <Position />
-        <WhatWeMake />
-        <Work />
-        <Film />
-        {/* navy -> paper transition */}
-        <WeaveDivider className="bg-navy" />
-        <HowWeWork />
-        <Materials />
-        {/* navy -> paper transition */}
-        <WeaveDivider className="bg-navy" />
-        <Testimonials />
-        <Enquiry />
-      </main>
+      <GalleryFilterProvider>
+        <main id="main">
+          <Hero />
+          <Position />
+          {/* navy -> paper: breaks up what was an unbroken run of five navy sections */}
+          <WeaveDivider className="bg-navy" />
+          <WhatWeMake />
+          <Work />
+          <Film />
+          {/* navy -> paper transition */}
+          <WeaveDivider className="bg-navy" />
+          <HowWeWork />
+          <Materials />
+          {/* navy -> paper transition */}
+          <WeaveDivider className="bg-navy" />
+          <Testimonials />
+          <Enquiry />
+        </main>
+      </GalleryFilterProvider>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }}

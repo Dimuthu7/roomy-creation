@@ -20,7 +20,27 @@ const LINKS = [
 // Shared by every non-CTA nav item, marketing or admin, so the two variants
 // look identical apart from their labels/targets.
 const LINK_CLASS =
-  'u-mono shrink-0 whitespace-nowrap text-sky transition-opacity duration-150 hover:text-yellow active:opacity-60'
+  'u-mono shrink-0 whitespace-nowrap text-sky transition-[color,opacity] duration-150 hover:text-yellow active:opacity-60'
+
+// The marketing links add a current-section marker: yellow text plus a short underline
+// that grows in, so a visitor scrolling a single long page can see where they are.
+const SECTION_LINK_CLASS = `${LINK_CLASS} relative after:absolute after:inset-x-0 after:-bottom-1.5 after:h-0.5 after:origin-left after:scale-x-0 after:rounded-full after:bg-yellow after:transition-transform after:duration-300 aria-[current=true]:text-yellow aria-[current=true]:after:scale-x-100`
+
+// A section counts as "current" once its top has crossed this fraction of the viewport
+// height, so the marker switches roughly when the new section fills the screen rather
+// than the instant its first pixel appears under the bar.
+const ACTIVE_LINE = 0.4
+
+/** The last linked section whose top has passed ACTIVE_LINE, or null above the first. */
+export function currentSection(hrefs: readonly string[]): string | null {
+  const line = window.innerHeight * ACTIVE_LINE
+  let current: string | null = null
+  for (const href of hrefs) {
+    const el = document.querySelector(href)
+    if (el && el.getBoundingClientRect().top <= line) current = href
+  }
+  return current
+}
 
 // Past this many pixels the bar has visibly left the hero, so it's fair to shrink it;
 // scrolling back below it restores the resting size.
@@ -41,6 +61,7 @@ export function Nav() {
   const reduced = level === 'reduced'
   const [scrolled, setScrolled] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [activeHref, setActiveHref] = useState<string | null>(null)
   const headerRef = useRef<HTMLElement>(null)
   const pathname = usePathname()
   // The login screen has no session yet, so "Home"/"Sign out" would either bounce
@@ -75,6 +96,49 @@ export function Nav() {
       root.style.removeProperty('--nav-height')
     }
   }, [])
+
+  // Tracks which section the visitor is in. Not a motion effect, so it runs under
+  // reduced motion too; throttled to one measurement per frame.
+  useEffect(() => {
+    if (isAdmin) return
+    // #enquiry has no nav link of its own, but it still has to clear the marker: past
+    // Testimonials the visitor is in the form, not still reading reviews.
+    const tracked = [...LINKS.map((l) => l.href), '#enquiry']
+    let frame = 0
+    const update = () => {
+      frame = 0
+      setActiveHref(currentSection(tracked))
+    }
+    const onScroll = () => {
+      if (!frame) frame = requestAnimationFrame(update)
+    }
+    update()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    window.addEventListener('resize', onScroll)
+    return () => {
+      cancelAnimationFrame(frame)
+      window.removeEventListener('scroll', onScroll)
+      window.removeEventListener('resize', onScroll)
+    }
+  }, [isAdmin])
+
+  // The open mobile menu closes on Escape or a tap anywhere outside the bar, the way
+  // any other disclosure panel does.
+  useEffect(() => {
+    if (!menuOpen) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setMenuOpen(false)
+    }
+    const onPointer = (e: PointerEvent) => {
+      if (!headerRef.current?.contains(e.target as Node)) setMenuOpen(false)
+    }
+    window.addEventListener('keydown', onKey)
+    document.addEventListener('pointerdown', onPointer)
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      document.removeEventListener('pointerdown', onPointer)
+    }
+  }, [menuOpen])
 
   // Plain anchors jump instantly with no easing. Matches Hero's own scroll cue and
   // the enquiry prefill's scrollIntoView pattern — an explicit `behavior` here beats
@@ -198,7 +262,8 @@ export function Nav() {
                     key={link.href}
                     href={link.href}
                     onClick={(e) => scrollToSection(e, link.href)}
-                    className={LINK_CLASS}
+                    aria-current={activeHref === link.href ? 'true' : undefined}
+                    className={SECTION_LINK_CLASS}
                   >
                     {link.label}
                   </a>

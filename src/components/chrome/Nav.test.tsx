@@ -333,3 +333,65 @@ describe('Nav', () => {
     expect(screen.queryByText('Admin')).not.toBeInTheDocument()
   })
 })
+
+describe('Nav mobile menu dismissal', () => {
+  it('closes on Escape', async () => {
+    const user = userEvent.setup()
+    render(<Nav />)
+    await user.click(screen.getByRole('button', { name: 'Open menu' }))
+    expect(screen.getByRole('button', { name: 'Close menu' })).toHaveAttribute('aria-expanded', 'true')
+    await user.keyboard('{Escape}')
+    expect(screen.getByRole('button', { name: 'Open menu' })).toHaveAttribute('aria-expanded', 'false')
+  })
+
+  it('closes on a tap outside the bar, but not on one inside it', async () => {
+    const user = userEvent.setup()
+    render(
+      <>
+        <Nav />
+        <p>page content</p>
+      </>,
+    )
+    await user.click(screen.getByRole('button', { name: 'Open menu' }))
+    await user.click(screen.getByRole('navigation', { name: 'Primary' }))
+    expect(screen.getByRole('button', { name: 'Close menu' })).toBeInTheDocument()
+    await user.click(screen.getByText('page content'))
+    expect(screen.getByRole('button', { name: 'Open menu' })).toHaveAttribute('aria-expanded', 'false')
+  })
+})
+
+describe('Nav current-section marker', () => {
+  function section(id: string, top: number) {
+    const el = document.createElement('section')
+    el.id = id
+    el.getBoundingClientRect = () => ({ top }) as DOMRect
+    document.body.appendChild(el)
+    return el
+  }
+
+  it('marks the link for the section the visitor has scrolled into, and only that one', () => {
+    Object.defineProperty(window, 'innerHeight', { value: 1000, configurable: true })
+    const els = [section('work', -800), section('how', 200), section('materials', 1400)]
+    render(<Nav />)
+    scrollTo(1200)
+    return new Promise<void>((resolve) =>
+      requestAnimationFrame(() => {
+        expect(screen.getByRole('link', { name: 'Process' })).toHaveAttribute('aria-current', 'true')
+        expect(screen.getByRole('link', { name: 'Work' })).not.toHaveAttribute('aria-current')
+        expect(screen.getByRole('link', { name: 'Materials' })).not.toHaveAttribute('aria-current')
+        els.forEach((el) => el.remove())
+        resolve()
+      }),
+    )
+  })
+
+  it('marks nothing above the first linked section', () => {
+    Object.defineProperty(window, 'innerHeight', { value: 1000, configurable: true })
+    const el = section('work', 900)
+    render(<Nav />)
+    for (const name of ['Work', 'Process', 'Materials', 'Testimonials']) {
+      expect(screen.getByRole('link', { name })).not.toHaveAttribute('aria-current')
+    }
+    el.remove()
+  })
+})

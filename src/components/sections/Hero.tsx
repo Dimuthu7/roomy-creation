@@ -1,11 +1,26 @@
 'use client'
 import Image from 'next/image'
-import { useEffect, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import { useMotionLevel } from '@/hooks/useMotionLevel'
 
 // Past this many pixels the cue has served its purpose — the visitor is already
 // scrolling — so it fades rather than lingering over whatever section comes next.
 const SCROLL_CUE_FADE_THRESHOLD = 50
+
+const HEADLINE = 'We measure your wall, then build to it.'
+// Entrance timing, in seconds: the headline lands word by word, then the sub-line, then
+// the buttons. Kept short so the whole sequence is done in about a second.
+const WORD_STAGGER = 0.07
+const HEADLINE_END = HEADLINE.split(' ').length * WORD_STAGGER
+
+// The entrance is a CSS animation (globals.css, .hero-rise), not framer-motion: the hero
+// is server-rendered, and a CSS animation plays straight from that first HTML — no
+// waiting for hydration, and nothing left invisible if JS never runs. It only exists
+// inside a prefers-reduced-motion: no-preference query, so a reduced-motion visitor
+// gets the hero fully in place with no transform at all.
+function rise(delay: number): React.CSSProperties {
+  return { animationDelay: `${delay.toFixed(2)}s` }
+}
 
 // D1: /media/hero-master.jpg and /media/cutout-sofa.png do not exist yet. The probe
 // confirmed next/image renders a broken <img> and never throws on a missing file, so
@@ -86,21 +101,30 @@ export function Hero() {
           id="hero-heading"
           className="text-extrude max-w-3xl font-display text-5xl leading-[1.05] tracking-tight text-paper lg:text-7xl"
         >
-          We measure your wall, then build to it.
+          {HEADLINE.split(' ').map((word, i) => (
+            <Fragment key={i}>
+              <span className="hero-rise inline-block" style={rise(i * WORD_STAGGER)}>
+                {word}
+              </span>{' '}
+            </Fragment>
+          ))}
         </h1>
         {/* A5: text-paper, not text-sky. Measured against the delivered hero photo
             through the navy/72% overlay, text-sky lands at 4.20:1 where AA needs 4.5;
             text-paper reaches 5.94. The deliberate exception to D2 below — taken over
             darkening the overlay, which would have dimmed the photograph itself. */}
-        <p className="mt-6 max-w-xl text-paper">
+        <p className="hero-rise mt-6 max-w-xl text-paper" style={rise(HEADLINE_END)}>
           Built-in wardrobes, pantry cupboards and upholstered seating, cut to the room you
           actually have.
         </p>
-        <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:flex-wrap">
+        <div
+          className="hero-rise mt-10 flex flex-col gap-4 sm:flex-row sm:flex-wrap"
+          style={rise(HEADLINE_END + 0.15)}
+        >
           <a
             href="#enquiry"
             onClick={scrollToEnquiry}
-            className="group inline-flex w-full items-center justify-center gap-2 bg-yellow px-7 py-4 font-display text-navy transition duration-300 ease-out hover:-translate-y-0.5 hover:shadow-lg hover:shadow-yellow/30 focus-visible:-translate-y-0.5 active:scale-95 sm:w-auto"
+            className="group inline-flex w-full items-center justify-center gap-2 rounded-full bg-yellow px-7 py-4 font-display text-navy transition duration-300 ease-out hover:-translate-y-0.5 hover:shadow-lg hover:shadow-yellow/30 focus-visible:-translate-y-0.5 active:scale-95 sm:w-auto"
           >
             Request a quotation
             <span
@@ -119,7 +143,7 @@ export function Hero() {
           <a
             href="#work"
             onClick={scrollToWork}
-            className="flex w-full items-center justify-center border border-sky px-7 py-4 font-display text-sky transition duration-300 ease-out hover:-translate-y-0.5 hover:border-paper hover:text-paper hover:shadow-lg hover:shadow-sky/20 focus-visible:-translate-y-0.5 active:scale-95 sm:w-auto"
+            className="flex w-full items-center justify-center rounded-full border border-sky px-7 py-4 font-display text-sky transition duration-300 ease-out hover:-translate-y-0.5 hover:border-paper hover:text-paper hover:shadow-lg hover:shadow-sky/20 focus-visible:-translate-y-0.5 active:scale-95 sm:w-auto"
           >
             See our work
           </a>

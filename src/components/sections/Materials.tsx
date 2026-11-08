@@ -19,7 +19,7 @@ export function Materials() {
             brand palette. */}
         <h2
           id="materials-heading"
-          className="font-display text-4xl tracking-tight text-paper lg:text-5xl"
+          className="font-display text-3xl font-semibold tracking-tight text-paper sm:text-4xl"
         >
           What it is made of
         </h2>
