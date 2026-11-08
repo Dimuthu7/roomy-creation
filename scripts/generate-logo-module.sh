@@ -14,14 +14,19 @@ out="src/assets/logoMark.ts"
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
 
-sips -Z 256 "$src" --out "$tmp/mark.png" >/dev/null
+# sips on macOS, ImageMagick elsewhere: both fit the longest side to 256px.
+if command -v sips >/dev/null; then
+  sips -Z 256 "$src" --out "$tmp/mark.png" >/dev/null
+else
+  convert "$src" -resize 256x256 "$tmp/mark.png"
+fi
 b64="$(base64 < "$tmp/mark.png" | tr -d '\n')"
 
 {
   echo "// GENERATED FILE — do not edit by hand."
   echo "// Regenerate with: bash scripts/generate-logo-module.sh"
   echo "//"
-  echo "// The woven-interlace mark from src/assets/logo-mark.png, downscaled to 256px and"
+  echo "// The gold RC mark from src/assets/logo-mark.png, downscaled to 256px and"
   echo "// inlined as base64 so both document renderers can reach the actual bytes. A"
   echo "// next/image import gives a URL, not pixels, and @react-pdf/renderer and docx both"
   echo "// need pixels; reading from disk at render time is not dependable on a serverless"

@@ -29,7 +29,8 @@ export const styles = StyleSheet.create({
     gap: 8,
   },
   logoMark: {
-    width: 38,
+    // The RC mark is ~1.21:1, so keep the height and widen to match.
+    width: 46,
     height: 38,
   },
   companyName: {
