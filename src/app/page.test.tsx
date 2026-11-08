@@ -4,18 +4,24 @@ import userEvent from '@testing-library/user-event'
 import { buildLocalBusinessSchema } from '@/lib/schema'
 import { useSiteData } from '@/context/SiteData'
 import { SITE_FIXTURE, WORKS_FIXTURE, TESTIMONIALS_FIXTURE } from '@/test/fixtures'
+import type { SiteConfig } from '@/data/site'
+import Home from './page'
 
 vi.mock('@/context/SiteData', () => ({ useSiteData: vi.fn() }))
 
+// One hoisted mock whose return value a test can override, rather than
+// vi.resetModules() plus stacked vi.doMock() calls. That pattern was order-dependent:
+// under a busy full-suite run the re-imported page sometimes resolved the
+// beforeEach mock instead of the test's own (same failure as Footer.test.tsx).
+const site = vi.hoisted(() => ({ current: null as unknown as SiteConfig }))
+vi.mock('@/data/site', () => ({ getSiteConfig: async () => site.current }))
+
 async function renderPage() {
-  const { default: Home } = await import('./page')
   return render(await Home())
 }
 
 beforeEach(() => {
-  vi.resetModules()
-  vi.doUnmock('@/data/site')
-  vi.doMock('@/data/site', () => ({ getSiteConfig: async () => SITE_FIXTURE }))
+  site.current = SITE_FIXTURE
   vi.mocked(useSiteData).mockReturnValue({
     site: SITE_FIXTURE,
     works: WORKS_FIXTURE,
@@ -99,9 +105,7 @@ describe('Home page assembly', () => {
   // the .replace() call deleted — proven by mutation testing. This test forces a
   // '<' through a real site field so the escape has something to actually do.
   it('escapes a literal "<" reaching the JSON-LD payload through site data', async () => {
-    vi.doMock('@/data/site', () => ({
-      getSiteConfig: async () => ({ ...SITE_FIXTURE, city: '</script><script>alert(1)</script>' }),
-    }))
+    site.current = { ...SITE_FIXTURE, city: '</script><script>alert(1)</script>' }
     const { container } = await renderPage()
     const script = container.querySelector('script[type="application/ld+json"]')!
     expect(script.innerHTML).not.toContain('<script>')
