@@ -3,6 +3,7 @@ import { getSiteConfig } from '@/data/site'
 import { isTBC } from '@/lib/tbc'
 import { whatsappUrl } from '@/lib/whatsapp'
 import { getActiveSocials } from '@/lib/socials'
+import { mapLinks } from '@/lib/mapEmbed'
 import { DistrictsIcon, MapPinIcon, PhoneIcon, SOCIAL_ICONS } from './FooterIcons'
 
 // Every block below is [TBC]-gated exactly like Enquiry.tsx: a heading only renders
@@ -12,7 +13,12 @@ import { DistrictsIcon, MapPinIcon, PhoneIcon, SOCIAL_ICONS } from './FooterIcon
 export async function Footer() {
   const site = await getSiteConfig()
   const hasContact = !isTBC(site.phone) || !isTBC(site.email)
-  const hasVisit = !isTBC(site.addressLines) || !isTBC(site.city) || !isTBC(site.openingHours)
+  // The admin's map field was saved but never shown anywhere. A real embed URL becomes
+  // a map under the columns; a plain share link (all Google lets the phone app copy)
+  // can't be framed, so it becomes a "Get directions" link in the Visit column instead.
+  const map = mapLinks(site.mapEmbedUrl)
+  const hasVisit =
+    !isTBC(site.addressLines) || !isTBC(site.city) || !isTBC(site.openingHours) || map.openHref !== null
   const hasDistricts = !isTBC(site.districts)
   const socials = getActiveSocials(site.social)
   // Same "Chat on WhatsApp" pattern as WhatsAppFloat.tsx: null while site.whatsappNumber
@@ -99,6 +105,17 @@ export async function Footer() {
                         {hours}
                       </p>
                     ))}
+                  {map.openHref && (
+                    <a
+                      href={map.openHref}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-yellow underline decoration-yellow/40 underline-offset-4 transition-colors duration-150 hover:decoration-yellow"
+                    >
+                      Get directions
+                      <span aria-hidden="true">↗</span>
+                    </a>
+                  )}
                 </div>
               </div>
             )}
@@ -133,6 +150,18 @@ export async function Footer() {
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {map.embedSrc && (
+          <div className="mt-10 overflow-hidden rounded-2xl border border-teal/30">
+            <iframe
+              src={map.embedSrc}
+              title="Map showing where Roomy Creations is"
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+              className="block h-64 w-full border-0 sm:h-80"
+            />
           </div>
         )}
 

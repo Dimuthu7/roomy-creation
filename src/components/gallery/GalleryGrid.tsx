@@ -16,7 +16,13 @@ import { GalleryCard } from './GalleryCard'
 // disorganised rather than deliberate, and asked for a plain aligned grid instead.
 const CARD_ASPECT = 'aspect-[4/3]'
 
-export function GalleryGrid({ onOpen }: { onOpen: (index: number) => void }) {
+export function GalleryGrid({
+  onOpen,
+}: {
+  /** `sequence` is every visible work's index into WORKS, in grid order — the
+   *  lightbox steps through that, so Next/Previous stay inside the active filter. */
+  onOpen: (index: number, sequence: number[]) => void
+}) {
   const [active, setActive] = useState<CategoryId>('all')
   const [hovered, setHovered] = useState(false)
   const level = useMotionLevel()
@@ -24,18 +30,21 @@ export function GalleryGrid({ onOpen }: { onOpen: (index: number) => void }) {
 
   const visible = filterWorks(works, active)
   const categories = visibleCategories(works)
+  const sequence = visible.map((work) => works.indexOf(work))
+  const openInSequence = (index: number) => onOpen(index, sequence)
   const stagger = level === 'reduced' ? 0 : 0.025
 
   return (
     <div>
       {/* Sticky within this outer div's bounds: pinned flush under the fixed nav
           while the grid below scrolls past, then released the moment this div's own
-          bottom — the end of the grid — reaches that point. `top-[65px]` is the
-          nav's own measured height (globals.css's `scroll-padding-top` comment: py-4
-          + the h-8 logo + the 1px hairline) — flush, not the 5rem anchor-scroll
-          clearance that leaves a gap here. bg-navy stops the grid's images showing
-          through while pinned. */}
-      <div className="sticky top-[65px] z-40 bg-navy py-3">
+          bottom — the end of the grid — reaches that point. The offset is the nav's
+          live height, which Nav.tsx publishes as --nav-height: the bar shrinks from
+          65px to about 53px once the page scrolls, so a fixed 65px left a strip of
+          photos showing through between the two bars. 65px stays as the fallback
+          for the first paint, before Nav has measured itself. bg-navy stops the
+          grid's images showing through while pinned. */}
+      <div className="sticky top-[var(--nav-height,65px)] z-40 bg-navy py-3">
         <FilterRow categories={categories} active={active} onChange={setActive} />
       </div>
 
@@ -76,7 +85,7 @@ export function GalleryGrid({ onOpen }: { onOpen: (index: number) => void }) {
                 work={work}
                 index={works.indexOf(work)}
                 eager={isEager(i)}
-                onOpen={onOpen}
+                onOpen={openInSequence}
               />
             </motion.div>
           ))}

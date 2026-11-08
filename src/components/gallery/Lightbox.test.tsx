@@ -22,14 +22,26 @@ beforeEach(() => {
 const withoutBeforeIndex = WORKS.findIndex((w) => !w.beforeImage)
 const fourFiveIndex = WORKS.findIndex((w) => !w.beforeImage && w.ratio === '4:5')
 
-function setup(overrides: { index?: number; onClose?: () => void; onIndexChange?: (i: number) => void } = {}) {
+function setup(
+  overrides: {
+    index?: number
+    sequence?: number[]
+    onClose?: () => void
+    onIndexChange?: (i: number) => void
+  } = {},
+) {
   const onClose = overrides.onClose ?? vi.fn()
   const onIndexChange = overrides.onIndexChange ?? vi.fn()
   const index = overrides.index ?? 0
   const utils = render(
     <EnquiryPrefillProvider>
       <button type="button">outside</button>
-      <Lightbox index={index} onClose={onClose} onIndexChange={onIndexChange} />
+      <Lightbox
+        index={index}
+        sequence={overrides.sequence}
+        onClose={onClose}
+        onIndexChange={onIndexChange}
+      />
     </EnquiryPrefillProvider>,
   )
   return { onClose, onIndexChange, ...utils }
@@ -268,5 +280,34 @@ describe('Lightbox', () => {
     await user.click(screen.getByRole('button', { name: 'Enquire about something like this' }))
     const calls = getScrollIntoViewCalls()
     expect(calls[calls.length - 1].arg).toEqual({ behavior: 'auto' })
+  })
+})
+
+describe('Lightbox paging inside a filtered view', () => {
+  it('Next steps to the next work in the sequence, not the next work in the catalogue', async () => {
+    const user = userEvent.setup()
+    const sequence = [0, 2, 3]
+    const { onIndexChange } = setup({ index: 0, sequence })
+    await user.click(screen.getByRole('button', { name: 'Next' }))
+    expect(onIndexChange).toHaveBeenCalledWith(2)
+  })
+
+  it('Previous wraps around to the last work in the sequence', async () => {
+    const user = userEvent.setup()
+    const { onIndexChange } = setup({ index: 0, sequence: [0, 2, 3] })
+    await user.keyboard('{ArrowLeft}')
+    expect(onIndexChange).toHaveBeenCalledWith(3)
+  })
+
+  it('shows where the visitor is within the sequence', () => {
+    setup({ index: 2, sequence: [0, 2, 3] })
+    expect(screen.getByTestId('lightbox-counter')).toHaveTextContent('2 / 3')
+  })
+
+  it('falls back to the whole catalogue when the sequence does not contain the open work', async () => {
+    const user = userEvent.setup()
+    const { onIndexChange } = setup({ index: 0, sequence: [4, 5] })
+    await user.keyboard('{ArrowRight}')
+    expect(onIndexChange).toHaveBeenCalledWith(1)
   })
 })

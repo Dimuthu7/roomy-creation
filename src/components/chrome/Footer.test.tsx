@@ -50,6 +50,7 @@ describe('Footer', () => {
         city: TBC,
         openingHours: TBC,
         districts: TBC,
+        mapEmbedUrl: TBC,
         social: { facebook: TBC, instagram: TBC, tiktok: TBC },
       })
     const { container } = await renderFooter()
@@ -146,5 +147,33 @@ describe('Footer', () => {
   it('never uses text-white', async () => {
     const { container } = await renderFooter()
     expect(container.innerHTML).not.toMatch(/text-white/)
+  })
+})
+
+describe('Footer map', () => {
+  it('turns a plain share link into a "Get directions" link, without framing it', async () => {
+    setSite({ ...SITE_FIXTURE, mapEmbedUrl: 'https://maps.app.goo.gl/abc123' })
+    const { container } = await renderFooter()
+    const link = screen.getByRole('link', { name: /get directions/i })
+    expect(link).toHaveAttribute('href', 'https://maps.app.goo.gl/abc123')
+    expect(link).toHaveAttribute('target', '_blank')
+    expect(container.querySelector('iframe')).toBeNull()
+  })
+
+  it('embeds a real Google Maps embed URL as a lazy-loaded, titled map', async () => {
+    const embed = 'https://www.google.com/maps/embed?pb=abc'
+    setSite({ ...SITE_FIXTURE, mapEmbedUrl: embed })
+    const { container } = await renderFooter()
+    const frame = container.querySelector('iframe')
+    expect(frame).toHaveAttribute('src', embed)
+    expect(frame).toHaveAttribute('loading', 'lazy')
+    expect(frame).toHaveAttribute('title')
+  })
+
+  it('shows neither while the map field is [TBC]', async () => {
+    setSite({ ...SITE_FIXTURE, mapEmbedUrl: TBC })
+    const { container } = await renderFooter()
+    expect(screen.queryByRole('link', { name: /get directions/i })).toBeNull()
+    expect(container.querySelector('iframe')).toBeNull()
   })
 })

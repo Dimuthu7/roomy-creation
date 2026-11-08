@@ -349,3 +349,47 @@ describe('QuoteForm', () => {
     expect(wardrobe).not.toBeChecked()
   })
 })
+
+describe('QuoteForm mobile and recovery affordances', () => {
+  it('lets a phone autofill name, phone and email, with the right keypad for each', () => {
+    renderForm()
+    expect(screen.getByLabelText(/^name/i)).toHaveAttribute('autocomplete', 'name')
+    const phone = screen.getByLabelText(/^phone/i)
+    expect(phone).toHaveAttribute('autocomplete', 'tel')
+    expect(phone).toHaveAttribute('inputmode', 'tel')
+    const email = screen.getByLabelText(/^email/i)
+    expect(email).toHaveAttribute('autocomplete', 'email')
+    expect(email).toHaveAttribute('inputmode', 'email')
+  })
+
+  it('clears a field’s error as soon as the visitor fixes that field, leaving the others', async () => {
+    const user = userEvent.setup()
+    renderForm()
+    await user.click(screen.getByRole('button', { name: 'Send enquiry' }))
+    expect(await screen.findByText('Enter your name')).toBeInTheDocument()
+    const phoneErrorsBefore = screen.getByLabelText(/^phone/i).getAttribute('aria-invalid')
+    await user.type(screen.getByLabelText(/^name/i), 'A')
+    expect(screen.queryByText('Enter your name')).not.toBeInTheDocument()
+    expect(screen.getByLabelText(/^phone/i).getAttribute('aria-invalid')).toBe(phoneErrorsBefore)
+  })
+
+  it('clears a Listbox field’s error once an option is picked', async () => {
+    const user = userEvent.setup()
+    renderForm()
+    await user.click(screen.getByRole('button', { name: 'Send enquiry' }))
+    await waitFor(() =>
+      expect(screen.getByLabelText(/how you found us/i)).toHaveAttribute('aria-invalid', 'true'),
+    )
+    await chooseOption(user, /how you found us/i, 'Facebook')
+    expect(screen.getByLabelText(/how you found us/i)).not.toHaveAttribute('aria-invalid')
+  })
+
+  it('keeps each need a real, labelled checkbox even though it is drawn as a chip', async () => {
+    const user = userEvent.setup()
+    renderForm()
+    const wardrobe = screen.getByRole('checkbox', { name: /Wardrobe/i })
+    expect(wardrobe).not.toBeChecked()
+    await user.click(screen.getByText('Wardrobe'))
+    expect(wardrobe).toBeChecked()
+  })
+})

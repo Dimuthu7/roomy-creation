@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { Logo } from './Logo'
@@ -41,6 +41,7 @@ export function Nav() {
   const reduced = level === 'reduced'
   const [scrolled, setScrolled] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
+  const headerRef = useRef<HTMLElement>(null)
   const pathname = usePathname()
   // The login screen has no session yet, so "Home"/"Sign out" would either bounce
   // straight back to it (proxy.ts) or destroy nothing — SiteChrome hides this whole
@@ -57,6 +58,23 @@ export function Nav() {
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
   }, [reduced])
+
+  // Publishes the bar's live height as --nav-height, so anything that has to sit flush
+  // under it (the gallery's sticky filter row) follows the shrink-on-scroll instead of
+  // hard-coding the resting 65px and leaving a gap once the bar is smaller.
+  useEffect(() => {
+    const header = headerRef.current
+    if (!header) return
+    const root = document.documentElement
+    const publish = () => root.style.setProperty('--nav-height', `${header.offsetHeight}px`)
+    publish()
+    const observer = new ResizeObserver(publish)
+    observer.observe(header)
+    return () => {
+      observer.disconnect()
+      root.style.removeProperty('--nav-height')
+    }
+  }, [])
 
   // Plain anchors jump instantly with no easing. Matches Hero's own scroll cue and
   // the enquiry prefill's scrollIntoView pattern — an explicit `behavior` here beats
@@ -87,6 +105,7 @@ export function Nav() {
       {/* z-50: sits above a navy hero. The hairline is what keeps it visible at rest
           against a navy section beneath it. */}
       <header
+        ref={headerRef}
         className={`fixed inset-x-0 top-0 z-50 border-b border-teal/30 ${HEADER_TRANSITION} ${
           scrolled ? 'bg-navy/95 shadow-lg shadow-navy/30 sm:backdrop-blur-sm' : 'bg-navy'
         }`}
