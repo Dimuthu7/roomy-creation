@@ -2,7 +2,7 @@
 # Regenerates src/assets/logoMark.ts from src/assets/logo-mark.png.
 #
 # The PDF and Word renderers need the mark as *bytes*, not as a next/image import
-# (which yields a URL). Reading it off disk at render time is unreliable on Vercel,
+# (which yields a URL). Reading it off disk at render time is unreliable on a serverless runtime,
 # so the bytes are inlined into a TS module the bundler is guaranteed to include.
 # 256px keeps it crisp at the ~55pt it prints at while keeping the module small.
 #
