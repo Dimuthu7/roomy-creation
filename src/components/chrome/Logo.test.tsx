@@ -22,4 +22,11 @@ describe('Logo', () => {
     render(<Logo />)
     expect(screen.getByText('Roomy Creations')).toHaveClass('text-yellow')
   })
+
+  it('draws the mark a step smaller in the nav than in the footer', () => {
+    const { container: nav } = render(<Logo size="nav" />)
+    const { container: footer } = render(<Logo />)
+    expect(nav.querySelector('img')).toHaveClass('h-6', 'sm:h-7')
+    expect(footer.querySelector('img')).toHaveClass('h-8')
+  })
 })

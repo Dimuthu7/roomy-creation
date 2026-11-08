@@ -248,19 +248,24 @@ export function Lightbox({
           {specRow('Year', isTBC(work.year) ? undefined : String(work.year))}
         </dl>
 
-        <div className="flex items-center justify-between gap-4">
+        {/* On a phone the three controls no longer fit one row: the enquire pill was
+            squeezed into a four-line blob. So it takes its own full-width row there,
+            under Previous/Next (which split the row between them), and rejoins them on
+            one line from `sm` up. Short copy in the display face rather than spaced-out
+            mono capitals keeps it to a single line either way. */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
           <div className="flex gap-2">
             <button
               type="button"
               onClick={goPrev}
-              className="u-mono rounded-full border border-teal/40 px-4 py-2 text-sky hover:border-teal"
+              className="u-mono flex-1 rounded-full border border-teal/40 px-4 py-2 text-sky transition-colors hover:border-teal sm:flex-none"
             >
               Previous
             </button>
             <button
               type="button"
               onClick={goNext}
-              className="u-mono rounded-full border border-teal/40 px-4 py-2 text-sky hover:border-teal"
+              className="u-mono flex-1 rounded-full border border-teal/40 px-4 py-2 text-sky transition-colors hover:border-teal sm:flex-none"
             >
               Next
             </button>
@@ -272,9 +277,9 @@ export function Lightbox({
               prefill(work.category)
               onClose()
             }}
-            className="u-mono rounded-full bg-yellow px-6 py-2 text-navy"
+            className="w-full whitespace-nowrap rounded-full bg-yellow px-6 py-3 font-display text-sm text-navy transition-transform active:scale-95 sm:w-auto sm:py-2.5"
           >
-            Enquire about something like this
+            Enquire about this
           </button>
         </div>
       </motion.div>
