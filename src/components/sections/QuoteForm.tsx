@@ -2,9 +2,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { Listbox, ListboxButton, ListboxOption, ListboxOptions } from '@headlessui/react'
 import { toast } from 'sonner'
+import { motion } from 'framer-motion'
 import { enquirySchema, NEED_OPTIONS, PROPERTY_TYPES, SOURCE_OPTIONS } from '@/lib/enquirySchema'
 import { useEnquiryPrefill } from '@/context/EnquiryPrefill'
 import { useSiteData } from '@/context/SiteData'
+import { useMotionLevel } from '@/hooks/useMotionLevel'
 
 type Errors = Record<string, string>
 
@@ -70,6 +72,19 @@ export function QuoteForm() {
   const [errors, setErrors] = useState<Errors>({})
   const [state, setState] = useState<'idle' | 'sending' | 'sent' | 'failed'>('idle')
   const successRef = useRef<HTMLDivElement>(null)
+  const reduced = useMotionLevel() === 'reduced'
+
+  // An error used to stay on screen until the next submit, even after the visitor had
+  // fixed the field — so a corrected form still looked broken. Each error now clears
+  // the moment its own field changes.
+  function clearError(name: string) {
+    setErrors((current) => {
+      if (!(name in current)) return current
+      const next = { ...current }
+      delete next[name]
+      return next
+    })
+  }
   // Ids already merged from the prefill context. A checkbox the visitor deliberately
   // unticks must stay unticked even if the same id shows up again in `prefilled` (its
   // identity changes whenever any card prefills anything) — only ids that are new
@@ -132,22 +147,36 @@ export function QuoteForm() {
 
   if (state === 'sent') {
     return (
-      <div
+      <motion.div
         ref={successRef}
         role="status"
         tabIndex={-1}
         className="on-paper border-2 border-navy p-8 text-navy"
+        initial={reduced ? undefined : { opacity: 0, y: 16 }}
+        animate={reduced ? undefined : { opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
       >
-        <h3 className="font-display text-2xl text-navy">We have your enquiry</h3>
+        <SuccessTick reduced={reduced} />
+        <h3 className="mt-4 font-display text-2xl text-navy">We have your enquiry</h3>
         <p className="mt-3 text-navy">
           We reply within one working day. If it is urgent, message us on WhatsApp.
         </p>
-      </div>
+      </motion.div>
     )
   }
 
   return (
-    <form onSubmit={onSubmit} noValidate className="on-paper space-y-6 text-navy">
+    <form
+      onSubmit={onSubmit}
+      onChange={(e) => {
+        const target: EventTarget = e.target
+        if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) {
+          if (target.name) clearError(target.name)
+        }
+      }}
+      noValidate
+      className="on-paper space-y-6 text-navy"
+    >
       <p className="u-mono text-navy">
         <span aria-hidden="true" className="font-bold">
           *
@@ -156,17 +185,33 @@ export function QuoteForm() {
       </p>
 
       <div className="grid gap-5 sm:grid-cols-2">
-        <Field id="name" label="Name" error={errors.name} required />
-        <Field id="phone" label="Phone" type="tel" error={errors.phone} required />
+        <Field id="name" label="Name" autoComplete="name" error={errors.name} required />
+        <Field
+          id="phone"
+          label="Phone"
+          type="tel"
+          autoComplete="tel"
+          inputMode="tel"
+          error={errors.phone}
+          required
+        />
       </div>
 
       <div className="grid gap-5 sm:grid-cols-2">
-        <Field id="email" label="Email" type="email" error={errors.email} />
+        <Field
+          id="email"
+          label="Email"
+          type="email"
+          autoComplete="email"
+          inputMode="email"
+          error={errors.email}
+        />
         <Select
           id="propertyType"
           label="Property type"
           options={PROPERTY_TYPE_OPTIONS}
           error={errors.propertyType}
+          onSelect={() => clearError('propertyType')}
           required
         />
       </div>
@@ -176,11 +221,23 @@ export function QuoteForm() {
           What you need
           <RequiredMark />
         </legend>
-        <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
+        {/* Tappable chips rather than bare browser checkboxes: a much bigger target on a
+            phone, and the same pill language as the gallery's filter row. The real
+            checkbox is still there (visually hidden, not display:none), so it keeps its
+            role, label, keyboard toggle and form value; the label carries the visible
+            focus ring on its behalf. */}
+        <div className="mt-3 flex flex-wrap gap-2">
           {NEED_OPTIONS.map((n) => (
-            <label key={n.id} className="flex items-center gap-2 text-navy">
+            <label
+              key={n.id}
+              className="inline-flex cursor-pointer select-none items-center gap-2 rounded-full border border-navy/40 px-4 py-2 text-navy
+                         transition-colors duration-200 hover:border-navy active:scale-95
+                         has-checked:border-navy has-checked:bg-navy has-checked:text-paper
+                         has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-navy"
+            >
               <input
                 type="checkbox"
+                className="peer sr-only"
                 name="needs"
                 value={n.id}
                 checked={needs.includes(n.id)}
@@ -191,6 +248,7 @@ export function QuoteForm() {
                   )
                 }
               />
+              <CheckIcon className="hidden h-4 w-4 shrink-0 text-yellow peer-checked:block" />
               {n.label}
             </label>
           ))}
@@ -240,6 +298,7 @@ export function QuoteForm() {
         label="How you found us"
         options={SOURCE_OPTIONS}
         error={errors.source}
+        onSelect={() => clearError('source')}
         required
       />
 
@@ -273,7 +332,10 @@ export function QuoteForm() {
         disabled={state === 'sending'}
         className="w-full rounded-full bg-yellow px-6 py-4 font-display text-navy transition duration-200 hover:bg-yellow/80 active:scale-95 disabled:opacity-60"
       >
-        {state === 'sending' ? 'Sending' : 'Send enquiry'}
+        <span className="inline-flex items-center justify-center gap-2">
+          {state === 'sending' && <Spinner />}
+          {state === 'sending' ? 'Sending' : 'Send enquiry'}
+        </span>
       </button>
 
       <p className="u-mono">We reply within one working day.</p>
@@ -300,12 +362,17 @@ function Field({
   id,
   label,
   type = 'text',
+  autoComplete,
+  inputMode,
   error,
   required,
 }: {
   id: string
   label: string
   type?: string
+  /** Lets a phone offer the visitor's saved name, number and email in one tap. */
+  autoComplete?: string
+  inputMode?: React.HTMLAttributes<HTMLInputElement>['inputMode']
   error?: string
   required?: boolean
 }) {
@@ -319,6 +386,8 @@ function Field({
         id={id}
         name={id}
         type={type}
+        autoComplete={autoComplete}
+        inputMode={inputMode}
         aria-required={required || undefined}
         aria-invalid={error ? true : undefined}
         aria-describedby={error ? `${id}-error` : undefined}
@@ -352,9 +421,9 @@ function ChevronIcon() {
   )
 }
 
-function CheckIcon() {
+function CheckIcon({ className = 'h-4 w-4 shrink-0' }: { className?: string }) {
   return (
-    <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" className="h-4 w-4 shrink-0">
+    <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" className={className}>
       <path
         d="M4 10l4 4 8-8"
         stroke="currentColor"
@@ -371,12 +440,16 @@ function Select({
   label,
   options,
   error,
+  onSelect,
   required,
 }: {
   id: string
   label: string
   options: readonly { id: string; label: string }[]
   error?: string
+  /** Headless UI's hidden input never fires a DOM change event, so the form-level
+   *  error clearing cannot see a Listbox pick — this is how it hears about one. */
+  onSelect?: () => void
   required?: boolean
 }) {
   return (
@@ -385,7 +458,7 @@ function Select({
         {label}
         {required && <RequiredMark />}
       </label>
-      <Listbox defaultValue="" name={id}>
+      <Listbox defaultValue="" name={id} onChange={() => onSelect?.()}>
         <ListboxButton
           id={id}
           aria-required={required || undefined}
@@ -440,5 +513,39 @@ function Select({
         </p>
       )}
     </div>
+  )
+}
+
+function Spinner() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      fill="none"
+      className="h-5 w-5 animate-spin motion-reduce:hidden"
+    >
+      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeOpacity="0.25" strokeWidth="3" />
+      <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+/** The success state's tick draws itself in once; under reduced motion it is simply there. */
+function SuccessTick({ reduced }: { reduced: boolean }) {
+  return (
+    <span className="flex h-12 w-12 items-center justify-center rounded-full bg-yellow text-navy">
+      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" className="h-6 w-6">
+        <motion.path
+          d="M5 12.5l4.5 4.5L19 7.5"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          initial={reduced ? undefined : { pathLength: 0 }}
+          animate={reduced ? undefined : { pathLength: 1 }}
+          transition={{ duration: 0.45, delay: 0.2, ease: 'easeOut' }}
+        />
+      </svg>
+    </span>
   )
 }

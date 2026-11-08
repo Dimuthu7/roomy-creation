@@ -1,4 +1,5 @@
 'use client'
+import { useState } from 'react'
 import { FacebookIcon } from '@/components/chrome/FooterIcons'
 import { useSiteData } from '@/context/SiteData'
 import type { Testimonial } from '@/data/testimonials'
@@ -15,6 +16,10 @@ const MIN_DURATION_S = 20
 // pill isn't something we have real data for).
 const HEADING = 'What our customers say'
 const SUBHEAD = 'Reviews from real customers, on Facebook and in person.'
+
+// Past roughly this many characters a review overflows the card's four-line clamp, so
+// it gets a "Read more" toggle; shorter ones never show a control that does nothing.
+const READ_MORE_THRESHOLD = 180
 
 function QuoteIcon({ className }: { className?: string }) {
   return (
@@ -84,6 +89,8 @@ function TestimonialMeta({ testimonial }: { testimonial: Testimonial }) {
 }
 
 function TestimonialCard({ testimonial, duplicate }: { testimonial: Testimonial; duplicate?: boolean }) {
+  const [expanded, setExpanded] = useState(false)
+  const long = testimonial.reviewText.length > READ_MORE_THRESHOLD
   return (
     <div
       data-testid={duplicate ? 'testimonial-card-duplicate' : 'testimonial-card'}
@@ -91,10 +98,27 @@ function TestimonialCard({ testimonial, duplicate }: { testimonial: Testimonial;
       aria-label={duplicate ? undefined : `Review from ${testimonial.authorName}`}
       aria-hidden={duplicate || undefined}
       tabIndex={duplicate ? -1 : 0}
-      className="w-80 shrink-0 rounded-2xl border border-navy/10 bg-white p-6 shadow-sm"
+      className="testimonial-card w-80 shrink-0 rounded-2xl border border-navy/10 bg-white p-6 shadow-sm"
     >
       <QuoteIcon className="h-6 w-6 text-yellow" />
-      <p className="mt-3 line-clamp-4 text-sm leading-relaxed text-navy/90">{testimonial.reviewText}</p>
+      <p
+        className={`mt-3 text-sm leading-relaxed text-navy/90 ${expanded ? '' : 'line-clamp-4'}`}
+      >
+        {testimonial.reviewText}
+      </p>
+      {long && (
+        <button
+          type="button"
+          onClick={() => setExpanded((open) => !open)}
+          aria-expanded={expanded}
+          // The duplicate set is aria-hidden and out of the tab order; a focusable
+          // button inside it would put it straight back in.
+          tabIndex={duplicate ? -1 : undefined}
+          className="u-mono mt-2 text-navy underline decoration-yellow decoration-2 underline-offset-4 hover:text-navy/70"
+        >
+          {expanded ? 'Show less' : 'Read more'}
+        </button>
+      )}
       <div className="mt-5 flex items-center gap-3">
         <Avatar testimonial={testimonial} />
         <div className="min-w-0">
@@ -112,20 +136,39 @@ function TestimonialCard({ testimonial, duplicate }: { testimonial: Testimonial;
  *  testimonials, matching Position's "cut what's unknown" rule for its stats. */
 export function Testimonials() {
   const { testimonials } = useSiteData()
+  // WCAG 2.2.2: content that moves on its own for more than five seconds needs a way
+  // to stop it. Hover/focus already pause the belt, but a visitor who just wants it
+  // still had no control for that — this is it.
+  const [paused, setPaused] = useState(false)
   if (testimonials.length === 0) return null
 
   const duration = Math.max(MIN_DURATION_S, testimonials.length * SECONDS_PER_CARD)
 
   return (
     <section id="testimonials" aria-label="Testimonials" className="on-paper relative bg-paper py-24 text-navy">
-      <div className="relative z-10 mx-auto max-w-6xl px-6">
-        <h2 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">{HEADING}</h2>
-        <p className="mt-2 max-w-md font-body text-sm leading-relaxed text-navy/70">{SUBHEAD}</p>
+      <div className="relative z-10 mx-auto flex max-w-6xl flex-wrap items-end justify-between gap-4 px-6">
+        <div>
+          <h2 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">{HEADING}</h2>
+          <p className="mt-2 max-w-md font-body text-sm leading-relaxed text-navy/70">{SUBHEAD}</p>
+        </div>
+        {/* Hidden wherever the belt does not move at all (touch screens and reduced
+            motion turn it into a swipeable row instead — see globals.css), since a
+            pause control for a static row would do nothing. */}
+        <button
+          type="button"
+          onClick={() => setPaused((p) => !p)}
+          aria-pressed={paused}
+          className="testimonial-pause u-mono inline-flex items-center gap-2 rounded-full border border-navy/30 px-4 py-2 text-navy transition-colors duration-200 hover:border-navy active:scale-95"
+        >
+          {paused ? <PlayIcon /> : <PauseIcon />}
+          {paused ? 'Play reviews' : 'Pause reviews'}
+        </button>
       </div>
 
-      <div className="testimonial-fade-mask relative mt-10 overflow-hidden">
+      <div className="testimonial-viewport testimonial-fade-mask relative mt-10 overflow-hidden">
         <div
-          className="animate-testimonial-marquee flex w-max gap-6 px-6"
+          data-paused={paused}
+          className="animate-testimonial-marquee flex w-max items-start gap-6 px-6"
           style={{ animationDuration: `${duration}s` }}
         >
           {testimonials.map((t) => (
@@ -137,5 +180,22 @@ export function Testimonials() {
         </div>
       </div>
     </section>
+  )
+}
+
+function PauseIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" fill="currentColor">
+      <rect x="6" y="5" width="4" height="14" rx="1" />
+      <rect x="14" y="5" width="4" height="14" rx="1" />
+    </svg>
+  )
+}
+
+function PlayIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" fill="currentColor">
+      <path d="M7 5.5v13a1 1 0 0 0 1.5.86l10.5-6.5a1 1 0 0 0 0-1.72L8.5 4.64A1 1 0 0 0 7 5.5Z" />
+    </svg>
   )
 }

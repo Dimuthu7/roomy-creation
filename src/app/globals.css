@@ -181,8 +181,45 @@ body {
 }
 
 .animate-testimonial-marquee:hover,
-.animate-testimonial-marquee:focus-within {
+.animate-testimonial-marquee:focus-within,
+.animate-testimonial-marquee[data-paused='true'] {
   animation-play-state: paused;
+}
+
+/*
+ * On a touch screen there is no hover to pause the belt and no way to go back to a
+ * card that has already slid past, and under reduced motion the belt never moves at
+ * all — so any review past the first few was simply unreachable. Both cases get a
+ * plain swipeable row instead: native horizontal scroll with snap points, the real
+ * card set only (the duplicate set exists purely to make the loop seamless), no edge
+ * fade (it would hide the first card's edge at rest), and no pause button.
+ */
+@media (pointer: coarse), (prefers-reduced-motion: reduce) {
+  .testimonial-viewport {
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: 1.5rem;
+    overscroll-behavior-x: contain;
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+
+  .testimonial-viewport .animate-testimonial-marquee {
+    animation: none !important;
+    padding-bottom: 0.5rem;
+  }
+
+  .testimonial-viewport [data-testid='testimonial-card-duplicate'] {
+    display: none;
+  }
+
+  .testimonial-viewport .testimonial-card {
+    scroll-snap-align: start;
+  }
+
+  .testimonial-pause {
+    display: none;
+  }
 }
 
 /*

@@ -9,6 +9,9 @@ import { Lightbox } from '@/components/gallery/Lightbox'
 // piece of the page that needs state.
 export function Work() {
   const [openIndex, setOpenIndex] = useState<number | null>(null)
+  // The filtered view the lightbox was opened from, so it pages through what the
+  // visitor was actually looking at rather than every work on the site.
+  const [sequence, setSequence] = useState<number[]>([])
 
   return (
     <section id="work" aria-labelledby="work-heading" className="bg-navy py-24">
@@ -22,12 +25,18 @@ export function Work() {
         >
           Our work
         </h2>
-        <GalleryGrid onOpen={setOpenIndex} />
+        <GalleryGrid
+          onOpen={(index, visible) => {
+            setSequence(visible)
+            setOpenIndex(index)
+          }}
+        />
       </div>
 
       {openIndex !== null && (
         <Lightbox
           index={openIndex}
+          sequence={sequence}
           onClose={() => setOpenIndex(null)}
           onIndexChange={setOpenIndex}
         />

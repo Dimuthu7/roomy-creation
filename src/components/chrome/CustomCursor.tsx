@@ -1,17 +1,42 @@
 'use client'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useSyncExternalStore } from 'react'
 import { useMotionLevel } from '@/hooks/useMotionLevel'
+
+// A follower ring only makes sense for a real mouse or trackpad. 'full' motion is
+// decided by width alone, so a touch tablet in landscape (an iPad is wider than the
+// mobile breakpoint) got the ring too — parked wherever the last tap landed. Gating on
+// the primary pointer as well keeps it off every touch-first device.
+const FINE_POINTER = '(hover: hover) and (pointer: fine)'
+
+function subscribePointer(onChange: () => void): () => void {
+  const query = window.matchMedia(FINE_POINTER)
+  query.addEventListener('change', onChange)
+  return () => query.removeEventListener('change', onChange)
+}
+
+function useFinePointer(): boolean {
+  return useSyncExternalStore(
+    subscribePointer,
+    () => window.matchMedia(FINE_POINTER).matches,
+    () => false,
+  )
+}
 
 export function CustomCursor() {
   const ref = useRef<HTMLDivElement>(null)
   const level = useMotionLevel()
+  const finePointer = useFinePointer()
+  const enabled = level === 'full' && finePointer
 
   useEffect(() => {
-    if (level !== 'full') return
+    if (!enabled) return
     const el = ref.current
     if (!el) return
 
     const move = (e: PointerEvent) => {
+      // A touch-screen laptop still reports a fine primary pointer; a finger on its
+      // screen should not drag the ring around.
+      if (e.pointerType === 'touch') return
       el.style.transform = `translate3d(${e.clientX}px, ${e.clientY}px, 0) translate(-50%, -50%)`
       const target = e.target as HTMLElement
       const label = target.closest('[data-cursor-label]')?.getAttribute('data-cursor-label')
@@ -22,9 +47,9 @@ export function CustomCursor() {
 
     window.addEventListener('pointermove', move)
     return () => window.removeEventListener('pointermove', move)
-  }, [level])
+  }, [enabled])
 
-  if (level !== 'full') return null
+  if (!enabled) return null
 
   return (
     <div

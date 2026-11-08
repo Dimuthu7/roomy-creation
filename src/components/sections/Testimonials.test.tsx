@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { useSiteData } from '@/context/SiteData'
 import { SITE_FIXTURE, WORKS_FIXTURE, TESTIMONIALS_FIXTURE } from '@/test/fixtures'
 import type { Testimonial } from '@/data/testimonials'
@@ -127,5 +128,40 @@ describe('Testimonials', () => {
       const track = container.querySelector('.animate-testimonial-marquee') as HTMLElement
       expect(track.style.animationDuration).toBe('20s')
     })
+  })
+})
+
+describe('Testimonials controls', () => {
+  it('offers a pause control that stops the belt and can start it again', async () => {
+    const user = userEvent.setup()
+    const { container } = render(<Testimonials />)
+    const track = container.querySelector('.animate-testimonial-marquee') as HTMLElement
+    const pause = screen.getByRole('button', { name: 'Pause reviews' })
+    expect(pause).toHaveAttribute('aria-pressed', 'false')
+    expect(track).toHaveAttribute('data-paused', 'false')
+
+    await user.click(pause)
+    expect(track).toHaveAttribute('data-paused', 'true')
+    const play = screen.getByRole('button', { name: 'Play reviews' })
+    expect(play).toHaveAttribute('aria-pressed', 'true')
+
+    await user.click(play)
+    expect(track).toHaveAttribute('data-paused', 'false')
+  })
+
+  it('lets a long review be read in full, and keeps the duplicate copy out of the tab order', async () => {
+    const user = userEvent.setup()
+    const long = { ...TESTIMONIALS_FIXTURE[0], id: 'long', reviewText: 'Fitted perfectly. '.repeat(20) }
+    renderWithTestimonials([long])
+    const [real, duplicate] = screen.getAllByRole('button', { name: 'Read more', hidden: true })
+    expect(duplicate).toHaveAttribute('tabindex', '-1')
+    expect(real).toHaveAttribute('aria-expanded', 'false')
+    await user.click(real)
+    expect(screen.getByRole('button', { name: 'Show less' })).toHaveAttribute('aria-expanded', 'true')
+  })
+
+  it('shows no Read more control on a short review', () => {
+    renderWithTestimonials([{ ...TESTIMONIALS_FIXTURE[0], id: 'short', reviewText: 'Great work.' }])
+    expect(screen.queryByRole('button', { name: 'Read more', hidden: true })).toBeNull()
   })
 })

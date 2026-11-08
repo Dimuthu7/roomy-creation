@@ -88,7 +88,7 @@ describe('GalleryGrid', () => {
     const onOpen = vi.fn()
     render(<GalleryGrid onOpen={onOpen} />)
     await user.click(screen.getAllByRole('button', { name: /Built-in wardrobe/ })[0])
-    expect(onOpen).toHaveBeenCalledWith(0)
+    expect(onOpen).toHaveBeenCalledWith(0, expect.any(Array))
   })
 
   it('exposes each card as a keyboard-reachable button', () => {
@@ -155,7 +155,7 @@ describe('GalleryGrid', () => {
     expect(expected).toBeGreaterThan(2) // the test is worthless if the two indices agree
 
     await user.click(within(third).getByRole('button'))
-    expect(onOpen).toHaveBeenCalledWith(expected)
+    expect(onOpen).toHaveBeenCalledWith(expected, expect.any(Array))
   })
 
   // The x offset was already gated on motion level; the opacity was not, so every card
@@ -172,8 +172,10 @@ describe('GalleryGrid', () => {
   })
 
   // The client wants the filter chips reachable while scrolling the grid, rather
-  // than having to scroll back to the top to change category. `top-[65px]` is the
-  // nav's own measured height, so the filter row sits flush under it with no gap
+  // than having to scroll back to the top to change category. The offset is the
+  // nav's live measured height (--nav-height, published by Nav, which shrinks once the
+  // page scrolls), with 65px as the pre-measurement fallback, so the filter row sits
+  // flush under it with no gap
   // (rather than the 5rem anchor-scroll clearance globals.css uses elsewhere, which
   // would leave one). `bg-navy` is required — without an opaque background the
   // grid's own images would show through, and scroll underneath, the pinned bar.
@@ -182,7 +184,7 @@ describe('GalleryGrid', () => {
     const filterRow = screen.getByRole('group', { name: 'Filter work by category' })
     const stickyWrapper = filterRow.parentElement
     expect(stickyWrapper?.className).toContain('sticky')
-    expect(stickyWrapper?.className).toContain('top-[65px]')
+    expect(stickyWrapper?.className).toContain('top-[var(--nav-height,65px)]')
     expect(stickyWrapper?.className).toContain('bg-navy')
   })
 })

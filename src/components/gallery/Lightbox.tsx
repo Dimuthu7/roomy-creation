@@ -27,10 +27,14 @@ function specRow(label: string, value: string | undefined) {
 
 export function Lightbox({
   index,
+  sequence,
   onClose,
   onIndexChange,
 }: {
   index: number
+  /** Indices into WORKS to page through, in order — the gallery's filtered view.
+   *  Omitted (or not containing `index`), it pages through every work. */
+  sequence?: number[]
   onClose: () => void
   onIndexChange: (index: number) => void
 }) {
@@ -42,6 +46,15 @@ export function Lightbox({
   const { prefill } = useEnquiryPrefill()
   const { works } = useSiteData()
   const work = works[index]
+
+  // Next/Previous used to walk the whole catalogue, so a visitor browsing "Kitchens"
+  // was dropped into wardrobes on the first Next. Paging now stays inside the view the
+  // lightbox was opened from.
+  const order =
+    sequence && sequence.includes(index) ? sequence : works.map((_, i) => i)
+  const position = order.indexOf(index)
+  const goNext = () => onIndexChange(order[nextIndex(position, order.length)])
+  const goPrev = () => onIndexChange(order[prevIndex(position, order.length)])
 
   useEffect(() => {
     // The lint rule wants setState deferred to a callback, but there is no external
@@ -100,12 +113,12 @@ export function Lightbox({
     }
     if (e.key === 'ArrowRight') {
       e.preventDefault()
-      onIndexChange(nextIndex(index, works.length))
+      goNext()
       return
     }
     if (e.key === 'ArrowLeft') {
       e.preventDefault()
-      onIndexChange(prevIndex(index, works.length))
+      goPrev()
       return
     }
     if (e.key !== 'Tab') return
@@ -157,9 +170,16 @@ export function Lightbox({
     >
       <div className="flex max-h-full w-full max-w-4xl flex-col gap-6 overflow-y-auto">
         <div className="flex items-start justify-between gap-4">
-          <h2 id="lightbox-title" className="font-display text-2xl text-paper">
-            {work.title}
-          </h2>
+          <div>
+            <h2 id="lightbox-title" className="font-display text-2xl text-paper">
+              {work.title}
+            </h2>
+            {order.length > 1 && (
+              <p data-testid="lightbox-counter" className="u-mono mt-1 text-sky/70">
+                {position + 1} / {order.length}
+              </p>
+            )}
+          </div>
           <button type="button" onClick={onClose} className="u-mono text-sky hover:text-yellow">
             Close
           </button>
@@ -187,14 +207,14 @@ export function Lightbox({
           <div className="flex gap-2">
             <button
               type="button"
-              onClick={() => onIndexChange(prevIndex(index, works.length))}
+              onClick={goPrev}
               className="u-mono rounded-full border border-teal/40 px-4 py-2 text-sky hover:border-teal"
             >
               Previous
             </button>
             <button
               type="button"
-              onClick={() => onIndexChange(nextIndex(index, works.length))}
+              onClick={goNext}
               className="u-mono rounded-full border border-teal/40 px-4 py-2 text-sky hover:border-teal"
             >
               Next
