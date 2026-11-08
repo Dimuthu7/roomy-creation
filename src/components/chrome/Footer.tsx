@@ -39,7 +39,7 @@ export async function Footer() {
           <div className="flex flex-wrap gap-4">
             <a
               href="#enquiry"
-              className="border border-yellow px-6 py-3 font-display text-yellow transition duration-200 hover:bg-yellow hover:text-navy active:scale-95"
+              className="rounded-full border border-yellow px-6 py-3 font-display text-yellow transition duration-200 hover:bg-yellow hover:text-navy active:scale-95"
             >
               Request a quotation
             </a>
@@ -48,7 +48,7 @@ export async function Footer() {
                 href={whatsapp}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="border border-yellow px-6 py-3 font-display text-yellow transition duration-200 hover:bg-yellow hover:text-navy active:scale-95"
+                className="rounded-full border border-yellow px-6 py-3 font-display text-yellow transition duration-200 hover:bg-yellow hover:text-navy active:scale-95"
               >
                 Chat on WhatsApp
               </a>

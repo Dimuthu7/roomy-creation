@@ -36,7 +36,11 @@ describe('Hero', () => {
   // consecutive copy-drift incidents. Exact match, not a regex.
   it('carries the approved headline verbatim', () => {
     render(<Hero />)
-    expect(screen.getByText('We measure your wall, then build to it.')).toBeInTheDocument()
+    // By accessible name rather than getByText: the headline is split into one span
+    // per word for its entrance animation, and the name is what a visitor actually hears.
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'We measure your wall, then build to it.' }),
+    ).toBeInTheDocument()
   })
 
   // F2: a bare <section> with no accessible name is not exposed as a landmark
@@ -212,5 +216,27 @@ describe('Hero', () => {
     await user.click(screen.getByRole('link', { name: 'Scroll down' }))
     const calls = getScrollIntoViewCalls()
     expect(calls[calls.length - 1].arg).toEqual({ behavior: 'auto' })
+  })
+})
+
+describe('Hero entrance', () => {
+  it('keeps the headline as one readable sentence while splitting it into animated words', () => {
+    render(<Hero />)
+    const heading = screen.getByRole('heading', { level: 1 })
+    expect(heading.textContent?.replace(/\s+/g, ' ').trim()).toBe(
+      'We measure your wall, then build to it.',
+    )
+    const words = heading.querySelectorAll('.hero-rise')
+    expect(words).toHaveLength(8)
+    // Staggered: each word starts a little after the one before it.
+    const delays = Array.from(words, (w) => parseFloat((w as HTMLElement).style.animationDelay))
+    for (let i = 1; i < delays.length; i++) expect(delays[i]).toBeGreaterThan(delays[i - 1])
+  })
+
+  it('brings the buttons in after the headline has landed', () => {
+    render(<Hero />)
+    const lastWord = Array.from(screen.getByRole('heading', { level: 1 }).querySelectorAll('.hero-rise')).at(-1) as HTMLElement
+    const ctas = screen.getByRole('link', { name: /request a quotation/i }).closest('.hero-rise') as HTMLElement
+    expect(parseFloat(ctas.style.animationDelay)).toBeGreaterThan(parseFloat(lastWord.style.animationDelay))
   })
 })

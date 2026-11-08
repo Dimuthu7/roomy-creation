@@ -5,6 +5,7 @@ import { useSiteData } from '@/context/SiteData'
 import type { CategoryId } from '@/data/categories'
 import { filterWorks, isEager, visibleCategories } from '@/lib/galleryLayout'
 import { useMotionLevel } from '@/hooks/useMotionLevel'
+import { useGalleryFilter } from '@/context/GalleryFilter'
 import { FilterRow } from './FilterRow'
 import { GalleryCard } from './GalleryCard'
 
@@ -23,13 +24,21 @@ export function GalleryGrid({
    *  lightbox steps through that, so Next/Previous stay inside the active filter. */
   onOpen: (index: number, sequence: number[]) => void
 }) {
-  const [active, setActive] = useState<CategoryId>('all')
+  // The page shares the filter through GalleryFilterProvider so "What we make" can set
+  // it; rendered without one, the grid keeps its own.
+  const shared = useGalleryFilter()
+  const [localActive, setLocalActive] = useState<CategoryId>('all')
+  const requested = shared?.active ?? localActive
+  const setActive = shared?.setActive ?? setLocalActive
   const [hovered, setHovered] = useState(false)
   const level = useMotionLevel()
   const { works } = useSiteData()
 
-  const visible = filterWorks(works, active)
   const categories = visibleCategories(works)
+  // A category with no delivered work yet has no chip, so a request for it (from a
+  // "What we make" card) falls back to everything rather than an empty grid.
+  const active = categories.some((c) => c.id === requested) ? requested : 'all'
+  const visible = filterWorks(works, active)
   const sequence = visible.map((work) => works.indexOf(work))
   const openInSequence = (index: number) => onOpen(index, sequence)
   const stagger = level === 'reduced' ? 0 : 0.025

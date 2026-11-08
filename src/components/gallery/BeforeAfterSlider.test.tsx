@@ -1,8 +1,9 @@
 import { describe, it, expect } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { BeforeAfterSlider } from './BeforeAfterSlider'
 import { WORKS_FIXTURE as WORKS } from '@/test/fixtures'
+import { setPrefersReducedMotion } from '@/test/browserStubs'
 
 const withBefore = WORKS.find((w) => w.beforeImage)!
 const withoutBefore = WORKS.find((w) => !w.beforeImage)!
@@ -200,5 +201,42 @@ describe('BeforeAfterSlider', () => {
       await user.keyboard('{ArrowRight}')
       expect(slider).toHaveAttribute('aria-valuenow', '52')
     })
+  })
+})
+
+describe('BeforeAfterSlider affordances', () => {
+  it('labels the two sides Before and After, hidden from assistive tech', () => {
+    render(<BeforeAfterSlider work={withBefore} />)
+    expect(screen.getByText('Before')).toHaveAttribute('aria-hidden', 'true')
+    expect(screen.getByText('After')).toHaveAttribute('aria-hidden', 'true')
+  })
+
+  it('sweeps the handle once as a drag hint, then settles back in the middle', async () => {
+    setPrefersReducedMotion(false)
+    render(<BeforeAfterSlider work={withBefore} />)
+    const slider = screen.getByRole('slider')
+    await waitFor(() => expect(Number(slider.getAttribute('aria-valuenow'))).not.toBe(50), {
+      timeout: 2000,
+    })
+    await waitFor(() => expect(slider).toHaveAttribute('aria-valuenow', '50'), { timeout: 3000 })
+  })
+
+  it('hands the handle over the moment the visitor touches it', async () => {
+    setPrefersReducedMotion(false)
+    const user = userEvent.setup()
+    render(<BeforeAfterSlider work={withBefore} />)
+    const slider = screen.getByRole('slider')
+    slider.focus()
+    await user.keyboard('{End}')
+    expect(slider).toHaveAttribute('aria-valuenow', '100')
+    await new Promise((r) => setTimeout(r, 900))
+    expect(slider).toHaveAttribute('aria-valuenow', '100')
+  })
+
+  it('plays no hint under reduced motion', async () => {
+    setPrefersReducedMotion(true)
+    render(<BeforeAfterSlider work={withBefore} />)
+    await new Promise((r) => setTimeout(r, 900))
+    expect(screen.getByRole('slider')).toHaveAttribute('aria-valuenow', '50')
   })
 })

@@ -311,3 +311,35 @@ describe('Lightbox paging inside a filtered view', () => {
     expect(onIndexChange).toHaveBeenCalledWith(1)
   })
 })
+
+describe('Lightbox swipe on touch', () => {
+  function swipe(el: Element, fromX: number, toX: number, dy = 0) {
+    fireEvent.touchStart(el, { touches: [{ clientX: fromX, clientY: 200 }] })
+    fireEvent.touchEnd(el, { changedTouches: [{ clientX: toX, clientY: 200 + dy }] })
+  }
+
+  it('swipes left to the next work and right to the previous one', () => {
+    const index = withoutBeforeIndex
+    const { onIndexChange } = setup({ index })
+    const media = screen.getByTestId('lightbox-media')
+    swipe(media, 300, 150)
+    expect(onIndexChange).toHaveBeenLastCalledWith((index + 1) % WORKS.length)
+    swipe(media, 150, 300)
+    expect(onIndexChange).toHaveBeenLastCalledWith((index - 1 + WORKS.length) % WORKS.length)
+  })
+
+  it('ignores a short or mostly vertical swipe', () => {
+    const { onIndexChange } = setup({ index: withoutBeforeIndex })
+    const media = screen.getByTestId('lightbox-media')
+    swipe(media, 300, 270)
+    swipe(media, 300, 220, 200)
+    expect(onIndexChange).not.toHaveBeenCalled()
+  })
+
+  it('leaves horizontal drags to the comparison slider on a before/after work', () => {
+    const withBefore = WORKS.findIndex((w) => w.beforeImage)
+    const { onIndexChange } = setup({ index: withBefore })
+    swipe(screen.getByTestId('lightbox-media'), 300, 100)
+    expect(onIndexChange).not.toHaveBeenCalled()
+  })
+})

@@ -1,6 +1,8 @@
 'use client'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
+import { animate, type AnimationPlaybackControls } from 'framer-motion'
+import { useMotionLevel } from '@/hooks/useMotionLevel'
 import { clampPercent } from '@/lib/clamp'
 import { workAlt } from '@/lib/workAlt'
 import { aspectClass } from '@/lib/aspect'
@@ -19,8 +21,38 @@ function ImageFallback({ testId, slot }: { testId: string; slot: string }) {
   )
 }
 
+// One gentle sweep of the handle shortly after a comparison opens, so a visitor can see
+// it is draggable before they have touched it. Plays once per work; any pointer or key
+// interaction stops it on the spot and hands the handle over.
+const HINT_KEYFRAMES = [50, 62, 40, 50]
+const HINT_DELAY_S = 0.6
+const HINT_DURATION_S = 1.4
+
 export function BeforeAfterSlider({ work }: { work: Work }) {
   const [percent, setPercent] = useState(50)
+  const level = useMotionLevel()
+  const hintRef = useRef<AnimationPlaybackControls | null>(null)
+  const hasComparison = Boolean(work.beforeImage)
+
+  useEffect(() => {
+    if (!hasComparison || level === 'reduced') return
+    const controls = animate(50, HINT_KEYFRAMES, {
+      delay: HINT_DELAY_S,
+      duration: HINT_DURATION_S,
+      ease: 'easeInOut',
+      onUpdate: setPercent,
+    })
+    hintRef.current = controls
+    return () => {
+      controls.stop()
+      hintRef.current = null
+    }
+  }, [hasComparison, level])
+
+  const stopHint = () => {
+    hintRef.current?.stop()
+    hintRef.current = null
+  }
   const [singleFailed, setSingleFailed] = useState(false)
   const [beforeFailed, setBeforeFailed] = useState(false)
   const [afterFailed, setAfterFailed] = useState(false)
@@ -52,6 +84,7 @@ export function BeforeAfterSlider({ work }: { work: Work }) {
   }
 
   const onKeyDown = (e: React.KeyboardEvent) => {
+    stopHint()
     const step = e.shiftKey ? 10 : 2
     if (e.key === 'ArrowRight') setPercent((p) => clampPercent(p + step))
     else if (e.key === 'ArrowLeft') setPercent((p) => clampPercent(p - step))
@@ -73,6 +106,7 @@ export function BeforeAfterSlider({ work }: { work: Work }) {
       // and the slider cannot be dragged on a phone at all.
       className={`relative ${aspectClass(work.ratio)} w-full touch-pan-y select-none overflow-hidden`}
       onPointerDown={(e) => {
+        stopHint()
         e.currentTarget.setPointerCapture(e.pointerId)
         setFromClientX(e.clientX)
       }}
@@ -111,6 +145,19 @@ export function BeforeAfterSlider({ work }: { work: Work }) {
         )}
       </div>
 
+      {/* Which side is which. aria-hidden: the two images' alt text already says it. */}
+      <span
+        aria-hidden="true"
+        className="u-mono pointer-events-none absolute top-3 left-3 z-10 rounded-full bg-navy/80 px-3 py-1 text-paper"
+      >
+        Before
+      </span>
+      <span
+        aria-hidden="true"
+        className="u-mono pointer-events-none absolute top-3 right-3 z-10 rounded-full bg-yellow px-3 py-1 text-navy"
+      >
+        After
+      </span>
       <div
         role="slider"
         tabIndex={0}

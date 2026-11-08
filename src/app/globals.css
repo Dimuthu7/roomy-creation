@@ -123,6 +123,29 @@ body {
 }
 
 /*
+ * Hero entrance (Hero.tsx): each headline word, then the sub-line, then the buttons rise
+ * into place on first load. Declared only under no-preference, so under reduced motion
+ * the class does nothing at all rather than relying on the 0.01ms guard above. `both`
+ * fill keeps each piece hidden during its own delay and settled after it.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes hero-rise {
+    from {
+      opacity: 0;
+      transform: translateY(0.6em);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  .hero-rise {
+    animation: hero-rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+}
+
+/*
  * Hero headline extrusion. The front face stays text-paper (already
  * contrast-checked against the photo — see Hero.tsx's A5 note, untouched here since
  * text-shadow doesn't affect the measured fill color); the depth is a single navy

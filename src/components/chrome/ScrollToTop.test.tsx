@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { render, screen, act } from '@testing-library/react'
+import { render, screen, act, waitFor } from '@testing-library/react'
 import { setPrefersReducedMotion } from '@/test/browserStubs'
 import * as smoothScroll from './SmoothScroll'
 import { ScrollToTop } from './ScrollToTop'
@@ -30,12 +30,37 @@ describe('ScrollToTop', () => {
     expect(screen.getByRole('button', { name: 'Scroll to top' })).toBeInTheDocument()
   })
 
-  it('disappears again after scrolling back up to the top', () => {
+  it('disappears again after scrolling back up to the top', async () => {
+    Object.defineProperty(window, 'innerHeight', { value: 800, configurable: true })
+    const { container } = render(<ScrollToTop />)
+    scrollTo(900)
+    scrollTo(0)
+    // It fades out rather than vanishing in one frame, so give the exit time to finish.
+    await waitFor(() => expect(container).toBeEmptyDOMElement())
+  })
+
+  it('removes itself immediately under reduced motion, with no exit animation', () => {
+    setPrefersReducedMotion(true)
     Object.defineProperty(window, 'innerHeight', { value: 800, configurable: true })
     const { container } = render(<ScrollToTop />)
     scrollTo(900)
     scrollTo(0)
     expect(container).toBeEmptyDOMElement()
+  })
+
+  it('updates the progress ring in place as the page scrolls', () => {
+    Object.defineProperty(window, 'innerHeight', { value: 800, configurable: true })
+    Object.defineProperty(document.documentElement, 'scrollHeight', { value: 2800, configurable: true })
+    Object.defineProperty(document.documentElement, 'clientHeight', { value: 800, configurable: true })
+    render(<ScrollToTop />)
+    scrollTo(1000)
+    const button = screen.getByRole('button', { name: 'Scroll to top' })
+    const ring = button.querySelectorAll('circle')[1]
+    const half = (2 * Math.PI * 24) / 2
+    expect(Number(ring.getAttribute('stroke-dashoffset'))).toBeCloseTo(half, 3)
+    scrollTo(2000)
+    expect(Number(ring.getAttribute('stroke-dashoffset'))).toBeCloseTo(0, 3)
+    expect(screen.getByRole('button', { name: 'Scroll to top' })).toBe(button)
   })
 
   // A float over a modal is a defect: Lightbox's portal is z-50, so this has to sit

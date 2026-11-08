@@ -1,6 +1,8 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { motion } from 'framer-motion'
+import { useMotionLevel } from '@/hooks/useMotionLevel'
 import { useSiteData } from '@/context/SiteData'
 import { CATEGORIES } from '@/data/categories'
 import { nextIndex, prevIndex } from '@/lib/lightboxNav'
@@ -10,6 +12,10 @@ import { BeforeAfterSlider } from './BeforeAfterSlider'
 
 // Native <dialog> (showModal/close) is unimplemented in jsdom, so the trap, focus
 // restore and scroll lock below are hand-rolled rather than delegated to the browser.
+// A horizontal swipe has to travel at least this far, and further sideways than up or
+// down, before it counts as "next/previous" rather than an attempt to scroll.
+const SWIPE_MIN_PX = 50
+
 const FOCUSABLE_SELECTOR =
   'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])'
 
@@ -43,6 +49,8 @@ export function Lightbox({
   // flag defers the portal and every document touch to the client.
   const [mounted, setMounted] = useState(false)
   const dialogRef = useRef<HTMLDivElement>(null)
+  const swipeStart = useRef<{ x: number; y: number } | null>(null)
+  const reduced = useMotionLevel() === 'reduced'
   const { prefill } = useEnquiryPrefill()
   const { works } = useSiteData()
   const work = works[index]
@@ -145,6 +153,24 @@ export function Lightbox({
     }
   }
 
+  // Swipe left/right on the photo to page through works on a phone. Skipped for a
+  // before/after work: there a horizontal drag belongs to the comparison slider.
+  const handleTouchStart = (e: React.TouchEvent) => {
+    const t = e.touches[0]
+    swipeStart.current = work.beforeImage ? null : { x: t.clientX, y: t.clientY }
+  }
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    const start = swipeStart.current
+    swipeStart.current = null
+    if (!start) return
+    const t = e.changedTouches[0]
+    const dx = t.clientX - start.x
+    const dy = t.clientY - start.y
+    if (Math.abs(dx) < SWIPE_MIN_PX || Math.abs(dx) <= Math.abs(dy)) return
+    if (dx < 0) goNext()
+    else goPrev()
+  }
+
   if (!mounted) return null
 
   const projectType = CATEGORIES.find((c) => c.id === work.category)?.label
@@ -168,7 +194,15 @@ export function Lightbox({
       data-lenis-prevent
       className="fixed inset-0 z-50 flex items-center justify-center bg-navy/95 p-4"
     >
-      <div className="flex max-h-full w-full max-w-4xl flex-col gap-6 overflow-y-auto">
+      {/* Opens with a short fade-and-settle rather than appearing in one frame. The
+          backdrop stays a plain div so the click-outside check above keeps comparing
+          against the element that owns the handler. */}
+      <motion.div
+        className="flex max-h-full w-full max-w-4xl flex-col gap-6 overflow-y-auto"
+        initial={reduced ? undefined : { opacity: 0, scale: 0.96, y: 12 }}
+        animate={reduced ? undefined : { opacity: 1, scale: 1, y: 0 }}
+        transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+      >
         <div className="flex items-start justify-between gap-4">
           <div>
             <h2 id="lightbox-title" className="font-display text-2xl text-paper">
@@ -191,7 +225,18 @@ export function Lightbox({
             every photo after it: the stand-in re-rendered with the new work's path and no
             request was ever made for a file that exists. Keying on the work id also
             resets the compare handle, which otherwise stayed where the last work left it. */}
-        <BeforeAfterSlider key={work.id} work={work} />
+        {/* Keyed on the work as well, so each new photo fades in rather than cutting. */}
+        <motion.div
+          key={work.id}
+          data-testid="lightbox-media"
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+          initial={reduced ? undefined : { opacity: 0 }}
+          animate={reduced ? undefined : { opacity: 1 }}
+          transition={{ duration: 0.25, ease: 'easeOut' }}
+        >
+          <BeforeAfterSlider key={work.id} work={work} />
+        </motion.div>
 
         <dl className="flex flex-col">
           {specRow('Project type', projectType)}
@@ -232,7 +277,7 @@ export function Lightbox({
             Enquire about something like this
           </button>
         </div>
-      </div>
+      </motion.div>
     </div>,
     document.body,
   )
