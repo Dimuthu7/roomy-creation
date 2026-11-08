@@ -1,0 +1,29 @@
+# Lint and test every pull request and every push to main.
+#
+# Deploys are not done here: Cloudflare Workers Builds (connected to this repo in
+# the Cloudflare dashboard) builds and deploys `main` on every push. This workflow
+# only gives each PR a pass/fail check before it is merged, so it needs no secrets.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
